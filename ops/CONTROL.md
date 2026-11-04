@@ -122,7 +122,7 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | -- | ---- | --------------- | ------------------- | ------ |
 | O-1 | **Rotate R2 keys.** Keys were pasted into a chat during testing. The account token used for testing covers all buckets. | Anyone with the chat log can read or write the offsite bucket | Create a bucket-scoped token, replace in `/root/.config/rclone/rclone.conf` without printing, verify with `rclone lsl`, delete the old token | open |
 | O-2 | Verify how channel keys are stored (plaintext or encrypted) | Decides whether `CRYPTO_SECRET` can be rotated safely | Read the model layer for channel key handling; do not rotate until answered | open |
-| O-3 | Switch `HomePageContent` from inline HTML to the URL `https://ai.bozzii.com/brand/home.html` | Customers see the old inline page; the new page is not used | Admin → System settings → Site. Verify the page in a browser first | open |
+| O-3 | Switch `HomePageContent` from inline HTML to the URL `https://ai.bozzii.com/brand/home.html` | Customers see the old inline page; the new page is not used | Admin → System settings → Site. Operator performs it in the admin UI (assistant has no admin login). Rollback copy: `backups/homepage-before-url-switch.html` on the host | open, awaiting operator |
 | O-4 | App port 3000 is bound to `0.0.0.0`, reachable without the reverse proxy | Bypasses the proxy; exposes the app directly | Confirm the 1Panel OpenResty route to `127.0.0.1:3000`, then set `BIND_ADDRESS=127.0.0.1` in a window | open |
 | O-5 | `SESSION_COOKIE_SECURE=false` | Session cookies can travel over plain HTTP | Confirm HTTPS end to end, then set `true` in a window | open |
 | O-6 | Channel test on the new version has not been run | An upstream fault would appear only when a customer hits it | Run one low-cost channel test with operator approval (spends upstream quota) | open |
@@ -130,6 +130,8 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | O-8 | rclone 1.60 gives a harmless `501` on first upload to R2 | Log noise | Upgrade rclone from the official release | deferred |
 | O-9 | `/var/log/xseek-offsite-backup.log` has no rotation | Grows by a line per day; negligible now | Add `logrotate` if it matters | deferred |
 | O-10 | Staging and the Gemini 503 | None: Gemini is out of scope (D-008) | Closed by decision | closed |
+| O-11 | `/brand/home.html` is served with `Cache-Control: max-age=604800` (7 days). Browsers keep an old copy for a week after any edit. | Customers see stale landing page after a release | Add a versioned file name or a shorter cache header for `/brand/` before the next landing-page edit | open |
+| O-12 | Admin changes to options (for example `HomePageContent`) are held in server memory. Editing the database directly does not take effect until the app restarts. | A direct SQL edit looks applied but is not | Make all option changes through the admin UI or API only | rule |
 
 ## 6. Change log
 
