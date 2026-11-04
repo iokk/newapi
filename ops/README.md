@@ -5,7 +5,7 @@ This directory is the operations handbook for the production deployment of
 or an AI agent (Claude Code, Hermes, or similar) can pick it up cold and
 repeat the work safely.
 
-**Read this file first, then the runbook for your task.** Each runbook lists
+**Start with [`CONTROL.md`](CONTROL.md): it is the master record of current state, decisions, and open items. Then read this file and the runbook for your task.** Each runbook lists
 preconditions, exact commands, how to verify, and when to stop.
 
 ## Golden rules
@@ -35,6 +35,8 @@ preconditions, exact commands, how to verify, and when to stop.
 | `runbooks/04-release.md` | Building our image, staging it, cutting over, rolling back |
 | `runbooks/05-server-inventory.md` | Server layout, containers, cron jobs, file paths, where secrets live |
 | `runbooks/06-known-issues.md` | Problems that happened during release and how to prevent them |
+| `runbooks/07-daily-operations.md` | Daily, weekly, monthly, and quarterly checks |
+| `releases/rc48-bozzii2.md` | Record of the first production release |
 
 ## Scripts
 
@@ -61,7 +63,7 @@ decrypted. It must also be kept in the operator's password manager.
 | Image registry | **Decided:** GHCR, `ghcr.io/iokk/bozzii-new-api`, public. Tags `<upstream>-bozzii.<n>`, never `latest` |
 | Local image | Built: `ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1` from commit `50abf2f08`. Verified: version string in binary, landing page and brand CSS embedded, `/api/status` healthy on an empty SQLite database. **Not pushed.** Build with `ops/build-image.sh` |
 | Production image | **Replaced 2026-11-05.** Now `ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.2` (digest `sha256:f1e7af2c…`). Previous `calciumion/new-api:v1.0.0-rc.44` kept in `compose.yaml.bak-rc44-*` for rollback |
-| Open: R2 keys | Keys were pasted into a chat transcript during testing. **Must be rotated.** See `runbooks/02-backup.md` §6 |
+| Open: R2 keys (O-1 in CONTROL.md) | Keys were pasted into a chat transcript during testing. **Must be rotated.** See `runbooks/02-backup.md` §6 |
 | Open: R2 token scope | The token used for testing covers all buckets on the account. Replace it with a bucket-scoped token |
 
 ## For agents: how to use this directory
