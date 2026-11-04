@@ -38,6 +38,7 @@ existing file.** That keeps `git merge` conflicts confined to a line or two.
 | Brand colours, radius, font | `web/src/styles/brand.css` | No — new file |
 | Loading brand.css | `web/src/styles/index.css` (one `@import`) | Yes — 1 line |
 | Landing page (static, bilingual) | `web/public/brand/home.html` → served at `/brand/home.html` | No — new file |
+| Server ops scripts (offsite backup, R2 setup) | `ops/` → copied to `/opt/xseek-new-api/ops/` | No — new directory |
 | Future feature code | `web/src/branding/` | No — new directory |
 | Future backend hooks | `plugins/` or a new package | No |
 
