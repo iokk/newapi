@@ -12,8 +12,10 @@ set -eu
 umask 077
 
 APP_DIR=/opt/xseek-new-api
-RECIPIENT="$APP_DIR/ops/age-recipient.txt"
-REMOTE="r2:bozzii/newapi"
+# Overridable so the pipeline can be tested against a local directory and a
+# throwaway key without touching R2 or the real recipient.
+RECIPIENT="${RECIPIENT:-$APP_DIR/ops/age-recipient.txt}"
+REMOTE="${REMOTE:-r2:bozzii/newapi}"
 KEEP_LOCAL_DAYS=7
 
 cd "$APP_DIR"
