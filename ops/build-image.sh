@@ -6,7 +6,12 @@
 # VERSION for the frontend build stamp and the Go -ldflags version.
 #
 # Usage: sh ops/build-image.sh <upstream-tag> <bozzii-build-number>
-#   e.g. sh ops/build-image.sh v1.0.0-rc.48 1
+#   e.g. sh ops/build-image.sh v1.0.0-rc.48 2
+#
+# Always builds for linux/amd64, the production host's architecture. Building
+# on an Apple Silicon Mac without --platform produces an arm64 image that dies
+# with "exec /new-api: exec format error" on the server. The architecture is
+# verified after the build; never ship an image whose arch check failed.
 #
 # Builds only. Does not push. Run from the repository root.
 set -eu
@@ -26,13 +31,19 @@ docker info >/dev/null 2>&1 || { echo "Docker daemon is not running" >&2; exit 1
 trap 'git checkout -- VERSION' EXIT
 printf '%s\n' "$IMAGE_TAG" > VERSION
 
-docker build \
+docker buildx build --platform linux/amd64 --load \
   --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
   --label "org.opencontainers.image.version=${IMAGE_TAG}" \
   --label "org.opencontainers.image.base.name=upstream ${UPSTREAM_TAG}" \
   -t "$IMAGE" .
 
-echo "built: $IMAGE"
+arch=$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$IMAGE")
+if [ "$arch" != "linux/amd64" ]; then
+  echo "FATAL: built ${arch}, production needs linux/amd64. Do not deploy." >&2
+  exit 1
+fi
+
+echo "built: $IMAGE ($arch)"
 echo "image id: $(docker image inspect --format '{{.Id}}' "$IMAGE")"
 echo "source commit: $(git rev-parse --short HEAD)"
 echo "not pushed. Next: stage 2 (staging) in ops/runbooks/04-release.md"
