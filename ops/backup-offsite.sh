@@ -17,6 +17,7 @@ APP_DIR=/opt/xseek-new-api
 RECIPIENT="${RECIPIENT:-$APP_DIR/ops/age-recipient.txt}"
 REMOTE="${REMOTE:-r2:bozzii/newapi}"
 KEEP_LOCAL_DAYS=7
+RETAIN_DAYS="${RETAIN_DAYS:-30}"
 
 cd "$APP_DIR"
 sh ./backup.sh
@@ -37,5 +38,12 @@ done
 # Uploaded copies are the long-term archive; keep a week locally for fast restores.
 find backups -name 'newapi-*.dump' -mtime +"$KEEP_LOCAL_DAYS" -delete
 find backups -name 'config-*.tar.gz' -mtime +"$KEEP_LOCAL_DAYS" -delete
+
+# Remote retention: only *.age objects under the backup prefix, older than RETAIN_DAYS.
+# Guarded so a mistyped REMOTE cannot delete anything outside the backup prefix.
+case "$REMOTE" in
+  r2:bozzii/newapi|/*) rclone delete --min-age "${RETAIN_DAYS}d" --include '*.age' "$REMOTE" ;;
+  *) echo "refusing remote retention on unexpected REMOTE=$REMOTE" >&2; exit 1 ;;
+esac
 
 printf 'Offsite backup uploaded: %s\n' "$stamp"

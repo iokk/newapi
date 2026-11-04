@@ -83,14 +83,17 @@ Image build (same layers as upstream's Dockerfile):
 docker build -t bozzii/new-api:$(cat VERSION) .
 ```
 
-## Deploying
+## Deploying and operating production
 
-The running instance uses `calciumion/new-api`. Switching to our image is a
-`docker compose` change: point `image:` at our tag and `docker compose up -d`.
-The database lives in a volume and is untouched by the swap.
+Production runbooks live in [`ops/`](ops/README.md). Start there. Do not
+deploy from this document alone: the production instance holds real customer
+data, and the steps that matter (backup, staging, cut-over, rollback) are in
+`ops/runbooks/`.
 
-Take a database dump before the first switch anyway — a rollback to the old
-image is only clean if the schema hasn't been migrated forward.
+- Backups and offsite copies: `ops/runbooks/02-backup.md`
+- Restore and proof of restore: `ops/runbooks/03-restore.md`
+- Building and cutting over a new image: `ops/runbooks/04-release.md`
+- Server layout and secret locations (no values): `ops/runbooks/05-server-inventory.md`
 
 ## Upstream licence
 
