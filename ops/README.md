@@ -57,6 +57,7 @@ decrypted. It must also be kept in the operator's password manager.
 | Offsite storage | Cloudflare R2 bucket `bozzii`, prefix `newapi/`, public access disabled |
 | Restore test | Passed on a scratch database (12 users, 21 channels, 18 tokens, matching checksums) |
 | Brand build | Branch `brand/bozzii` in `iokk/newapi`: CSS tokens and bilingual landing page |
+| Image registry | **Decided:** GHCR, `ghcr.io/iokk/bozzii-new-api`, public. Tags `<upstream>-bozzii.<n>`, never `latest` |
 | Production image | **Not yet replaced.** See `runbooks/04-release.md` |
 | Open: R2 keys | Keys were pasted into a chat transcript during testing. **Must be rotated.** See `runbooks/02-backup.md` §6 |
 | Open: R2 token scope | The token used for testing covers all buckets on the account. Replace it with a bucket-scoped token |

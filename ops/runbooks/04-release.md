@@ -47,12 +47,26 @@ Build from the merged tree. Use the upstream Dockerfile.
 
 ```bash
 cd /Users/qi/cludecode/bozzii-newapi
-docker build -t <REGISTRY>/bozzii-new-api:<TAG> .
+docker build -t ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1 .
 ```
 
-`<REGISTRY>` and `<TAG>` are placeholders. **The operator has not yet chosen a
-registry.** Options under consideration: GitHub Container Registry (`ghcr.io/iokk/…`),
-or Docker Hub. Do not push until the operator chooses.
+Push (after Stage 2 passes, not before):
+
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u iokk --password-stdin   # token from gh auth, never printed
+docker push ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1
+docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1
+```
+
+Registry decision (2026-11-05): **GitHub Container Registry**, image
+`ghcr.io/iokk/bozzii-new-api`, public visibility. Why: same account as the repository,
+the operator's `gh` token already has `write:packages`, and the production host already
+pulls from `ghcr.io` (nezha, skillhub). The image contains no secrets; runtime
+configuration comes from `.env` on the host.
+
+Tag rule: `<upstream release>-bozzii.<n>`, for example `v1.0.0-rc.48-bozzii.1`.
+Production `compose.yaml` must reference a version tag, never `latest`, and should
+record the image digest (`@sha256:…`) of the build it was tested with.
 
 Gate: the build finishes. Then start the image on a throwaway port with no data and check
 that `/api/status` answers with `"success":true`. Do not rely on a version flag; verify the
