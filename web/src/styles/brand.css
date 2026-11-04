@@ -1,0 +1,41 @@
+/*
+ * Bozzii brand layer.
+ *
+ * CUSTOM(brand): the only file this fork owns. It overrides the official
+ * design tokens instead of forking components, so `git merge upstream/main`
+ * never conflicts here (upstream does not know this file exists; the only
+ * shared edit is the single `@import` line in ./index.css).
+ *
+ * Loaded AFTER theme.css and theme-presets.css so these :root / .dark values
+ * win the cascade for the default theme. A user who picks another theme
+ * preset in the config drawer still gets that preset — brand colours are the
+ * baseline, not a lock.
+ *
+ * Colours match https://ai.bozzii.com static pages (#245ad6 / #111c2c).
+ */
+
+:root {
+  --primary: #245ad6;
+  --primary-foreground: #ffffff;
+  --ring: #245ad6;
+  --sidebar-primary: #245ad6;
+  --sidebar-primary-foreground: #ffffff;
+  --secondary-foreground: #245ad6;
+  --foreground: #182b49;
+  /* The public site uses 5px corners; 0.5rem keeps data tables readable. */
+  --radius: 0.5rem;
+  --font-ui-sans:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui,
+    -apple-system, sans-serif;
+}
+
+.dark {
+  --background: #111c2c;
+  --foreground: #edf2fc;
+  --primary: #aac4ff;
+  --primary-foreground: #111c2c;
+  --ring: #aac4ff;
+  --sidebar-primary: #aac4ff;
+  --sidebar-primary-foreground: #111c2c;
+  --secondary-foreground: #aac4ff;
+}

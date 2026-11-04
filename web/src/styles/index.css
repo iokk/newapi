@@ -29,6 +29,10 @@ For commercial licensing, please contact support@quantumnous.com
 
 @import './theme.css';
 @import './theme-presets.css';
+/* CUSTOM(brand): must stay last so it wins the baseline cascade. A theme
+ * preset picked in the config drawer still overrides it — those declarations
+ * land on <body>, which shadows these inherited values. */
+@import './brand.css';
 
 @layer base {
   :root {
