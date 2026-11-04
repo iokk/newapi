@@ -28,10 +28,19 @@ test -z "$(git status --porcelain --untracked-files=no)" || { echo "tracked file
 
 docker info >/dev/null 2>&1 || { echo "Docker daemon is not running" >&2; exit 1; }
 
+# Operator's network path: V2Ray (xray) mixed proxy on the Mac at 10808, which
+# accepts both SOCKS5 and HTTP. Builds and pulls go through it; a dead proxy
+# must fail fast here instead of hanging in a registry call.
+PROXY="${BOZZII_PROXY:-http://127.0.0.1:10808}"
+curl -s -o /dev/null --max-time 10 -x "$PROXY" https://auth.docker.io/ || { echo "proxy $PROXY not reachable; start V2Ray first" >&2; exit 1; }
+
 trap 'git checkout -- VERSION' EXIT
 printf '%s\n' "$IMAGE_TAG" > VERSION
 
 docker buildx build --platform linux/amd64 --load \
+  --build-arg HTTP_PROXY=http://host.docker.internal:10808 \
+  --build-arg HTTPS_PROXY=http://host.docker.internal:10808 \
+  --build-arg NO_PROXY=localhost,127.0.0.1 \
   --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
   --label "org.opencontainers.image.version=${IMAGE_TAG}" \
   --label "org.opencontainers.image.base.name=upstream ${UPSTREAM_TAG}" \
