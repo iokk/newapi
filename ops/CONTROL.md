@@ -148,6 +148,7 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | 2026-11-05 | amd64 build fix; known-issues runbook | `cc1e96777` |
 | 2026-11-05 | Production cut-over to rc.48-bozzii.2 | see `releases/rc48-bozzii2.md` |
 | 2026-11-05 | Wallet entry points follow admin switch; theme drawer replaced by light/dark switch; cut-over to rc.48-bozzii.3 | `f3ae32bb5`, see `releases/rc48-bozzii3.md` |
+| 2026-11-06 | ESA cache rules for ai.bozzii.com `/static/` (7d) and `/brand/` (1h). Not `/` or `/api/`. | SiteId 184042911097052, configs 528459549947904 and 528459570923520 |
 
 ## 7. Rules for editing these documents
 
