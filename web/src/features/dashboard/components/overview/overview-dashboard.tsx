@@ -51,6 +51,7 @@ import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { useIsSidebarModuleVisible } from '@/hooks/use-sidebar-config'
 import { getUserModels } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
 import { MOTION_TRANSITION } from '@/lib/motion'
@@ -465,6 +466,7 @@ export function OverviewDashboard() {
   const setupGuideId = useId()
   const setupGuideToggleRef = useRef<HTMLButtonElement>(null)
   const user = useAuthStore((state) => state.auth.user)
+  const isWalletVisible = useIsSidebarModuleVisible('/wallet')
   const { items: apiInfoItems } = useApiInfo()
   const {
     apiInfo: showApiInfoPanel,
@@ -504,7 +506,7 @@ export function OverviewDashboard() {
     [apiKeysQuery.data]
   )
 
-  const startSteps = useMemo<StartStep[]>(
+  const allStartSteps = useMemo<StartStep[]>(
     () => [
       {
         title: t('Create API Key'),
@@ -530,6 +532,11 @@ export function OverviewDashboard() {
     ],
     [preferredKey, remainQuota, requestCount, t, usedQuota]
   )
+  // CUSTOM(brand): credits are added by the operator, so the step is dropped
+  // when the wallet is hidden; progress is computed from this array.
+  const startSteps = isWalletVisible
+    ? allStartSteps
+    : allStartSteps.filter((step) => step.to !== '/wallet')
 
   const quickActions = useMemo<QuickAction[]>(
     () => [
