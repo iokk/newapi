@@ -166,7 +166,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                       {label}
                     </span>
                   )}
-                  <span className='flex flex-wrap items-baseline gap-x-1 font-mono text-sm font-semibold tabular-nums'>
+                  <span className='flex flex-wrap items-baseline gap-x-1 font-mono text-base font-semibold tabular-nums'>
                     <span>{entry.formattedRange ?? entry.formatted}</span>
                     <span className='text-muted-foreground text-xs font-normal whitespace-nowrap'>
                       {' '}
@@ -229,7 +229,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     priceSummary = prices.map((price) => (
       <div key={price.type} className='flex min-w-0 flex-col gap-1'>
         <span className='text-muted-foreground text-xs'>{price.label}</span>
-        <span className='font-mono text-sm font-semibold tabular-nums'>
+        <span className='font-mono text-base font-semibold tabular-nums'>
           {formatPrice(
             props.model,
             price.type,
@@ -249,7 +249,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   } else {
     priceSummary = (
       <div className='col-span-full flex min-w-0 flex-col gap-1'>
-        <span className='font-mono text-sm font-semibold tabular-nums'>
+        <span className='font-mono text-base font-semibold tabular-nums'>
           {formatRequestPrice(
             props.model,
             showRechargePrice,
@@ -304,9 +304,11 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       </CardHeader>
       <CardContent className='flex flex-1 flex-col gap-3'>
         <div className='flex min-w-0 flex-col gap-1.5'>
-          <p className='text-muted-foreground line-clamp-2 text-[13px] leading-5 break-words'>
-            {props.model.description || t('No description available.')}
-          </p>
+          {props.model.description && (
+            <p className='text-muted-foreground line-clamp-2 text-[13px] leading-5 break-words'>
+              {props.model.description}
+            </p>
+          )}
           {tags.length > 0 && (
             <div
               role='group'

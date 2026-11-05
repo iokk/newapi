@@ -60,7 +60,6 @@ export function Pricing() {
     vendorFilter,
     groupFilter,
     quotaTypeFilter,
-    endpointTypeFilter,
     tagFilter,
     tokenUnit,
     viewMode,
@@ -70,7 +69,6 @@ export function Pricing() {
     setVendorFilter,
     setGroupFilter,
     setQuotaTypeFilter,
-    setEndpointTypeFilter,
     setTagFilter,
     setTokenUnit,
     setViewMode,
@@ -177,9 +175,9 @@ export function Pricing() {
           }}
         />
         <PageTransition className='relative mx-auto w-full max-w-[1800px] px-3 pt-16 pb-8 sm:px-6 sm:pt-20 sm:pb-10 xl:px-8'>
-          <header className='mx-auto mb-5 max-w-3xl pt-5 text-center sm:mb-10 sm:pt-10'>
-            <h1 className='text-[clamp(2rem,5.5vw,3.5rem)] leading-[1.15] font-bold tracking-tight'>
-              {t('Model Square')}
+          <header className='mx-auto mb-5 max-w-3xl pt-3 text-center sm:mb-8 sm:pt-6'>
+            <h1 className='text-[clamp(1.75rem,4.5vw,2.5rem)] leading-[1.2] font-bold tracking-tight'>
+              {t('Model Pricing')}
             </h1>
             <p className='text-muted-foreground/80 mt-3 text-sm sm:mt-4 sm:text-base'>
               {t('This site currently has {{count}} models enabled', {
@@ -205,12 +203,10 @@ export function Pricing() {
           <div className='grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]'>
             <PricingSidebar
               quotaTypeFilter={quotaTypeFilter}
-              endpointTypeFilter={endpointTypeFilter}
               vendorFilter={vendorFilter}
               groupFilter={groupFilter}
               tagFilter={tagFilter}
               onQuotaTypeChange={setQuotaTypeFilter}
-              onEndpointTypeChange={setEndpointTypeFilter}
               onVendorChange={setVendorFilter}
               onGroupChange={setGroupFilter}
               onTagChange={setTagFilter}
@@ -237,12 +233,10 @@ export function Pricing() {
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 quotaTypeFilter={quotaTypeFilter}
-                endpointTypeFilter={endpointTypeFilter}
                 vendorFilter={vendorFilter}
                 groupFilter={groupFilter}
                 tagFilter={tagFilter}
                 onQuotaTypeChange={setQuotaTypeFilter}
-                onEndpointTypeChange={setEndpointTypeFilter}
                 onVendorChange={setVendorFilter}
                 onGroupChange={setGroupFilter}
                 onTagChange={setTagFilter}

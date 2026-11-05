@@ -30,13 +30,7 @@ import {
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
-import {
-  ENDPOINT_TYPES,
-  FILTER_ALL,
-  QUOTA_TYPES,
-  getEndpointTypeLabels,
-  getQuotaTypeLabels,
-} from '../constants'
+import { FILTER_ALL, QUOTA_TYPES, getQuotaTypeLabels } from '../constants'
 import { getModelQuotaType, parseTags } from '../lib/filters'
 import type { PricingModel, PricingVendor } from '../types'
 
@@ -57,12 +51,10 @@ type FilterSectionProps = {
 
 export interface PricingSidebarProps {
   quotaTypeFilter: string
-  endpointTypeFilter: string
   vendorFilter: string
   groupFilter: string
   tagFilter: string
   onQuotaTypeChange: (value: string) => void
-  onEndpointTypeChange: (value: string) => void
   onVendorChange: (value: string) => void
   onGroupChange: (value: string) => void
   onTagChange: (value: string) => void
@@ -154,7 +146,6 @@ export const PricingSidebar = memo(function PricingSidebar(
   const counts = useMemo(() => {
     const vendors = new Map<string, number>()
     const tags = new Map<string, number>()
-    const endpoints = new Map<string, number>()
     const quotas = { token: 0, request: 0, task: 0 }
     for (const model of props.models) {
       if (model.vendor_name) {
@@ -168,16 +159,12 @@ export const PricingSidebar = memo(function PricingSidebar(
       )) {
         tags.set(tag, (tags.get(tag) ?? 0) + 1)
       }
-      for (const endpoint of new Set(model.supported_endpoint_types ?? [])) {
-        endpoints.set(endpoint, (endpoints.get(endpoint) ?? 0) + 1)
-      }
       const quotaType = getModelQuotaType(model)
       if (quotaType) quotas[quotaType]++
     }
-    return { vendors, tags, endpoints, quotas }
+    return { vendors, tags, quotas }
   }, [props.models])
   const quotaTypeLabels = getQuotaTypeLabels(t)
-  const endpointTypeLabels = getEndpointTypeLabels(t)
 
   const vendorOptions: FilterOption[] = [
     {
@@ -243,21 +230,6 @@ export const PricingSidebar = memo(function PricingSidebar(
     })),
   ]
 
-  const endpointOptions: FilterOption[] = [
-    {
-      value: ENDPOINT_TYPES.ALL,
-      label: endpointTypeLabels[ENDPOINT_TYPES.ALL],
-      count: props.models.length,
-    },
-    ...Object.entries(endpointTypeLabels)
-      .filter(([value]) => value !== ENDPOINT_TYPES.ALL)
-      .map(([value, label]) => ({
-        value,
-        label,
-        count: counts.endpoints.get(value) ?? 0,
-      })),
-  ]
-
   return (
     <aside className={cn('bg-card rounded-xl border p-3', props.className)}>
       <div className='mb-2.5 flex items-center justify-between gap-2'>
@@ -288,13 +260,7 @@ export const PricingSidebar = memo(function PricingSidebar(
 
       <div className='space-y-1'>
         <FilterSection
-          title={t('Groups')}
-          value={props.groupFilter}
-          options={groupOptions}
-          onChange={props.onGroupChange}
-        />
-        <FilterSection
-          title={t('All Vendors')}
+          title={t('Vendors')}
           value={props.vendorFilter}
           options={vendorOptions}
           onChange={props.onVendorChange}
@@ -312,10 +278,10 @@ export const PricingSidebar = memo(function PricingSidebar(
           onChange={props.onQuotaTypeChange}
         />
         <FilterSection
-          title={t('Endpoint Type')}
-          value={props.endpointTypeFilter}
-          options={endpointOptions}
-          onChange={props.onEndpointTypeChange}
+          title={t('Groups')}
+          value={props.groupFilter}
+          options={groupOptions}
+          onChange={props.onGroupChange}
         />
       </div>
     </aside>

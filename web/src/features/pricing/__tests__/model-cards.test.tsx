@@ -170,7 +170,9 @@ describe('model cards', () => {
     })
     expect(statusStrip).toHaveTextContent('—')
     expect(statusStrip.querySelectorAll('[aria-hidden]')).toHaveLength(0)
-    expect(screen.getByText('No description available.')).toBeVisible()
+    expect(
+      screen.queryByText('No description available.')
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Details' })).toBeEnabled()
   })
 

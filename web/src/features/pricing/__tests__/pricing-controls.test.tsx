@@ -37,7 +37,6 @@ function toolbarProps(): PricingToolbarProps {
     showRechargePrice: false,
     viewMode: 'card',
     quotaTypeFilter: 'all',
-    endpointTypeFilter: 'all',
     vendorFilter: 'all',
     groupFilter: 'all',
     tagFilter: 'all',
@@ -46,7 +45,6 @@ function toolbarProps(): PricingToolbarProps {
     onRechargePriceChange: vi.fn(),
     onViewModeChange: vi.fn(),
     onQuotaTypeChange: vi.fn(),
-    onEndpointTypeChange: vi.fn(),
     onVendorChange: vi.fn(),
     onGroupChange: vi.fn(),
     onTagChange: vi.fn(),
@@ -240,7 +238,7 @@ describe('pricing controls', () => {
     expect(screen.getByRole('button', { name: /^Vendor A\s*2$/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /^Vendor B\s*1$/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /^Chat\s*2$/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: /^Chat\s*1$/ })).toBeVisible()
+    expect(screen.queryByRole('button', { name: /^Chat\s*1$/ })).toBeNull()
     expect(
       screen.getByRole('button', { name: /^Token-based\s*1$/ })
     ).toBeVisible()
@@ -258,7 +256,7 @@ describe('pricing controls', () => {
     expect(screen.getByRole('button', { name: /^Vendor A\s*1$/ })).toBeVisible()
     expect(screen.queryByRole('button', { name: /^Vendor B\s*1$/ })).toBeNull()
     expect(screen.getByRole('button', { name: /^Chat\s*1$/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: /^Chat\s*0$/ })).toBeVisible()
+    expect(screen.queryByRole('button', { name: /^Chat\s*0$/ })).toBeNull()
     expect(
       screen.getByRole('button', { name: /^Token-based\s*0$/ })
     ).toBeVisible()
