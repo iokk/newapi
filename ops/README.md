@@ -37,6 +37,7 @@ preconditions, exact commands, how to verify, and when to stop.
 | `runbooks/06-known-issues.md` | Problems that happened during release and how to prevent them |
 | `runbooks/07-daily-operations.md` | Daily, weekly, monthly, and quarterly checks |
 | `releases/rc48-bozzii2.md` | Record of the first production release |
+| `releases/rc48-bozzii3.md` | Record of the wallet-hide and theme-switch release |
 
 ## Scripts
 

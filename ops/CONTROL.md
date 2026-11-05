@@ -42,12 +42,12 @@ Last full review: 2026-11-05.
 | Item | Value |
 | ---- | ----- |
 | Name | `ghcr.io/iokk/bozzii-new-api` |
-| Running tag | `v1.0.0-rc.48-bozzii.2` |
+| Running tag | `v1.0.0-rc.48-bozzii.3` |
 | Platform | `linux/amd64` (matches host `x86_64`) |
 | Digest | `sha256:f1e7af2cf0e10b0623e55db96506aaf3048616677303a5af0a04fd04b9efaeb0` |
 | Registry visibility | **private** (decision D-006) |
-| Built by | `ops/build-image.sh v1.0.0-rc.48 2` |
-| Previous (rollback) | `calciumion/new-api:v1.0.0-rc.44`, saved as `compose.yaml.bak-rc44-*` on the host |
+| Built by | `ops/build-image.sh v1.0.0-rc.48 3` (image id `sha256:2c24a329b01c895e08a5a9b409fc53a92c10dc7152f431ad1466f68b6551e7f3`; not pushed to GHCR, loaded on the host via docker save/load) |
+| Previous (rollback) | `bozzii.2`, compose saved as `compose.yaml.bak-bozzii2-*` on the host; before that `calciumion/new-api:v1.0.0-rc.44` (`compose.yaml.bak-rc44-*`) |
 
 ### Production host
 
@@ -57,8 +57,8 @@ Last full review: 2026-11-05.
 | Termark asset | `1cc3ef79-f6fe-4aac-913b-34f703da1d8e` |
 | App directory | `/opt/xseek-new-api` (compose project) |
 | Containers | `xseek-new-api` (app), `xseek-new-api-postgres`, `xseek-new-api-redis` |
-| Running since | 2026-11-05, cut over from rc.44 |
-| Data at cut-over | 12 users, 22 channels, 18 tokens, quota sum 1754322390 |
+| Running since | 2026-11-05, `bozzii.3` cut over from `bozzii.2` (first cut-over from rc.44 earlier the same day) |
+| Data at last cut-over | 12 users, 20 channels, 18 tokens, quota sum 1696435798 (channels and quota change as the operator works in the admin UI) |
 | Health | `/api/status` → `success: true`, version `v1.0.0-rc.48-bozzii.2`, system name `Bozzii AI` |
 | App port | `BIND_ADDRESS=0.0.0.0`, port 3000 (see open item O-4) |
 
@@ -132,8 +132,8 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | O-10 | Staging and the Gemini 503 | None: Gemini is out of scope (D-008) | Closed by decision | closed |
 | O-11 | `/brand/home.html` is served with `Cache-Control: max-age=604800` (7 days). Browsers keep an old copy for a week after any edit. | Customers see stale landing page after a release | Add a versioned file name or a shorter cache header for `/brand/` before the next landing-page edit | open |
 | O-13 | Header "Docs" button points to the official `https://docs.newapi.pro` (the built-in default), because `general_setting.docs_link` was never set. | Customers are sent to upstream documentation | Operator sets `general_setting.docs_link` to `https://doc.bozzii.com/` in admin → System settings → Site → System information. Verify the button in the header | open, awaiting operator |
-| O-14 | Hide the "Wallet" entry. Admin toggle `personal.topup` hides the sidebar and profile-menu entries (set to false on production 2026-11-05). Code change on branch `brand/bozzii` makes the mobile drawer link, the dashboard wallet button, and the setup-guide "Add credits" step follow the same toggle. The `/wallet` route itself stays reachable by URL. | Customers still see the wallet on mobile and the dashboard until the next image is deployed | Build `bozzii.3`, stage, cut over (see runbooks/04-release.md) | code done, not yet deployed |
-| O-15 | Top bar: the colour-preset drawer is replaced by a light/dark switch (`ThemeSwitch`); presets, fonts, radius and layout can no longer be changed by users. Language switcher kept. | Users lose font and layout choices (intended) | Deployed with `bozzii.3` | code done, not yet deployed |
+| O-14 | Hide the "Wallet" entry. Admin toggle `personal.topup` hides the sidebar and profile-menu entries (set to false on production 2026-11-05). Code change on branch `brand/bozzii` makes the mobile drawer link, the dashboard wallet button, and the setup-guide "Add credits" step follow the same toggle. The `/wallet` route itself stays reachable by URL. | Customers still see the wallet on mobile and the dashboard until bozzii.3 | Done | deployed in bozzii.3 (2026-11-05) |
+| O-15 | Top bar: the colour-preset drawer is replaced by a light/dark switch (`ThemeSwitch`); presets, fonts, radius and layout can no longer be changed by users. Language switcher kept. | Users lose font and layout choices (intended) | Deployed with `bozzii.3` | deployed in bozzii.3 (2026-11-05) |
 | O-16 | Admin panels on the overview: Uptime Kuma panel is off on production (`console_setting.uptime_kuma_enabled=false`). Announcements panel is still on; no `announcements_enabled` row exists. | Announcement card still shown | Operator turns it off in admin → System settings → Content → Announcements. Check whether the bell icon still lists announcements | open, awaiting operator |
 | O-12 | Admin changes to options (for example `HomePageContent`) are held in server memory. Editing the database directly does not take effect until the app restarts. | A direct SQL edit looks applied but is not | Make all option changes through the admin UI or API only | rule |
 
@@ -147,6 +147,7 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | 2026-11-05 | Registry decision; build script | `50abf2f08`, `b470dd65d` |
 | 2026-11-05 | amd64 build fix; known-issues runbook | `cc1e96777` |
 | 2026-11-05 | Production cut-over to rc.48-bozzii.2 | see `releases/rc48-bozzii2.md` |
+| 2026-11-05 | Wallet entry points follow admin switch; theme drawer replaced by light/dark switch; cut-over to rc.48-bozzii.3 | `f3ae32bb5`, see `releases/rc48-bozzii3.md` |
 
 ## 7. Rules for editing these documents
 
