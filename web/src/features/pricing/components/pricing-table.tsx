@@ -27,7 +27,7 @@ import {
   useDataTable,
 } from '@/components/data-table'
 
-import { DEFAULT_PRICING_PAGE_SIZE, DEFAULT_TOKEN_UNIT } from '../constants'
+import { DEFAULT_TOKEN_UNIT } from '../constants'
 import type { PricingModel, TokenUnit } from '../types'
 import { usePricingColumns } from './pricing-columns'
 
@@ -57,7 +57,7 @@ export function PricingTable(props: PricingTableProps) {
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: DEFAULT_PRICING_PAGE_SIZE,
+    pageSize: 50,
   })
 
   const columns = usePricingColumns({
@@ -96,8 +96,13 @@ export function PricingTable(props: PricingTableProps) {
         emptyDescription={t('No models match your current filters.')}
         skeletonKeyPrefix='pricing-skeleton'
         applyHeaderSize
+        splitHeader
+        splitHeaderScrollClassName='max-h-[calc(100dvh-15rem)]'
+        pinnedColumns={[{ columnId: 'model_name', side: 'left' }]}
         getColumnClassName={(_columnId, kind) =>
-          kind === 'header' ? 'text-muted-foreground font-medium' : undefined
+          kind === 'header'
+            ? 'border-border/70 bg-muted border-r font-medium'
+            : 'border-border/50 border-r'
         }
         renderRow={(row: Row<PricingModel>) => (
           <DataTableRow
