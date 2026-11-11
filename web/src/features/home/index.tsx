@@ -59,36 +59,33 @@ export function Home() {
   }, [isUrl, syncIframePreferences])
 
   if (!isLoaded) {
+    // CUSTOM(brand): no shell header here; the landing page brings its own nav.
     return (
-      <PublicLayout showMainContainer={false}>
-        <main className='flex min-h-screen items-center justify-center'>
-          <div className='text-muted-foreground'>{t('Loading...')}</div>
-        </main>
-      </PublicLayout>
+      <main className='bg-background flex min-h-screen items-center justify-center'>
+        <div className='text-muted-foreground'>{t('Loading...')}</div>
+      </main>
     )
   }
 
   if (content) {
     if (isUrl) {
+      // CUSTOM(brand): iframe only. The landing page has its own navigation, so
+      // the shell header is not rendered (it used to stack on top of it).
+      /*
+        allow-top-navigation-by-user-activation: the custom home page URL is
+        admin-configured (trusted); this lets its target="_top" nav/menu links
+        navigate the top-level window on user click. This token only permits
+        user-activated top-level navigation and does NOT grant same-origin access.
+      */
       return (
-        <PublicLayout showMainContainer={false}>
-          {/*
-            allow-top-navigation-by-user-activation: the custom home page URL is
-            admin-configured (trusted); this lets its target="_top" nav/menu links
-            navigate the top-level window on user click. The default sandbox blocks
-            this on desktop, while some mobile browsers allow it via allow-popups,
-            causing inconsistent behavior. This token only permits user-activated
-            top-level navigation and does NOT grant same-origin access.
-          */}
-          <iframe
-            ref={iframeRef}
-            src={content}
-            className='h-screen w-full border-none'
-            title={t('Custom Home Page')}
-            sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-top-navigation-by-user-activation'
-            onLoad={syncIframePreferences}
-          />
-        </PublicLayout>
+        <iframe
+          ref={iframeRef}
+          src={content}
+          className='h-screen w-full border-none'
+          title={t('Custom Home Page')}
+          sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-top-navigation-by-user-activation'
+          onLoad={syncIframePreferences}
+        />
       )
     }
 
