@@ -151,6 +151,7 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | 2026-11-05 | Wallet entry points follow admin switch; theme drawer replaced by light/dark switch; cut-over to rc.48-bozzii.3 | `f3ae32bb5`, see `releases/rc48-bozzii3.md` |
 | 2026-11-06 | ESA cache rules for ai.bozzii.com `/static/` (7d) and `/brand/` (1h). Not `/` or `/api/`. | SiteId 184042911097052, configs 528459549947904 and 528459570923520 |
 | 2026-11-11 | Landing page replaced by the new interactive version (about 1.09 MB, inline CSS/JS/images); workbench links point to `https://xingyuqiusuo.com/product.html`; served from disk on the origin (O-17). Pricing page opens as a table; "Model Square" renamed "Model Pricing" | see git log on `brand/bozzii` |
+| 2026-11-11 | Hard availability and compliance claims removed from the landing page; copied to the origin | `f67c796af`, see `releases/2026-11-11-landing-and-pricing.md` |
 
 ## 7. Rules for editing these documents
 
