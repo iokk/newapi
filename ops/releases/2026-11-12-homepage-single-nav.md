@@ -16,12 +16,14 @@ The homepage is the React shell (`web/src/features/home/index.tsx`) wrapping an 
 1. `web/src/features/home/index.tsx`: in the iframe branch render the iframe alone (no `PublicLayout`). The loading state also renders without the header, so no header appears and then disappears.
 2. `web/public/brand/home.html`: delete the `html[data-in-iframe="true"]` CSS block so its own banner, nav and hero spacing show. The JS flag stays (harmless).
 
+3. Review finding fixed: the shell no longer posts `themeMode`/`lang` to the iframe (it overwrote the visitor's own choice on every load, and the shell switchers no longer exist on `/`).
+
 ## Side effects to accept
 - Logged-in users on `/` lose the shell header (profile menu, version badge for admins) on the homepage only; they use the page's "进入控制台" link. Other routes are unchanged.
 - The page's own nav says "模型广场" and "接入指南"; the app renamed the pricing page to "模型定价". Not changed here; decide separately.
 
 ## Verified locally (2026-11-12)
-`tsc` and `oxlint` pass; `bun run build` ok; patched build against a mock API: 0 shell headers at 0.5 s, 1.9 s and 4.4 s, only the page's own banner and nav visible (desktop width). Not yet verified: logged-in view, mobile width, production.
+`tsc` and `oxlint` pass; `bun run build` ok; patched build against a mock API: 0 shell headers at 0.5 s, 1.9 s and 4.4 s, only the page's own banner and nav visible (desktop width). Also 390 px mobile width: one nav, no horizontal scroll, no double scrollbar at desktop. Independent code review (subagent) found no Critical issue. Not verified: logged-in view, Safari/Firefox, production.
 
 ## Verify after deploy
 - `bunx tsc --noEmit` and lint on the changed file.
