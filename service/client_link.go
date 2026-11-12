@@ -46,10 +46,16 @@ var clientLinkTargets = map[string]struct{ tokenName, file string }{
 // anyone can forge it, so abuse limits must not rely on it alone.
 type Device struct{ OS, WB, HW string }
 
-// Hash returns the hex sha256 of the three fields, or false if any is missing or oversized.
+// Hash returns the hex sha256 of the device fields, or false if an input is
+// oversized or OS/HW are missing. WB stays optional: a machine without
+// WorkBuddy installed yet has no device-id file, and HW alone still binds the
+// download code to the machine.
 func (d Device) Hash() (string, bool) {
+	if d.OS == "" || d.HW == "" {
+		return "", false
+	}
 	for _, v := range []string{d.OS, d.WB, d.HW} {
-		if v == "" || len(v) > 128 {
+		if len(v) > 128 {
 			return "", false
 		}
 	}

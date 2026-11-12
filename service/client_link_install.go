@@ -53,7 +53,12 @@ function run(argv) {
     }
     if (old != null && oldArr !== null) {
       backup(p)
-      const keep = oldArr.filter(m => { try { return !(m && typeof m.url === 'string' && new URL(m.url).hostname === host) } catch (e) { return true } })
+      const keep = oldArr.filter(m => {
+        if (!m || typeof m.url !== 'string') return true
+        // JXA has no URL constructor; take the authority segment and compare the host.
+        const h = (m.url.split('//')[1] || '').split(/[/?#]/)[0]
+        return h !== host && h !== host + ':80' && h !== host + ':443'
+      })
       const ids = new Set(fresh.map(m => m.id))
       if (keep.some(m => m && ids.has(m.id))) { report.push(dir + ': 已有同 id 的其他模型，未改动'); continue }
       const out = fresh.concat(keep)
@@ -66,7 +71,7 @@ function run(argv) {
       write(p, JSON.stringify(out))
       report.push(dir + ': 写入 ' + fresh.length + ' 个模型，保留 ' + keep.length + ' 个原有模型')
     } else if (old == null) {
-      fs.createDirectoryAtPathWithIntermediateDirectoriesAttributesError(dir, true, null, null)
+      fs.createDirectoryAtPathWithIntermediateDirectoriesAttributesError(dir, true, $(), null)
       write(p, JSON.stringify(fresh))
       report.push(dir + ': 新建 models.json，写入 ' + fresh.length + ' 个模型')
     }

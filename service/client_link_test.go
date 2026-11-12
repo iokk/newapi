@@ -248,3 +248,18 @@ func TestClientLinkInstallScript(t *testing.T) {
 	assert.NotContains(t, ps1, "sk-")
 	assert.NotContains(t, ps1, "`", "a backtick in the template breaks the Go raw string")
 }
+
+func TestClientLinkDeviceWithoutWorkBuddy(t *testing.T) {
+	setupClientLinkTest(t)
+	// A machine that has never run WorkBuddy has no device-id file: WB is empty.
+	dev := Device{OS: "Darwin", HW: "hw-only"}
+	user := &model.User{Username: "owner2", Password: "password-12345", DisplayName: "owner2", Role: common.RoleCommonUser}
+	require.NoError(t, user.Insert(0))
+	code, err := NewClientLink(user.Id)
+	require.NoError(t, err)
+	dl, err := ExchangeClientLink(code, "workbuddy", dev)
+	require.NoError(t, err)
+	body, err := RedeemClientLink(dl, "models.json", dev)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "sk-")
+}

@@ -21,6 +21,8 @@ import { Terminal } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { api } from '@/lib/api'
+
 import { CopyButton } from '@/components/copy-button'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +34,7 @@ import {
 } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { handleServerError } from '@/lib/handle-server-error'
+import { requireServerSuccess } from '@/lib/server-error-message'
 
 import type { ClientTarget } from '../api'
 
@@ -47,19 +50,11 @@ export function TerminalInstallCard(props: TerminalInstallCardProps) {
 
   const commandMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/client_link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ target: props.target, share: false }),
+      const res = await api.post('/api/client_link', {
+        target: props.target,
+        share: false,
       })
-      if (!res.ok) throw new Error(String(res.status))
-      const body = (await res.json()) as {
-        success: boolean
-        data?: { code: string }
-      }
-      if (!body.success || !body.data) throw new Error('unavailable')
-      return body.data.code
+      return requireServerSuccess(res.data).data.code
     },
     onSuccess: (code) => {
       const file = props.target === 'workbuddy' ? 'install.sh' : 'install.ps1'
