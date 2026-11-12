@@ -83,3 +83,28 @@ Claude 极小请求的 `input_tokens` 达 1,900+（如日志 27437：内容近 0
 
 **以后怎么避免**
 判断缓存问题先跑"同前缀连发 + 换前缀对照"受控测试，再查代码；小 prompt 零命中是正常现象，不要计入故障。
+
+---
+
+## 2026-11-12｜SSE 保活未开启 — 已启用（管理后台配置，非代码改动）
+
+**现象（客户看到什么）**
+XSEEK 反馈 Claude opus 请求要等 33–144 秒才收到响应头，等待期间连接上无任何字节，客户端按 120 秒超时断开。11-12 直连 ai.bozzii.com 测了 4 次（同一小请求，带一个工具）：第一个字节分别在 33s、72s、130s、140s。同一时间 gpt-6.1-sol 是 5.9s，正常。
+
+**根因（实测证据）**
+1. 保活功能网关代码里已有（`controller/relay.go:155` Claude 流、`relay/channel/api_request.go:472` 所有流，`StartStreamKeepAlive` 每 N 秒写 `: PING\n\n` 注释行并提前发出 SSE 响应头），但 `general_setting.ping_interval_enabled` 默认 **false**，生产 `options` 表里没有这个键 → 保活从未开启。
+2. 生产日志：渠道 4（nbwly）承担全部 opus 流量，今天 916 条，平均 frt 21.5s，50 条 > 60s（最长 129–144s）；同网关 gpt 渠道 39 平均 8.2s——网关本身不是瓶颈，慢在 nbwly 上游排队。
+3. 直连上游实测：nbwly 对非 CC 客户端快速拒绝（<1s 返回 503 "No available accounts: this group only allows Claude Code clients"）——上游按 Claude Code 账号槽位排队，慢的时候就慢慢等槽位。
+
+**修法**
+管理后台配置（非代码改动）：`general_setting.ping_interval_enabled=true`、`general_setting.ping_interval_seconds=10`，写入 `options` 表后重启容器生效。
+
+**怎么验证的**
+重启后受控测试：慢路径（等上游 120 秒+）在 11.0s 收到 `: PING` 保活行，随后正常出流；3 次快速请求（3.4-3.6s）立即收到响应头，无需 ping（流在首个 10s tick 前就开始）。4 次测试（日志 ID 见 bugfix-log 27975-27984）`returned_model` 全部为空、全部 200。
+
+**以后怎么避免**
+客户再报"自动换模型"或"没有响应头"时，先查 `ping_interval_enabled` 是否开启，再核对当日上游 503 波动；不要先怀疑网关路由。
+
+**遗留**
+- nbwly key `sk-fbc1128fdb40e34590d550a7c7355e3fab0c795a27461d2ee2cca7c658500ee0` 已泄露进对话记录，必须轮换（用户已知晓）
+- XSEEK 客户端 SSE 解析需兼容注释行（`: PING`），标准 SSE 行为，已告知
