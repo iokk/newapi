@@ -211,6 +211,11 @@ var accessTokenRouteRules = map[string]accessTokenRouteRule{
 	// router/authz-router.go
 	"GET /api/authz/catalog": accessTokenScopeRule("user:read"),
 
+	// router/api-router.go: /api/client_link (creates a key and returns it, so session only)
+	"GET /api/client_link/options":  accessTokenSessionRule,
+	"POST /api/client_link":         accessTokenSessionRule,
+	"GET /api/client_link/download": accessTokenSessionRule,
+
 	// router/api-router.go: /api/token
 	"GET /api/token/":            accessTokenScopeRule("api_key:read"),
 	"GET /api/token/search":      accessTokenScopeRule("api_key:read"),

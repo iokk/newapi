@@ -271,6 +271,12 @@ func GetTokenByIds(id int, userId int) (*Token, error) {
 	return &token, err
 }
 
+func GetUserTokenByName(userId int, name string) (*Token, error) {
+	token := Token{}
+	err := DB.Where("user_id = ? AND name = ?", userId, name).First(&token).Error
+	return &token, err
+}
+
 func GetTokenById(id int) (*Token, error) {
 	if id == 0 {
 		return nil, errors.New("token id is empty")

@@ -27,6 +27,7 @@ import {
   LayoutDashboard,
   ListTodo,
   MessageSquare,
+  Plug,
   PlugZap,
   Radio,
   ServerCog,
@@ -87,6 +88,11 @@ export function useSidebarData(badges: SidebarBadges = {}): SidebarData {
             title: t('API Keys'),
             url: '/keys',
             icon: Key,
+          },
+          {
+            title: t('Client Setup'),
+            url: '/client-config',
+            icon: Plug,
           },
           {
             title: t('Usage Logs'),

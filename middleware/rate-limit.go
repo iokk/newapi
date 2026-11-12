@@ -194,6 +194,16 @@ func CriticalRateLimit() func(c *gin.Context) {
 	return defNext
 }
 
+// ClientLinkRateLimit limits the public client-link endpoints per IP. It uses its own
+// budget (3x the critical one) because one setup run makes three requests and many
+// users can share an IP behind a campus or office NAT.
+func ClientLinkRateLimit() func(c *gin.Context) {
+	if common.CriticalRateLimitEnable {
+		return rateLimitFactory(common.CriticalRateLimitNum*3, common.CriticalRateLimitDuration, "CL")
+	}
+	return defNext
+}
+
 func UserCriticalRateLimit(scope string) func(c *gin.Context) {
 	if !common.CriticalRateLimitEnable {
 		return defNext
