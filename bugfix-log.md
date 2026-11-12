@@ -106,7 +106,7 @@ XSEEK 反馈 Claude opus 请求要等 33–144 秒才收到响应头，等待期
 客户再报"自动换模型"或"没有响应头"时，先查 `ping_interval_enabled` 是否开启，再核对当日上游 503 波动；不要先怀疑网关路由。
 
 **遗留**
-- nbwly key `sk-fbc1128fdb40e34590d550a7c7355e3fab0c795a27461d2ee2cca7c658500ee0` 已泄露进对话记录，必须轮换（用户已知晓）
+- nbwly 测试密钥曾泄露进对话记录并进入一次已推送提交。文件中已删除，必须轮换，见 ops/CONTROL.md O-20
 - XSEEK 客户端 SSE 解析需兼容注释行（`: PING`），标准 SSE 行为，已告知
 
 ---
@@ -134,3 +134,19 @@ A/B 测试（同一台 Mac、同一个真 Claude Code 客户端、同一个小�
 
 **备注**
 SSE 保活（上一条）已解决"等待期间无响应头"的症状；本条解决长尾本身。上游个别账号断流（90s 流内错误）仍会发生，保活会让它以错误事件快速浮出而不是静默。
+
+---
+
+## 2026-11-12（夜）更正：metadata.user_id 覆盖不能删除，删除会导致非 CC 请求 503
+
+**更正的内容**：上一条"身份透传修复（已修复）"的结论作废。
+
+**实测**
+- 删除渠道 4/40 的 `metadata.user_id` 覆盖后，非 Claude Code 客户端经网关请求 opus/sonnet 全部 503 `only allows Claude Code clients`（22:40 起，客户令牌 大乔本有菜 出现 3 次，之前 19:01 为最后一次成功）。
+- 恢复覆盖（从 `/tmp/param_override_backup_20261112.json` 整段写回，读回校验一致，容器重启）后，`/v1/messages` 与 `/v1/chat/completions` 的 opus、sonnet 均 200。
+- 恢复后 chat/completions 单次样本：opus 8.8s、32.6s；sonnet 16.2s、6.6s。长尾仍可能出现，原因未确认。
+- `claude-fable-5-2` 经渠道 4 返回 502 `Upstream service temporarily unavailable`（2 次，测试请求），未修复。
+
+**结论**
+- 该覆盖对非 CC 客户端通过上游校验是必需的，不能为了降低延迟而删除。
+- 之前"长尾根因是身份钉死"的判断证据不足，撤回。长尾原因仍未知。

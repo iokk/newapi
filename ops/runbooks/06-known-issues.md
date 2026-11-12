@@ -69,6 +69,25 @@ Each entry is something that actually happened during the first production relea
   gap, not an upgrade fault. Check with:
   `SELECT id,name,status,models FROM channels WHERE models ILIKE '%<model>%';`
 
+## Upstream identity and channel overrides
+
+**12. Removing an upstream-required identity override broke plain (non-Claude-Code) requests.**
+- Symptom: after `metadata.user_id` was removed from the `param_override` of channels 4 and 40, every plain request to a Claude model through the gateway returned 503 `No available accounts: this group only allows Claude Code clients`. A customer token started failing at 22:40 on 2026-11-12. The override was restored from backup at 22:50.
+- Cause: the upstream accepts plain requests only when they carry the identity the override sets. Restoring the override made plain requests return 200 again. The exact check inside the upstream is not known.
+- Prevention: see decision D-013. Before any `param_override` change: (1) save the full JSON from the database; (2) send one plain request per Claude model, on both `/v1/messages` and `/v1/chat/completions`, and expect 200; (3) grep the error log for `only allows Claude Code`; (4) after a database edit, restart the app container, because channels are cached in memory.
+
+**13. A fix was declared before the customer's traffic was checked.**
+- Symptom: `bugfix-log.md` (commit `3aa76948a`) recorded the first-byte tail as fixed. The next day the same change produced 503 errors for the customer (item 12).
+- Cause: the test used only the Claude Code client, the request type the change was meant to help. It did not cover plain requests, and it did not check the logs of the customer's token.
+- Prevention: every bug entry lists the tested request types (endpoint, model, client type) and the log query that showed customer traffic healthy after the change. Until both are present, the entry says "unverified", not "fixed". A wrong entry is corrected by a new dated entry, not edited silently.
+
+**14. A secret was written into a committed document.**
+- Symptom: a full upstream API key appeared in `bugfix-log.md` in commit `27061425a`, which was pushed to `origin`.
+- Cause: the key was copied into a "remaining risk" note as a reminder to rotate it.
+- Prevention: never write a key, even partly, into any file or commit message. Before each commit, check the added lines with `git diff --cached | grep '^+' | grep -Eo 'sk-[A-Za-z0-9]{20,}'`, and stop if anything prints. Editing a file does not remove a pushed secret from history. Rotate the secret first, then decide whether to rewrite history (CONTROL O-21).
+
+---
+
 ## Memory and cache (to check before every release)
 
 These have not been observed on this host yet. They are checks to run, with the threshold to act on.
