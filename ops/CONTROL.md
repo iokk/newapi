@@ -17,6 +17,7 @@ Last full review: 2026-11-05.
 | How to get onto the server | `runbooks/01-access.md` |
 | Backup, encryption, offsite, retention | `runbooks/02-backup.md` |
 | Proving a backup works, restoring | `runbooks/03-restore.md` |
+| Repository and branch workflow | `../FORK.md` |
 | Building, staging, cutting over, rolling back | `runbooks/04-release.md` |
 | Server layout, containers, cron, secret locations | `runbooks/05-server-inventory.md` |
 | Problems we hit and how to prevent them | `runbooks/06-known-issues.md` |
@@ -32,7 +33,7 @@ Last full review: 2026-11-05.
 | ---- | ----- |
 | Upstream | `QuantumNous/new-api`, remote `upstream` |
 | Our fork | `iokk/newapi`, remote `origin` |
-| Working branch | `brand/bozzii` (current head: `git rev-parse --short HEAD`) |
+| Working branch | `main` (only integration and image-source branch; see `../FORK.md`) |
 | Upstream base | tag `v1.0.0-rc.48` (commit `706144769`) |
 | Customisations | `web/src/styles/brand.css` (new), `web/src/styles/index.css` (one `@import`), `web/public/brand/home.html` (new), `ops/` (new) |
 | Marker | every change to an upstream file carries `CUSTOM(brand)`; list with `git grep -n 'CUSTOM(brand)'` |
@@ -114,6 +115,7 @@ Each decision has a reason. Do not reverse one without reading its reason and wr
 | D-011 | 2026-11-04 | Route git and docker traffic through the V2Ray proxy on 10808 | Direct connections to GitHub, GHCR and Docker Hub are unreliable from this network |
 | D-012 | 2026-11-05 | Landing page is served by the app at `/brand/home.html` from the image | Keeps the page versioned with the build |
 | D-013 | 2026-11-12 | Keep the `metadata.user_id` set operation in channels 4 and 40 `param_override` | Removing it made every plain (non-Claude-Code) Claude request return 503 `only allows Claude Code clients`. Restored from backup and verified with plain requests. See `runbooks/06-known-issues.md` item 12 |
+| D-014 | 2026-11-16 | `origin/main` is the only integration branch; use short-lived feature/fix/docs branches and PRs; production images build only from reviewed `main` | Prevents deployed code being stranded on brand, deploy, or session branches; merging `main` remains separate from deployment. See `../FORK.md` |
 
 ## 5. Open items
 
@@ -141,7 +143,7 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | O-19 | Homepage showed two navigation bars (React shell header stacked on the iframe's own banner/nav) and a version badge for anonymous visitors. Root cause: the shell wrapped the iframe in `PublicLayout` and home.html hid its own nav only after JS ran. Fixed in `d00f3c9b4` + `f96904722`: shell renders the iframe without `PublicLayout`, loading state without header, no postMessage of theme/lang; `data-in-iframe` CSS removed. Deployed as `bozzii.5` (digest `sha256:626875995f88…`, image loaded on host via `docker load`, no staging run — frontend-only change). | Logged-in users lose the shell profile menu on the homepage only; they use the page's 控制台 link. Old cached home.html (7-day header era) can still show for returning visitors until browser cache expires or they force-refresh | After deploy: check logged-in view, Safari/Firefox, and whether any returning visitor still reports the old page | closed 2026-11-12 |
 | O-12 | Admin changes to options (for example `HomePageContent`) are held in server memory. Editing the database directly does not take effect until the app restarts. | A direct SQL edit looks applied but is not | Make all option changes through the admin UI or API only | rule |
 | O-20 | **Rotate the nbwly test key.** It was printed in chat and written into a pushed commit (`27061425a`, `bugfix-log.md`). Channels 4 and 40 also use nbwly keys. | Anyone with repository or chat access can spend the upstream quota | Create a new key in the nbwly console, enter it in channels 4 and 40 through the admin UI only, verify with a plain request, then retire the old key. Never print a key in shell output | open |
-| O-21 | Decide whether to remove the leaked key from git history (force-push to `brand/bozzii`) | A force-push rewrites shared history, and the old key stays valid until O-20 is done either way | Operator decision, after O-20. Check whether `iokk/newapi` is public first | open |
+| O-21 | Decide whether to remove the leaked key from git history. The affected commits are now in `main`; rewriting them requires a coordinated force-push | A force-push rewrites shared history, and the old key stays valid until O-20 is done either way | Operator decision, after O-20. `iokk/newapi` is public; rotate first | open |
 | O-22 | Root cause of the Claude Opus first-byte tail (40 to 144 s) is unknown | Customers wait a long time. The SSE ping keeps the connection alive but does not shorten the wait | The earlier conclusion that the identity override caused the tail is withdrawn (see `bugfix-log.md`, 2026-11-12 correction). Facts: one upstream attempt, no gateway retry, the wait is on the upstream first byte. Daily check: scheduled task `opus-frt-daily-check` at 09:07. Next: compare a real Claude Code client and the gateway with the same identity, and ask nbwly how it assigns account slots | open |
 
 ## 6. Change log
@@ -163,6 +165,8 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | 2026-11-12 | Single navigation on the homepage: shell header removed around the iframe, theme/lang postMessage removed, `data-in-iframe` CSS deleted; reviewed by a subagent (no Critical), verified locally at desktop and 390 px mobile; image `bozzii.5` cut over | commits `d00f3c9b4`, `f96904722`; release note `ops/releases/2026-11-12-homepage-single-nav.md`; pre-cut compose backup `compose.yaml.pre-bozzii5-202611111927` |
 | 2026-11-12 | Identity override removed, plain requests failed with 503, override restored; `bugfix-log.md` correction; known-issues items 12 to 14; D-013; O-20 to O-22 | see git log on `brand/bozzii` |
 | 2026-11-16 | Client setup supports per-client API key selection plus Claude Code/Codex/CC Switch; mobile tabs wrap; `bozzii.7` deployed after independent review, encrypted off-host backup and isolated staging | release note `ops/releases/2026-11-16-client-config-keys.md`; source `9084dd0be` |
+
+| 2026-11-16 | Reconciled deployed `bozzii.6` client-link source into `main` via PR #6; retired merged brand/feature branches; established `main` + short-lived PR workflow (D-014) | PR https://github.com/iokk/newapi/pull/6; `../FORK.md`; focused client-link Go and frontend tests passed before merge |
 
 ## 7. Rules for editing these documents
 

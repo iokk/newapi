@@ -15,18 +15,57 @@ releases with as close to zero conflict as possible.
 `--filter=blob:none` partial-clone setting. Blobs are fetched on demand; the
 first checkout after a fetch downloads only what changed.
 
-## Updating from upstream
+## Branch and release workflow
 
-```bash
-git fetch upstream --tags
-git merge upstream/main
+`origin/main` is the only long-lived integration branch and the source for every
+production image. The retired `brand/bozzii` branch must not be recreated.
+`upstream` is read-only: never push to it.
+
+```text
+QuantumNous/new-api (upstream, read-only)
+        | fetch + merge a release tag through a sync/* PR
+        v
+iokk/newapi main  <--- feat/*, fix/*, docs/* short-lived branches via PR
+        |
+        | explicit build, staging and cut-over (not triggered by a merge)
+        v
+ai.bozzii.com production
 ```
 
-Then rebuild and redeploy (see [Rebuilding](#rebuilding)).
+For a feature, fix, or documentation change:
 
-Tag releases (`v1.0.0-rc.47`, …) are what upstream actually ships; `main` runs
-slightly ahead. Merging `main` is fine and keeps us current. If a merge ever
-gets ugly, merge the previous release tag instead and skip that one cycle.
+```bash
+git switch main
+git pull --ff-only
+git switch -c feat/short-name       # or fix/short-name, docs/short-name
+# Make the change and run the checks that cover it.
+git push -u origin feat/short-name
+gh pr create --repo iokk/newapi --base main --head feat/short-name
+```
+
+Review the diff and wait for the PR's CI checks. Merge only the intended change;
+a PR into `main` does not change production. After merging, pull `main`, delete
+the feature branch, and deploy only through `ops/runbooks/04-release.md`.
+Production-only changes must be merged into `main` as well, so deployed source
+is never stranded on a temporary branch.
+
+Use one worktree per active change. Do not keep permanent `brand/*`, `deploy/*`,
+or session-specific `claude/*` integration branches. Never delete an unmerged
+branch, a branch checked out in another worktree, or a Dependabot branch with an
+open PR without checking it first. `git branch --merged origin/main` identifies
+candidates, not an automatic deletion list.
+
+## Updating from upstream
+
+Check upstream monthly and promptly for security fixes. Follow
+`ops/runbooks/04-release.md`: merge an upstream **release tag** into a
+`sync/upstream-<tag>` branch, not directly into `main`. Review the complete diff,
+including database migrations, preserve `CUSTOM(brand)` hooks, test, and open a
+PR into `main`. Do not routinely merge `upstream/main`, which runs ahead of its
+releases. If a tag merge is too disruptive, skip that cycle and record why in
+`ops/CONTROL.md`.
+
+After merging upstream, rebuild and redeploy through the release runbook.
 
 ## Where our changes live
 
@@ -80,8 +119,11 @@ go build -o new-api .
 Image build (same layers as upstream's Dockerfile):
 
 ```bash
-docker build -t bozzii/new-api:$(cat VERSION) .
+ops/build-image.sh <upstream-tag> <n>
 ```
+
+The script builds `ghcr.io/iokk/bozzii-new-api:<upstream-tag>-bozzii.<n>` for
+`linux/amd64`. Follow the release runbook for staging and transfer to production.
 
 ## Deploying and operating production
 
