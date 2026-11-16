@@ -55,16 +55,47 @@ PowerShell（Windows）：$h = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Crypt
 第 4 步：不管前面哪一步结束，回复用户之前都删掉 $HOME/.newapi-dsh.json、$HOME/.newapi-device 和临时文件。成功时回复：「已经配置好了，不需要重启。在输入框下方的模型选择里选本站的型号，新开一个会话发条消息试试。」失败时回复失败原因。
 `
 
+const clientLinkCodingGuide = `# {HOST}：给 {PRODUCT} 的配置步骤
+只在用户自己的电脑上做，只改当前登录用户自己的配置。不要发送任何模型请求或连通性测试；不要在回复、终端输出或日志里显示 Key、下载文件内容或含 Key 的链接；不要用读文件工具打开 $HOME/.newapi-{FILE}；本页只读一次，后面的命令照原样执行。
+
+第 1 步：确认操作系统、当前实际登录的用户，以及是否已安装 CC Switch 和 {PRODUCT}。不要写管理员、SYSTEM、其他用户或 WSL 的目录。
+
+第 2 步：执行下面这条命令，把本次账户配置下载到 $HOME/.newapi-{FILE}。它先输出一行下载码，再输出三位状态码：
+zsh / bash：w=""; h=$(ioreg -rd1 -c IOPlatformExpertDevice 2>/dev/null | awk -F'"' '/IOPlatformUUID/{print $4}'); [ -n "$h" ] || h=$(cat /etc/machine-id 2>/dev/null); {HEADER}; c=$(curl -sS --max-time 30 -H "@$HOME/.newapi-device" "{BASE}/c/{CODE}/code?t={TARGET}") && echo "$c" && curl -sS --max-time 60 -w "%{http_code}" -o "$HOME/.newapi-{FILE}" -H "@$HOME/.newapi-device" "{BASE}/k/$c/{FILE}"
+PowerShell（Windows）：$w = ""; $h = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Cryptography').MachineGuid; [IO.File]::WriteAllLines("$HOME/.newapi-device", [string[]]("X-Client-Os: Windows","X-Client-Wb: $w","X-Client-Hw: $h")); $c = (curl.exe -sS --max-time 30 -H "@$HOME/.newapi-device" "{BASE}/c/{CODE}/code?t={TARGET}"); echo $c; curl.exe -sS --max-time 60 -w "%{http_code}" -o "$HOME/.newapi-{FILE}" -H "@$HOME/.newapi-device" "{BASE}/k/$c/{FILE}"
+· 第一行以 k- 开头才是下载码，状态码 200 才继续；否则把那一行中文提示原样回复给用户，删掉下载文件和 .newapi-device，什么都不改。连不上可重试一次；仍失败就回复「网络连不上 {HOST}，请稍后再发一次」。
+· 下载 JSON 里的 api_key 是敏感值，只在本地脚本变量中使用。base_url、models、default_model 是普通配置值。
+
+第 3 步：按下面的方式配置。无论选哪种方式，都要先备份再合并；不要直接修改 CC Switch 的数据库或它管理的文件。
+{CONFIG_INSTRUCTIONS}
+通用写入规则：先把原文件按原字节备份到同目录唯一文件名；用本机已有的 JSON/TOML 解析器读取和合并，没有解析器就停下，不要下载或安装新工具。其他设置（MCP、权限、Skills、其他供应商、项目信任等）原样保留。写到同目录临时文件后原子替换，macOS/Linux 权限设为 600；写完读回并重新解析核对。任何一步失败都保留或恢复原文件，并告诉用户原因。脚本只输出路径、备份位置和布尔核对结果。
+
+第 4 步：不管前面哪一步结束，回复用户之前都删掉 $HOME/.newapi-{FILE}、$HOME/.newapi-device 和临时文件。告诉用户用了哪种方式、改了哪张 CC Switch 卡片或哪个文件、备份在哪里、核对了什么。配置成功不等于实际对话成功，提醒用户自己发一条消息试试。
+`
+
+const clientLinkClaudeInstructions = `已安装 CC Switch：从下载 JSON 在本地拼出 ccswitch://v1/import 导入链接，每个参数值都做 URL 编码，再用系统命令打开（macOS：open；Windows PowerShell：Start-Process；Linux：xdg-open）。参数：resource=provider，app=claude，name={HOST} Claude，endpoint=base_url（不要加 /v1），apiKey=api_key，model=default_model，opusModel=opus_model，sonnetModel=sonnet_model，haikuModel=haiku_model，homepage={BASE}，enabled=false。请用户核对名称、地址和型号后自己点「导入」，是否立即切换也由用户决定。不要把含 Key 的链接打印出来。
+没有 CC Switch：合并当前用户主目录下 .claude/settings.json。env 里写 ANTHROPIC_BASE_URL=base_url（不要加 /v1）、ANTHROPIC_AUTH_TOKEN=api_key、ANTHROPIC_MODEL=default_model、ANTHROPIC_DEFAULT_OPUS_MODEL=opus_model、ANTHROPIC_DEFAULT_SONNET_MODEL=sonnet_model、ANTHROPIC_DEFAULT_HAIKU_MODEL=haiku_model；删掉 env 里冲突的旧 ANTHROPIC_API_KEY。不要新增 modelPicker，models 只作为用户选模型的参考。`
+
+const clientLinkCodexInstructions = `已安装 CC Switch：从下载 JSON 在本地拼出 ccswitch://v1/import 导入链接，每个参数值都做 URL 编码，再用系统命令打开（macOS：open；Windows PowerShell：Start-Process；Linux：xdg-open）。参数：resource=provider，app=codex，name={HOST} Codex，endpoint=base_url，apiKey=api_key，model=default_model，homepage={BASE}，enabled=false。请用户核对名称、地址和型号后自己点「导入」，是否立即切换也由用户决定。不要把含 Key 的链接打印出来。
+没有 CC Switch：合并当前用户主目录下 .codex/config.toml。顶层写 model_provider="newapi"、model=default_model；表 [model_providers.newapi] 写 name="{HOST}"、base_url=base_url、wire_api="responses"、experimental_bearer_token=api_key。不要把表名写成 openai，不要覆盖用户原有的其他供应商、模型或思考档位。`
+
 var clientLinkCodePattern = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
 
 // ClientLinkGuide renders the plain-text steps an AI client reads. It never contains a key.
 // The code is pasted into text an AI will obey, so anything but a plain code is rejected.
 func ClientLinkGuide(target, base, code string) (string, error) {
 	text := clientLinkWorkBuddyGuide
+	product, file, instructions := "", "", ""
 	switch target {
 	case "workbuddy":
 	case "dsh":
 		text = clientLinkDshGuide
+	case "claude":
+		text = clientLinkCodingGuide
+		product, file, instructions = "Claude Code", "claude-code.json", clientLinkClaudeInstructions
+	case "codex":
+		text = clientLinkCodingGuide
+		product, file, instructions = "Codex", "codex.json", clientLinkCodexInstructions
 	default:
 		return "", ErrClientLinkUnavailable
 	}
@@ -75,8 +106,11 @@ func ClientLinkGuide(target, base, code string) (string, error) {
 	if u, err := url.Parse(base); err == nil && u.Host != "" {
 		host = u.Hostname()
 	}
+	instructions = strings.NewReplacer("{HOST}", host, "{BASE}", base).Replace(instructions)
 	return strings.NewReplacer(
 		"{PROBE}", clientLinkDeviceProbe, "{HEADER}", clientLinkDeviceHeader,
 		"{BASE}", base, "{CODE}", code, "{HOST}", host,
+		"{PRODUCT}", product, "{FILE}", file, "{TARGET}", target,
+		"{CONFIG_INSTRUCTIONS}", instructions,
 	).Replace(text), nil
 }

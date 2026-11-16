@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { Plug } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/empty-state'
@@ -25,13 +26,15 @@ import { SectionPageLayout } from '@/components/layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { getClientLinkOptions, type ClientTarget } from './api'
+import { ApiKeySelector } from './components/api-key-selector'
 import { TargetPanel } from './components/target-panel'
 import { CLIENT_PRODUCTS } from './lib/prompt'
 
-const TARGETS: ClientTarget[] = ['workbuddy', 'dsh']
+const TARGETS: ClientTarget[] = ['workbuddy', 'dsh', 'claude', 'codex']
 
 export function ClientConfig() {
   const { t } = useTranslation()
+  const [tokenId, setTokenId] = useState(0)
   const options = useQuery({
     queryKey: ['client-link', 'options'],
     queryFn: getClientLinkOptions,
@@ -39,8 +42,11 @@ export function ClientConfig() {
   const ready = {
     workbuddy: options.data?.workbuddy_ready === true,
     dsh: options.data?.dsh_ready === true,
+    claude: options.data?.claude_ready === true,
+    codex: options.data?.codex_ready === true,
   }
-  const unavailable = options.data != null && !ready.workbuddy && !ready.dsh
+  const unavailable =
+    options.data != null && TARGETS.every((target) => !ready[target])
 
   return (
     <SectionPageLayout>
@@ -55,23 +61,32 @@ export function ClientConfig() {
             )}
           />
         ) : (
-          <Tabs defaultValue='workbuddy'>
-            <TabsList>
+          <>
+            <ApiKeySelector value={tokenId} onValueChange={setTokenId} />
+            <Tabs defaultValue='workbuddy'>
+              <TabsList className='h-auto flex-wrap'>
+                {TARGETS.map((target) => (
+                  <TabsTrigger
+                    key={target}
+                    value={target}
+                    disabled={!ready[target]}
+                  >
+                    {CLIENT_PRODUCTS[target]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
               {TARGETS.map((target) => (
-                <TabsTrigger key={target} value={target} disabled={!ready[target]}>
-                  {CLIENT_PRODUCTS[target]}
-                </TabsTrigger>
+                <TabsContent key={target} value={target}>
+                  <TargetPanel
+                    key={`${target}-${tokenId}`}
+                    target={target}
+                    tokenId={tokenId}
+                    shareEnabled={options.data?.share_enabled === true}
+                  />
+                </TabsContent>
               ))}
-            </TabsList>
-            {TARGETS.map((target) => (
-              <TabsContent key={target} value={target}>
-                <TargetPanel
-                  target={target}
-                  shareEnabled={options.data?.share_enabled === true}
-                />
-              </TabsContent>
-            ))}
-          </Tabs>
+            </Tabs>
+          </>
         )}
       </SectionPageLayout.Content>
     </SectionPageLayout>

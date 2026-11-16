@@ -7399,6 +7399,11 @@
     "One-step install (no AI needed)": "一键安装（无需 AI）",
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "把这条命令复制到电脑的终端里运行，脚本会自动备份并合并配置。",
     "Generate install command": "生成安装命令",
-    "Install command": "安装命令"
+    "Install command": "安装命令",
+    "Automatic per-client key": "自动选择或创建专用密钥",
+    "Select an API key": "选择 API 密钥",
+    "No API keys found": "未找到 API 密钥",
+    "Could not load API keys. You can still use automatic keys.": "无法加载 API 密钥，仍可使用自动专用密钥。",
+    "Configure {{product}} with the selected API key.": "使用选中的 API 密钥配置 {{product}}。"
   }
 }

@@ -35,14 +35,22 @@ afterEach(() => {
   queryClient.clear()
 })
 
-function renderDialog(models = ['gpt-5.4', 'claude-sonnet-4-6']) {
+function renderDialog(
+  models = ['gpt-5.4', 'claude-sonnet-4-6'],
+  initialApp?: 'claude' | 'codex' | 'gemini'
+) {
   queryClient.setQueryData(['user-models-ccswitch'], {
     success: true,
     data: models,
   })
-  render(
+  return render(
     <QueryClientProvider client={queryClient}>
-      <CCSwitchDialog open onOpenChange={vi.fn()} tokenKey='test-only' />
+      <CCSwitchDialog
+        open
+        onOpenChange={vi.fn()}
+        tokenKey='test-only'
+        initialApp={initialApp}
+      />
     </QueryClientProvider>
   )
 }
@@ -123,5 +131,14 @@ describe('CC Switch model selection', () => {
 
     expect(input).toHaveValue('Development')
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('defaults to Claude and accepts Codex as the initial application', () => {
+    const first = renderDialog()
+    expect(screen.getByRole('radio', { name: 'Claude' })).toBeChecked()
+    first.unmount()
+
+    renderDialog(undefined, 'codex')
+    expect(screen.getByRole('radio', { name: 'Codex' })).toBeChecked()
   })
 })
