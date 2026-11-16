@@ -79,6 +79,25 @@ export async function createClientLink(
   return requireServerSuccess(res.data).data
 }
 
+export async function getClientConfigKey(
+  target: ClientTarget,
+  tokenId: number
+): Promise<string> {
+  const res = await api.get('/api/client_link/download', {
+    params: { target, token_id: tokenId },
+    responseType: 'blob',
+  })
+  const parsed: unknown = JSON.parse(await (res.data as Blob).text())
+  if ((parsed as { success?: boolean }).success === false) {
+    throw createServerError(parsed)
+  }
+  const apiKey = (parsed as { api_key?: unknown }).api_key
+  if (typeof apiKey !== 'string' || apiKey === '') {
+    throw new Error('Client config has no API key')
+  }
+  return apiKey
+}
+
 // The file is JSON and so is a business failure, so the body decides which one it is.
 export async function saveClientConfig(
   target: ClientTarget,

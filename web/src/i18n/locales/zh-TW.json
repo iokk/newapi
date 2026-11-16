@@ -7403,6 +7403,7 @@
     "Automatic per-client key": "自動選擇或建立專用金鑰",
     "Select an API key": "選擇 API 金鑰",
     "No API keys found": "找不到 API 金鑰",
-    "Could not load API keys. You can still use automatic keys.": "無法載入 API 金鑰，仍可使用自動專用金鑰。"
+    "Could not load API keys. You can still use automatic keys.": "無法載入 API 金鑰，仍可使用自動專用金鑰。",
+    "Configure {{product}} with the selected API key.": "使用選取的 API 金鑰設定 {{product}}。"
   }
 }

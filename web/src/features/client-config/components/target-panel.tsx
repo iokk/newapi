@@ -38,6 +38,7 @@ import { handleServerError } from '@/lib/handle-server-error'
 
 import { createClientLink, saveClientConfig, type ClientTarget } from '../api'
 import { buildClientPrompt, CLIENT_PRODUCTS } from '../lib/prompt'
+import { CCSwitchCard } from './cc-switch-card'
 import { TerminalInstallCard } from './terminal-install-card'
 
 type TargetPanelProps = {
@@ -114,34 +115,43 @@ export function TargetPanel(props: TargetPanelProps) {
 
       <TerminalInstallCard target={props.target} tokenId={props.tokenId} />
 
-      {props.shareEnabled && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('Share with friends')}</CardTitle>
-            <CardDescription>
-              {t(
-                'Friends can open the link without an account, copy the prompt and get started. Their new accounts are linked to you.'
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className='space-y-3'>
-            <Button
-              variant='outline'
-              onClick={() => shareMutation.mutate()}
-              disabled={shareMutation.isPending}
-            >
-              <Link2 />
-              {t('Generate share link')}
-            </Button>
-            {shareUrl !== '' && (
-              <div className='flex items-center gap-2'>
-                <Input readOnly value={shareUrl} aria-label={t('Share link')} />
-                <CopyButton value={shareUrl} variant='outline' />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {(props.target === 'claude' || props.target === 'codex') && (
+        <CCSwitchCard target={props.target} tokenId={props.tokenId} />
       )}
+
+      {props.shareEnabled &&
+        (props.target === 'workbuddy' || props.target === 'dsh') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('Share with friends')}</CardTitle>
+              <CardDescription>
+                {t(
+                  'Friends can open the link without an account, copy the prompt and get started. Their new accounts are linked to you.'
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-3'>
+              <Button
+                variant='outline'
+                onClick={() => shareMutation.mutate()}
+                disabled={shareMutation.isPending}
+              >
+                <Link2 />
+                {t('Generate share link')}
+              </Button>
+              {shareUrl !== '' && (
+                <div className='flex items-center gap-2'>
+                  <Input
+                    readOnly
+                    value={shareUrl}
+                    aria-label={t('Share link')}
+                  />
+                  <CopyButton value={shareUrl} variant='outline' />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
       <Card>
         <CardHeader>

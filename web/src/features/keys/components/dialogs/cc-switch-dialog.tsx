@@ -94,6 +94,7 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   tokenKey: string
+  initialApp?: AppType
 }
 
 export function CCSwitchDialog(props: Props) {
@@ -116,14 +117,15 @@ export function CCSwitchDialog(props: Props) {
 
   useEffect(() => {
     if (props.open) {
+      const initialApp = props.initialApp ?? 'claude'
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setModels({})
 
-      setApp('claude')
+      setApp(initialApp)
 
-      setName(APP_CONFIGS.claude.defaultName)
+      setName(APP_CONFIGS[initialApp].defaultName)
     }
-  }, [props.open])
+  }, [props.open, props.initialApp])
 
   const currentConfig = APP_CONFIGS[app]
 

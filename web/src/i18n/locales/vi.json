@@ -7403,6 +7403,7 @@
     "Automatic per-client key": "Tự động chọn hoặc tạo khóa riêng cho ứng dụng",
     "Select an API key": "Chọn khóa API",
     "No API keys found": "Không tìm thấy khóa API",
-    "Could not load API keys. You can still use automatic keys.": "Không thể tải khóa API. Bạn vẫn có thể dùng khóa tự động."
+    "Could not load API keys. You can still use automatic keys.": "Không thể tải khóa API. Bạn vẫn có thể dùng khóa tự động.",
+    "Configure {{product}} with the selected API key.": "Cấu hình {{product}} bằng khóa API đã chọn."
   }
 }

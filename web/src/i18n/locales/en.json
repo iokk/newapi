@@ -7403,6 +7403,7 @@
     "Automatic per-client key": "Automatic per-client key",
     "Select an API key": "Select an API key",
     "No API keys found": "No API keys found",
-    "Could not load API keys. You can still use automatic keys.": "Could not load API keys. You can still use automatic keys."
+    "Could not load API keys. You can still use automatic keys.": "Could not load API keys. You can still use automatic keys.",
+    "Configure {{product}} with the selected API key.": "Configure {{product}} with the selected API key."
   }
 }

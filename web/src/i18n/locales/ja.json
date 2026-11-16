@@ -7403,6 +7403,7 @@
     "Automatic per-client key": "クライアント専用キーを自動選択または作成",
     "Select an API key": "API キーを選択",
     "No API keys found": "API キーが見つかりません",
-    "Could not load API keys. You can still use automatic keys.": "API キーを読み込めませんでした。自動キーは引き続き使用できます。"
+    "Could not load API keys. You can still use automatic keys.": "API キーを読み込めませんでした。自動キーは引き続き使用できます。",
+    "Configure {{product}} with the selected API key.": "選択した API キーで {{product}} を設定します。"
   }
 }

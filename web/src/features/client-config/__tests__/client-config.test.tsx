@@ -17,7 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -56,8 +62,8 @@ function options() {
       share_enabled: true,
       workbuddy_ready: true,
       dsh_ready: true,
-      claude_ready: false,
-      codex_ready: false,
+      claude_ready: true,
+      codex_ready: true,
     },
   }
 }
@@ -76,15 +82,16 @@ function renderConfig() {
 
 beforeEach(() => {
   vi.mocked(copyToClipboard).mockResolvedValue(true)
-  vi.spyOn(api, 'post').mockImplementation(async (url) => {
+  vi.spyOn(api, 'post').mockImplementation(async (url, body) => {
     if (url === '/api/client_link') {
+      const target = (body as { target: string }).target
       return {
         data: {
           success: true,
           data: {
             code: 'u-test',
-            guide_url: 'https://example.com/c/u-test?t=workbuddy',
-            landing_url: 'https://example.com/s/u-test?t=workbuddy',
+            guide_url: `https://example.com/c/u-test?t=${target}`,
+            landing_url: `https://example.com/s/u-test?t=${target}`,
           },
         },
       }
@@ -246,4 +253,102 @@ describe('client API key selection', () => {
       screen.queryByRole('textbox', { name: 'Install command' })
     ).not.toBeInTheDocument()
   })
+})
+
+describe('coding clients', () => {
+  it.each([
+    {
+      target: 'claude',
+      tab: 'Claude Code',
+      app: 'Claude',
+      model: 'claude-sonnet-5-5',
+    },
+    { target: 'codex', tab: 'Codex', app: 'Codex', model: 'gpt-6.1-sol' },
+  ])(
+    'uses the selected key for $target and its CC Switch import',
+    async (fixture) => {
+      vi.spyOn(api, 'get').mockImplementation(async (url) => {
+        if (url === '/api/client_link/options') return { data: options() }
+        if (url.startsWith('/api/token/')) {
+          return {
+            data: {
+              success: true,
+              data: {
+                items: [token(7, 'laptop')],
+                total: 1,
+                page: 1,
+                page_size: 100,
+              },
+            },
+          }
+        }
+        if (url === '/api/client_link/download') {
+          return {
+            data: new Blob([
+              JSON.stringify({
+                api_key: 'sk-secret',
+                base_url: 'https://example.com',
+                models: [fixture.model],
+                default_model: fixture.model,
+              }),
+            ]),
+          }
+        }
+        if (url === '/api/user/models') {
+          return { data: { success: true, data: [fixture.model] } }
+        }
+        throw new Error(`unexpected GET ${url}`)
+      })
+      const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null)
+      renderConfig()
+      const user = userEvent.setup()
+      const selector = await screen.findByRole('combobox', { name: 'API Key' })
+      await user.click(selector)
+      await user.click(await screen.findByRole('option', { name: /laptop/ }))
+      await user.click(screen.getByRole('tab', { name: fixture.tab }))
+
+      await user.click(screen.getByRole('button', { name: 'Generate prompt' }))
+      const prompt = await screen.findByRole('textbox', {
+        name: 'Setup prompt',
+      })
+      expect(prompt).toHaveDisplayValue(new RegExp(`t=${fixture.target}`))
+      expect(prompt).not.toHaveDisplayValue(/sk-secret/)
+      expect(api.post).toHaveBeenCalledWith('/api/client_link', {
+        target: fixture.target,
+        share: false,
+        token_id: 7,
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Open CC Switch' }))
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Import to CC Switch',
+      })
+      expect(
+        within(dialog).getByRole('radio', { name: fixture.app })
+      ).toBeChecked()
+      expect(api.get).toHaveBeenCalledWith('/api/client_link/download', {
+        params: { target: fixture.target, token_id: 7 },
+        responseType: 'blob',
+      })
+      expect(document.body).not.toHaveTextContent('sk-secret')
+
+      await user.click(
+        within(dialog).getByRole('combobox', { name: 'Primary Model' })
+      )
+      await user.click(
+        await screen.findByRole('option', { name: fixture.model })
+      )
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Open CC Switch' })
+      )
+      expect(windowOpen).toHaveBeenCalledWith(
+        expect.stringContaining(`app=${fixture.target}`),
+        '_blank'
+      )
+      expect(windowOpen).toHaveBeenCalledWith(
+        expect.stringContaining('apiKey=sk-secret'),
+        '_blank'
+      )
+    }
+  )
 })

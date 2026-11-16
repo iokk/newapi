@@ -7403,6 +7403,7 @@
     "Automatic per-client key": "Clé dédiée automatique par client",
     "Select an API key": "Sélectionner une clé API",
     "No API keys found": "Aucune clé API trouvée",
-    "Could not load API keys. You can still use automatic keys.": "Impossible de charger les clés API. Vous pouvez toujours utiliser les clés automatiques."
+    "Could not load API keys. You can still use automatic keys.": "Impossible de charger les clés API. Vous pouvez toujours utiliser les clés automatiques.",
+    "Configure {{product}} with the selected API key.": "Configurez {{product}} avec la clé API sélectionnée."
   }
 }

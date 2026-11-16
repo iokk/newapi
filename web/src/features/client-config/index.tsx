@@ -30,7 +30,7 @@ import { ApiKeySelector } from './components/api-key-selector'
 import { TargetPanel } from './components/target-panel'
 import { CLIENT_PRODUCTS } from './lib/prompt'
 
-const TARGETS: ClientTarget[] = ['workbuddy', 'dsh']
+const TARGETS: ClientTarget[] = ['workbuddy', 'dsh', 'claude', 'codex']
 
 export function ClientConfig() {
   const { t } = useTranslation()
@@ -45,7 +45,8 @@ export function ClientConfig() {
     claude: options.data?.claude_ready === true,
     codex: options.data?.codex_ready === true,
   }
-  const unavailable = options.data != null && !ready.workbuddy && !ready.dsh
+  const unavailable =
+    options.data != null && TARGETS.every((target) => !ready[target])
 
   return (
     <SectionPageLayout>
