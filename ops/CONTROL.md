@@ -24,7 +24,7 @@ Last full review: 2026-11-05.
 | Per-release record | `releases/` (one file per release) |
 | Operator-facing summary (Chinese) | `bozzii/docs/newapi-运维与部署.md` (outside this repo) |
 
-## 2. Current state (2026-11-05)
+## 2. Current state (2026-11-16)
 
 ### Code
 
@@ -42,24 +42,24 @@ Last full review: 2026-11-05.
 | Item | Value |
 | ---- | ----- |
 | Name | `ghcr.io/iokk/bozzii-new-api` |
-| Running tag | `v1.0.0-rc.48-bozzii.3` |
+| Running tag | `v1.0.0-rc.48-bozzii.7` |
 | Platform | `linux/amd64` (matches host `x86_64`) |
-| Digest | `sha256:f1e7af2cf0e10b0623e55db96506aaf3048616677303a5af0a04fd04b9efaeb0` |
+| Digest | `sha256:7bcebbad2ad3fdfe93ab6b0d907f310a1674a9b84402ff5f95a7e8b7aa7ff150` |
 | Registry visibility | **private** (decision D-006) |
-| Built by | `ops/build-image.sh v1.0.0-rc.48 3` (image id `sha256:2c24a329b01c895e08a5a9b409fc53a92c10dc7152f431ad1466f68b6551e7f3`; not pushed to GHCR, loaded on the host via docker save/load) |
-| Previous (rollback) | `bozzii.2`, compose saved as `compose.yaml.bak-bozzii2-*` on the host; before that `calciumion/new-api:v1.0.0-rc.44` (`compose.yaml.bak-rc44-*`) |
+| Built by | `ops/build-image.sh v1.0.0-rc.48 7`; loaded on the host via docker save/load from reviewed commit `9084dd0be` |
+| Previous (rollback) | `bozzii.6`, compose saved as `/opt/xseek-new-api/compose.yaml.pre-bozzii7-20261116T080725Z` |
 
 ### Production host
 
 | Item | Value |
 | ---- | ----- |
-| Host | `154.19.43.98`, Hong Kong, x86_64, Debian 13 |
-| Termark asset | `1cc3ef79-f6fe-4aac-913b-34f703da1d8e` |
+| Host | `23.19.228.138`, x86_64 |
+| Termark asset | `a1b646cd-1a82-492d-9621-a88c8ed5f905` |
 | App directory | `/opt/xseek-new-api` (compose project) |
 | Containers | `xseek-new-api` (app), `xseek-new-api-postgres`, `xseek-new-api-redis` |
-| Running since | 2026-11-05, `bozzii.3` cut over from `bozzii.2` (first cut-over from rc.44 earlier the same day) |
-| Data at last cut-over | 12 users, 20 channels, 18 tokens, quota sum 1696435798 (channels and quota change as the operator works in the admin UI) |
-| Health | `/api/status` → `success: true`, version `v1.0.0-rc.48-bozzii.2`, system name `Bozzii AI` |
+| Running since | `bozzii.7` cut over on 2026-11-16; only the app was recreated |
+| Data at last cut-over | 14 users, 23 channels, 26 active tokens; raw token rows include 4 soft-deleted test records from this release |
+| Health | `/api/status` → `success: true`, version `v1.0.0-rc.48-bozzii.7`, system name `Bozzii AI` |
 | App port | `BIND_ADDRESS=0.0.0.0`, port 3000 (see open item O-4) |
 
 ### Backups
@@ -68,12 +68,12 @@ Last full review: 2026-11-05.
 | ---- | ----- |
 | Local | `/opt/xseek-new-api/backups/` (7 days) |
 | Offsite | Cloudflare R2 bucket `bozzii`, prefix `newapi/`, public access off |
-| Schedule | cron `47 3 * * *` (server time), script `ops/backup-offsite.sh` |
-| Retention | 30 days for offsite `*.age` (local 7 days) |
+| Schedule | No backup cron or `backup.sh` on the current origin; release backups were created manually for `bozzii.7` |
+| Retention | Release dumps and compose rollback stay on the origin; age-encrypted copies stay on the operator Mac; no current R2 lifecycle |
 | Encryption | age; private key only on operator's Mac at `~/.config/bozzii-backup/age-key.txt` |
-| Last offsite before cut-over | `20261104T214645Z` (uploaded) |
-| Last full verification (download + decrypt + compare) | `20261104T203139Z`, byte-identical |
-| Last restore test (scratch DB) | passed on `20261104T213150Z`; staging restore matched production counts |
+| Last offsite before cut-over | `20261116T080725Z`, age-encrypted on the operator Mac under `~/.config/bozzii-backup/releases/2026-11-16-bozzii7/`; R2 is not configured on the current origin |
+| Last full verification (download + decrypt + compare) | `20261116T073900Z`, byte-identical, SHA-256 `824379128331d7c665378b9bc5134dcc7b90d057d8db8158bde8ede8eae1467c` |
+| Last restore test (scratch DB) | passed on `20261116T073900Z`; user/channel/token counts matched, quota changed normally with live usage |
 
 ### Environment
 
@@ -87,13 +87,13 @@ Last full review: 2026-11-05.
 
 | Procedure | Script or runbook | Status |
 | --------- | ----------------- | ------ |
-| Nightly backup and offsite upload | `ops/backup-offsite.sh` (cron) | running |
-| R2 connection setup | `ops/setup-r2.sh` (interactive, once) | done |
-| Build image | `ops/build-image.sh <upstream-tag> <n>` | verified |
-| Staging with production data | `runbooks/04-release.md` stage 2 | done, torn down |
-| Cut-over | `runbooks/04-release.md` stage 3 | done 2026-11-05 |
+| Nightly backup and offsite upload | `ops/backup-offsite.sh` (cron) | not installed on the current origin |
+| R2 connection setup | `ops/setup-r2.sh` (interactive, once) | not configured on the current origin |
+| Build image | `ops/build-image.sh <upstream-tag> <n>` | verified for `bozzii.7` |
+| Staging with production data | `runbooks/04-release.md` stage 2 | passed for `bozzii.7`, torn down |
+| Cut-over | `runbooks/04-release.md` stage 3 | done 2026-11-16 |
 | Rollback | `runbooks/04-release.md` stage 4 | available, not used |
-| Restore verification | `runbooks/03-restore.md` | last run 2026-11-04 |
+| Restore verification | `runbooks/03-restore.md` | last run 2026-11-16 |
 
 ## 4. Decision log
 
@@ -162,6 +162,7 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | 2026-11-11 | ESA `/brand/` cache rule changed to follow origin; `/brand/home.html` purged (task 1777760391397379); public check: 5 requests returned the new 1,092,910-byte page with `no-cache` | see O-18; AccessKey was pasted in chat, rotate it |
 | 2026-11-12 | Single navigation on the homepage: shell header removed around the iframe, theme/lang postMessage removed, `data-in-iframe` CSS deleted; reviewed by a subagent (no Critical), verified locally at desktop and 390 px mobile; image `bozzii.5` cut over | commits `d00f3c9b4`, `f96904722`; release note `ops/releases/2026-11-12-homepage-single-nav.md`; pre-cut compose backup `compose.yaml.pre-bozzii5-202611111927` |
 | 2026-11-12 | Identity override removed, plain requests failed with 503, override restored; `bugfix-log.md` correction; known-issues items 12 to 14; D-013; O-20 to O-22 | see git log on `brand/bozzii` |
+| 2026-11-16 | Client setup supports per-client API key selection plus Claude Code/Codex/CC Switch; mobile tabs wrap; `bozzii.7` deployed after independent review, encrypted off-host backup and isolated staging | release note `ops/releases/2026-11-16-client-config-keys.md`; source `9084dd0be` |
 
 ## 7. Rules for editing these documents
 
