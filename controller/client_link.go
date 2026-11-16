@@ -64,6 +64,8 @@ func GetClientLinkOptions(c *gin.Context) {
 		"share_enabled":   setting.Enabled && setting.AnonymousEnabled,
 		"workbuddy_ready": service.ClientLinkTargetReady("workbuddy"),
 		"dsh_ready":       service.ClientLinkTargetReady("dsh"),
+		"claude_ready":    service.ClientLinkTargetReady("claude"),
+		"codex_ready":     service.ClientLinkTargetReady("codex"),
 		"server_address":  service.ClientLinkBase(),
 	})
 }
@@ -114,8 +116,13 @@ func DownloadClientConfig(c *gin.Context) {
 		return
 	}
 	file := "models.json"
-	if target == "dsh" {
+	switch target {
+	case "dsh":
 		file = "dsh.json"
+	case "claude":
+		file = "claude-code.json"
+	case "codex":
+		file = "codex.json"
 	}
 	c.Header("Content-Disposition", `attachment; filename="`+file+`"`)
 	c.Data(http.StatusOK, "application/json; charset=utf-8", body)

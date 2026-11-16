@@ -35,7 +35,7 @@ func TestClientLinkEndpoints(t *testing.T) {
 		system_setting.ServerAddress = prevAddr
 	})
 	*operation_setting.GetClientLinkSetting() = operation_setting.ClientLinkSetting{
-		Enabled: true, AnonymousDailyLimit: 10, WorkBuddyModels: `[{"id":"m1","name":"AG","vendor":"x"}]`,
+		Enabled: true, AnonymousDailyLimit: 10, WorkBuddyModels: `[{"id":"m1","name":"AG","vendor":"x"},{"id":"claude-sonnet-5-5"},{"id":"gpt-6.1-sol"}]`,
 	}
 	system_setting.ServerAddress = "https://api.example.com"
 	owner := &model.User{Username: "owner", Password: "password-12345", DisplayName: "owner", Role: common.RoleCommonUser}
@@ -49,6 +49,7 @@ func TestClientLinkEndpoints(t *testing.T) {
 	router.GET("/k/:dl/:file", ClientLinkRedeem)
 	router.POST("/api/client_link", func(c *gin.Context) { c.Set("id", owner.Id); CreateClientLink(c) })
 	router.GET("/api/client_link/download", func(c *gin.Context) { c.Set("id", owner.Id); DownloadClientConfig(c) })
+	router.GET("/api/client_link/options", GetClientLinkOptions)
 	do := func(method, path, body string, headers map[string]string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, strings.NewReader(body))
 		for k, v := range headers {
@@ -109,6 +110,14 @@ func TestClientLinkEndpoints(t *testing.T) {
 	assert.Contains(t, selectedBody.Body.String(), `"apiKey":"sk-selected-controller-key"`)
 	direct := do("GET", "/api/client_link/download?target=workbuddy&token_id="+strconv.Itoa(selected.Id), "", nil)
 	assert.Contains(t, direct.Body.String(), `"apiKey":"sk-selected-controller-key"`)
+	for target, file := range map[string]string{"claude": "claude-code.json", "codex": "codex.json"} {
+		response := do("GET", "/api/client_link/download?target="+target, "", nil)
+		assert.Equal(t, http.StatusOK, response.Code, target)
+		assert.Contains(t, response.Header().Get("Content-Disposition"), `filename="`+file+`"`)
+	}
+	options := do("GET", "/api/client_link/options", "", nil)
+	assert.Contains(t, options.Body.String(), `"claude_ready":true`)
+	assert.Contains(t, options.Body.String(), `"codex_ready":true`)
 
 	// Anonymous sharing stays off until the admin turns it on.
 	share := do("POST", "/api/client_link", `{"target":"workbuddy","share":true}`, nil)

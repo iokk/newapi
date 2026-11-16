@@ -40,6 +40,8 @@ var (
 var clientLinkTargets = map[string]struct{ tokenName, file string }{
 	"workbuddy": {"WorkBuddy", "models.json"},
 	"dsh":       {"DSH", "dsh.json"},
+	"claude":    {"Claude Code", "claude-code.json"},
+	"codex":     {"Codex", "codex.json"},
 }
 
 // Device is the client-reported fingerprint. It is a speed bump, not proof:
@@ -126,6 +128,25 @@ func clientLinkModelIDs() []string {
 	return ids
 }
 
+func clientLinkCodingModels(target string) []string {
+	prefix := ""
+	if target == "claude" {
+		prefix = "claude-"
+	} else if target == "codex" {
+		prefix = "gpt-"
+	} else {
+		return nil
+	}
+	ids := clientLinkModelIDs()
+	models := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if strings.HasPrefix(id, prefix) && !(target == "codex" && strings.HasPrefix(id, "gpt-image-")) {
+			models = append(models, id)
+		}
+	}
+	return models
+}
+
 // ClientLinkTargetReady reports whether the feature is on and the target has its template.
 func ClientLinkTargetReady(target string) bool {
 	s := operation_setting.GetClientLinkSetting()
@@ -137,6 +158,8 @@ func ClientLinkTargetReady(target string) bool {
 		return len(clientLinkModelIDs()) > 0
 	case "dsh":
 		return s.DshProvidersYaml != "" && s.DshKeyEnv != ""
+	case "claude", "codex":
+		return len(clientLinkCodingModels(target)) > 0
 	}
 	return false
 }
@@ -208,7 +231,8 @@ func ExchangeClientLink(code, target string, d Device) (string, error) {
 		}
 		userID = entry.UserID
 		tokenID = entry.TokenID
-	case strings.HasPrefix(code, clientLinkSharePrefix) && operation_setting.GetClientLinkSetting().AnonymousEnabled:
+	case strings.HasPrefix(code, clientLinkSharePrefix) && operation_setting.GetClientLinkSetting().AnonymousEnabled &&
+		(target == "workbuddy" || target == "dsh"):
 		// Anonymous accounts are limited to the template models, so the template must exist.
 		inviterID, err := model.GetUserIdByAffCode(strings.TrimPrefix(code, clientLinkSharePrefix))
 		if err != nil || len(clientLinkModelIDs()) == 0 {
@@ -287,6 +311,41 @@ func ClientConfigBody(userID int, target string, tokenID int) ([]byte, error) {
 
 	s := operation_setting.GetClientLinkSetting()
 	apiKey := "sk-" + token.Key
+	if target == "claude" || target == "codex" {
+		models := clientLinkCodingModels(target)
+		if target == "codex" {
+			return common.Marshal(map[string]any{
+				"api_key": apiKey, "base_url": ClientLinkBase() + "/v1",
+				"models": models, "default_model": models[0],
+			})
+		}
+		var opusModel, sonnetModel, haikuModel string
+		for _, model := range models {
+			if opusModel == "" && strings.HasPrefix(model, "claude-opus-") {
+				opusModel = model
+			}
+			if sonnetModel == "" && strings.HasPrefix(model, "claude-sonnet-") {
+				sonnetModel = model
+			}
+			if haikuModel == "" && strings.HasPrefix(model, "claude-haiku-") {
+				haikuModel = model
+			}
+		}
+		if opusModel == "" {
+			opusModel = models[0]
+		}
+		if sonnetModel == "" {
+			sonnetModel = models[0]
+		}
+		if haikuModel == "" {
+			haikuModel = models[0]
+		}
+		return common.Marshal(map[string]any{
+			"api_key": apiKey, "base_url": ClientLinkBase(), "models": models,
+			"default_model": models[0], "opus_model": opusModel,
+			"sonnet_model": sonnetModel, "haiku_model": haikuModel,
+		})
+	}
 	if target == "dsh" {
 		return common.Marshal(map[string]string{"key_env": s.DshKeyEnv, "api_key": apiKey, "providers_yaml": s.DshProvidersYaml})
 	}
