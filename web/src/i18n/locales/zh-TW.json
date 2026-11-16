@@ -7399,6 +7399,10 @@
     "One-step install (no AI needed)": "一鍵安裝（無需 AI）",
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "把這條命令複製到電腦的終端機裡執行，指令碼會自動備份並合併設定。",
     "Generate install command": "產生安裝命令",
-    "Install command": "安裝命令"
+    "Install command": "安裝命令",
+    "Automatic per-client key": "自動選擇或建立專用金鑰",
+    "Select an API key": "選擇 API 金鑰",
+    "No API keys found": "找不到 API 金鑰",
+    "Could not load API keys. You can still use automatic keys.": "無法載入 API 金鑰，仍可使用自動專用金鑰。"
   }
 }

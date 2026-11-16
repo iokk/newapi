@@ -7399,6 +7399,10 @@
     "One-step install (no AI needed)": "Cài đặt một bước (không cần AI)",
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "Sao chép lệnh này và chạy trong Terminal trên máy tính của bạn. Nó sẽ tự sao lưu và gộp cấu hình.",
     "Generate install command": "Tạo lệnh cài đặt",
-    "Install command": "Lệnh cài đặt"
+    "Install command": "Lệnh cài đặt",
+    "Automatic per-client key": "Tự động chọn hoặc tạo khóa riêng cho ứng dụng",
+    "Select an API key": "Chọn khóa API",
+    "No API keys found": "Không tìm thấy khóa API",
+    "Could not load API keys. You can still use automatic keys.": "Không thể tải khóa API. Bạn vẫn có thể dùng khóa tự động."
   }
 }

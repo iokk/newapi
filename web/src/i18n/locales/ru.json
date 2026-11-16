@@ -7399,6 +7399,10 @@
     "One-step install (no AI needed)": "Установка в один шаг (без ИИ)",
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "Скопируйте команду и выполните её в Терминале на вашем компьютере. Она сама сделает резервную копию и объединит конфигурацию.",
     "Generate install command": "Создать команду установки",
-    "Install command": "Команда установки"
+    "Install command": "Команда установки",
+    "Automatic per-client key": "Автоматический отдельный ключ для клиента",
+    "Select an API key": "Выберите API-ключ",
+    "No API keys found": "API-ключи не найдены",
+    "Could not load API keys. You can still use automatic keys.": "Не удалось загрузить API-ключи. Вы всё ещё можете использовать автоматические ключи."
   }
 }

@@ -7399,6 +7399,10 @@
     "One-step install (no AI needed)": "Installation en une étape (sans IA)",
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "Copiez cette commande et exécutez-la dans le Terminal de votre ordinateur. Elle sauvegarde et fusionne la configuration elle-même.",
     "Generate install command": "Générer la commande d’installation",
-    "Install command": "Commande d’installation"
+    "Install command": "Commande d’installation",
+    "Automatic per-client key": "Clé dédiée automatique par client",
+    "Select an API key": "Sélectionner une clé API",
+    "No API keys found": "Aucune clé API trouvée",
+    "Could not load API keys. You can still use automatic keys.": "Impossible de charger les clés API. Vous pouvez toujours utiliser les clés automatiques."
   }
 }

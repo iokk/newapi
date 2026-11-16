@@ -16,19 +16,23 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { getApiKeys } from '@/features/keys/api'
+import type { ApiKey } from '@/features/keys/types'
 import { api } from '@/lib/api'
 import {
   createServerError,
   requireServerSuccess,
 } from '@/lib/server-error-message'
 
-export type ClientTarget = 'workbuddy' | 'dsh'
+export type ClientTarget = 'workbuddy' | 'dsh' | 'claude' | 'codex'
 
 export type ClientLinkOptions = {
   enabled: boolean
   share_enabled: boolean
   workbuddy_ready: boolean
   dsh_ready: boolean
+  claude_ready: boolean
+  codex_ready: boolean
 }
 
 export type ClientLink = {
@@ -42,18 +46,46 @@ export async function getClientLinkOptions(): Promise<ClientLinkOptions> {
   return requireServerSuccess(res.data).data
 }
 
+export async function getClientApiKeys(): Promise<ApiKey[]> {
+  const firstResponse = requireServerSuccess(
+    await getApiKeys({ p: 1, size: 100 })
+  )
+  if (!firstResponse.data) throw new Error('Failed to load API keys')
+  const first = firstResponse.data
+  const remaining = await Promise.all(
+    Array.from(
+      { length: Math.max(0, Math.ceil(first.total / first.page_size) - 1) },
+      (_, index) => getApiKeys({ p: index + 2, size: first.page_size })
+    )
+  )
+  return [
+    ...first.items,
+    ...remaining.flatMap(
+      (response) => requireServerSuccess(response).data?.items ?? []
+    ),
+  ]
+}
+
 export async function createClientLink(
   target: ClientTarget,
-  share: boolean
+  share: boolean,
+  tokenId: number
 ): Promise<ClientLink> {
-  const res = await api.post('/api/client_link', { target, share })
+  const res = await api.post('/api/client_link', {
+    target,
+    share,
+    token_id: tokenId,
+  })
   return requireServerSuccess(res.data).data
 }
 
 // The file is JSON and so is a business failure, so the body decides which one it is.
-export async function saveClientConfig(target: ClientTarget): Promise<void> {
+export async function saveClientConfig(
+  target: ClientTarget,
+  tokenId: number
+): Promise<void> {
   const res = await api.get('/api/client_link/download', {
-    params: { target },
+    params: { target, token_id: tokenId },
     responseType: 'blob',
   })
   const blob = res.data as Blob
@@ -64,7 +96,12 @@ export async function saveClientConfig(target: ClientTarget): Promise<void> {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = target === 'dsh' ? 'dsh.json' : 'models.json'
+  link.download = {
+    workbuddy: 'models.json',
+    dsh: 'dsh.json',
+    claude: 'claude-code.json',
+    codex: 'codex.json',
+  }[target]
   link.click()
   URL.revokeObjectURL(url)
 }

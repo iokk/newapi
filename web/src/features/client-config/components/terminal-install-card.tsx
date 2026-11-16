@@ -21,8 +21,6 @@ import { Terminal } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { api } from '@/lib/api'
-
 import { CopyButton } from '@/components/copy-button'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,6 +31,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
+import { api } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
 import { requireServerSuccess } from '@/lib/server-error-message'
 
@@ -40,6 +39,7 @@ import type { ClientTarget } from '../api'
 
 type TerminalInstallCardProps = {
   target: ClientTarget
+  tokenId: number
 }
 
 // One-step terminal install: the command downloads the server-rendered script
@@ -53,6 +53,7 @@ export function TerminalInstallCard(props: TerminalInstallCardProps) {
       const res = await api.post('/api/client_link', {
         target: props.target,
         share: false,
+        token_id: props.tokenId,
       })
       return requireServerSuccess(res.data).data.code
     },

@@ -23,10 +23,17 @@ import type { ClientTarget } from '../api'
 export const CLIENT_PRODUCTS: Record<ClientTarget, string> = {
   workbuddy: 'WorkBuddy',
   dsh: 'DeepSeek Harness',
+  claude: 'Claude Code',
+  codex: 'Codex',
 }
 
 export function isClientTarget(value: unknown): value is ClientTarget {
-  return value === 'workbuddy' || value === 'dsh'
+  return (
+    value === 'workbuddy' ||
+    value === 'dsh' ||
+    value === 'claude' ||
+    value === 'codex'
+  )
 }
 
 // The sentence the user pastes into the AI client; the guide URL carries everything else.
