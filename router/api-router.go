@@ -280,6 +280,14 @@ func SetApiRouter(router *gin.Engine) {
 		handlePermissionRoute(apiRouter.Group("", middleware.AdminAuth()), http.MethodGet, "/task_plugin_options", authz.TaskPluginBind, controller.GetTaskPluginOptions)
 		registerChannelRoutes(apiRouter)
 		registerAuthzRoutes(apiRouter)
+		clientLinkRoute := apiRouter.Group("/client_link")
+		clientLinkRoute.Use(middleware.UserAuth(), middleware.DisableCache())
+		{
+			clientLinkRoute.GET("/options", controller.GetClientLinkOptions)
+			clientLinkRoute.POST("", middleware.CriticalRateLimit(), middleware.UserCriticalRateLimit("client-link"), controller.CreateClientLink)
+			clientLinkRoute.GET("/download", middleware.CriticalRateLimit(), middleware.UserCriticalRateLimit("client-link"), controller.DownloadClientConfig)
+		}
+
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())
 		tokenRoute.Use(middleware.TokenOperationAudit())
@@ -438,5 +446,16 @@ func SetApiRouter(router *gin.Engine) {
 			deploymentsRoute.POST("/:id/extend", controller.ExtendDeployment)
 			deploymentsRoute.DELETE("/:id", controller.DeleteDeployment)
 		}
+	}
+
+	// Public client-link endpoints read by WorkBuddy / DSH on the user's own computer.
+	clientLinkPublic := router.Group("")
+	clientLinkPublic.Use(middleware.RouteTag("api"), middleware.DisableCache(), middleware.ClientLinkRateLimit())
+	{
+		clientLinkPublic.GET("/c/:code", controller.ClientLinkGuide)
+		clientLinkPublic.GET("/c/:code/code", controller.ClientLinkExchange)
+		clientLinkPublic.GET("/k/:dl/:file", controller.ClientLinkRedeem)
+		clientLinkPublic.GET("/i/:code/install.sh", controller.ClientLinkInstallSh)
+		clientLinkPublic.GET("/i/:code/install.ps1", controller.ClientLinkInstallPs1)
 	}
 }
