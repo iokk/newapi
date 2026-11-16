@@ -64,7 +64,7 @@ export function ClientConfig() {
           <>
             <ApiKeySelector value={tokenId} onValueChange={setTokenId} />
             <Tabs defaultValue='workbuddy'>
-              <TabsList>
+              <TabsList className='h-auto flex-wrap'>
                 {TARGETS.map((target) => (
                   <TabsTrigger
                     key={target}

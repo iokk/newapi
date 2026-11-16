@@ -352,3 +352,25 @@ describe('coding clients', () => {
     }
   )
 })
+
+describe('responsive client tabs', () => {
+  it('uses a wrapping auto-height list so every target remains reachable', async () => {
+    vi.spyOn(api, 'get').mockImplementation(async (url) => {
+      if (url === '/api/client_link/options') return { data: options() }
+      if (url.startsWith('/api/token/')) {
+        return {
+          data: {
+            success: true,
+            data: { items: [], total: 0, page: 1, page_size: 100 },
+          },
+        }
+      }
+      throw new Error(`unexpected GET ${url}`)
+    })
+    renderConfig()
+
+    const list = await screen.findByRole('tablist')
+    expect(list).toHaveClass('flex-wrap', 'h-auto')
+    expect(screen.getAllByRole('tab')).toHaveLength(4)
+  })
+})
