@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/service"
@@ -68,8 +69,9 @@ func GetClientLinkOptions(c *gin.Context) {
 }
 
 type clientLinkRequest struct {
-	Target string `json:"target"`
-	Share  bool   `json:"share"`
+	Target  string `json:"target"`
+	Share   bool   `json:"share"`
+	TokenID int    `json:"token_id"`
 }
 
 // CreateClientLink returns a link for the signed-in user, or their share link.
@@ -79,11 +81,13 @@ func CreateClientLink(c *gin.Context) {
 		common.ApiErrorT(c, "Client link is not available")
 		return
 	}
-	create := service.NewClientLink
+	var code string
+	var err error
 	if req.Share {
-		create = service.ShareClientLink
+		code, err = service.ShareClientLink(c.GetInt("id"))
+	} else {
+		code, err = service.NewClientLink(c.GetInt("id"), req.TokenID)
 	}
-	code, err := create(c.GetInt("id"))
 	if err != nil {
 		common.ApiErrorT(c, "Client link is not available")
 		return
@@ -99,7 +103,12 @@ func CreateClientLink(c *gin.Context) {
 // DownloadClientConfig lets a signed-in user download the config file directly.
 func DownloadClientConfig(c *gin.Context) {
 	target := c.Query("target")
-	body, err := service.ClientConfigBody(c.GetInt("id"), target)
+	tokenID, err := strconv.Atoi(c.DefaultQuery("token_id", "0"))
+	if err != nil || tokenID < 0 {
+		common.ApiErrorT(c, "Client link is not available")
+		return
+	}
+	body, err := service.ClientConfigBody(c.GetInt("id"), target, tokenID)
 	if err != nil {
 		common.ApiErrorT(c, "Client link is not available")
 		return

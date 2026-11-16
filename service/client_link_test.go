@@ -57,7 +57,7 @@ func exchangeAndRedeem(t *testing.T, code string, d Device, target, file string)
 
 func TestClientLinkLoggedInUserFlow(t *testing.T) {
 	user := setupClientLinkTest(t)
-	code, err := NewClientLink(user.Id)
+	code, err := NewClientLink(user.Id, 0)
 	require.NoError(t, err)
 	body, err := exchangeAndRedeem(t, code, testDevice("a"), "workbuddy", "models.json")
 	require.NoError(t, err)
@@ -78,9 +78,69 @@ func TestClientLinkLoggedInUserFlow(t *testing.T) {
 	assert.Contains(t, string(dsh), "openai-responses")
 }
 
+func TestClientLinkSelectedToken(t *testing.T) {
+	user := setupClientLinkTest(t)
+	selected := &model.Token{
+		UserId: user.Id, Name: "laptop", Key: "selected-key", Status: common.TokenStatusEnabled,
+		ExpiredTime: -1, UnlimitedQuota: true,
+	}
+	require.NoError(t, selected.Insert())
+
+	code, err := NewClientLink(user.Id, selected.Id)
+	require.NoError(t, err)
+	body, err := exchangeAndRedeem(t, code, testDevice("selected"), "workbuddy", "models.json")
+	require.NoError(t, err)
+	var entries []map[string]any
+	require.NoError(t, common.Unmarshal(body, &entries))
+	require.Len(t, entries, 2)
+	assert.Equal(t, "sk-selected-key", entries[0]["apiKey"])
+}
+
+func TestClientLinkRejectsUnavailableSelectedToken(t *testing.T) {
+	user := setupClientLinkTest(t)
+	other := &model.User{Username: "other", Password: "password-12345", Role: common.RoleCommonUser}
+	require.NoError(t, other.Insert(0))
+	disabled := &model.Token{UserId: user.Id, Name: "disabled", Key: "disabled-key", Status: common.TokenStatusDisabled, ExpiredTime: -1}
+	require.NoError(t, disabled.Insert())
+	expired := &model.Token{UserId: user.Id, Name: "expired", Key: "expired-key", Status: common.TokenStatusEnabled, ExpiredTime: common.GetTimestamp() - 1}
+	require.NoError(t, expired.Insert())
+	foreign := &model.Token{UserId: other.Id, Name: "foreign", Key: "foreign-key", Status: common.TokenStatusEnabled, ExpiredTime: -1}
+	require.NoError(t, foreign.Insert())
+
+	for _, tc := range []struct {
+		name    string
+		tokenID int
+	}{
+		{name: "unknown", tokenID: 999999},
+		{name: "disabled", tokenID: disabled.Id},
+		{name: "expired", tokenID: expired.Id},
+		{name: "another user", tokenID: foreign.Id},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewClientLink(user.Id, tc.tokenID)
+			assert.ErrorIs(t, err, ErrClientLinkUnavailable)
+			_, err = ClientConfigBody(user.Id, "workbuddy", tc.tokenID)
+			assert.ErrorIs(t, err, ErrClientLinkUnavailable)
+		})
+	}
+}
+
+func TestClientLinkSelectedTokenIsRevalidatedAtRedemption(t *testing.T) {
+	user := setupClientLinkTest(t)
+	selected := &model.Token{UserId: user.Id, Name: "revoked", Key: "revoked-key", Status: common.TokenStatusEnabled, ExpiredTime: -1}
+	require.NoError(t, selected.Insert())
+	code, err := NewClientLink(user.Id, selected.Id)
+	require.NoError(t, err)
+	dl, err := ExchangeClientLink(code, "workbuddy", testDevice("revoked"))
+	require.NoError(t, err)
+	require.NoError(t, model.DB.Model(&model.Token{}).Where("id = ?", selected.Id).Update("status", common.TokenStatusDisabled).Error)
+	_, err = RedeemClientLink(dl, "models.json", testDevice("revoked"))
+	assert.ErrorIs(t, err, ErrClientLinkUnavailable)
+}
+
 func TestClientLinkDownloadCodeRules(t *testing.T) {
 	user := setupClientLinkTest(t)
-	code, err := NewClientLink(user.Id)
+	code, err := NewClientLink(user.Id, 0)
 	require.NoError(t, err)
 	dev := testDevice("a")
 
@@ -124,7 +184,7 @@ func TestClientLinkDownloadCodeRules(t *testing.T) {
 		_, err = RedeemClientLink(dl, "models.json", dev)
 		assert.ErrorIs(t, err, ErrClientLinkUnavailable)
 		clientLinkTTL = 20 * time.Millisecond
-		expired, err := NewClientLink(user.Id)
+		expired, err := NewClientLink(user.Id, 0)
 		require.NoError(t, err)
 		time.Sleep(80 * time.Millisecond)
 		_, err = ExchangeClientLink(expired, "workbuddy", dev)
@@ -192,19 +252,19 @@ func TestClientLinkAnonymousAccounts(t *testing.T) {
 
 func TestClientLinkDisabledOrUnconfigured(t *testing.T) {
 	user := setupClientLinkTest(t)
-	code, err := NewClientLink(user.Id)
+	code, err := NewClientLink(user.Id, 0)
 	require.NoError(t, err)
 	setting := operation_setting.GetClientLinkSetting()
 
 	setting.WorkBuddyModels = ""
 	_, err = exchangeAndRedeem(t, code, testDevice("a"), "workbuddy", "models.json")
 	assert.ErrorIs(t, err, ErrClientLinkUnavailable, "empty model template")
-	_, err = ClientConfigBody(user.Id, "workbuddy")
+	_, err = ClientConfigBody(user.Id, "workbuddy", 0)
 	assert.ErrorIs(t, err, ErrClientLinkUnavailable)
 
 	setting.WorkBuddyModels = clientLinkTestTemplate
 	setting.Enabled = false
-	_, err = NewClientLink(user.Id)
+	_, err = NewClientLink(user.Id, 0)
 	assert.ErrorIs(t, err, ErrClientLinkUnavailable)
 	_, err = exchangeAndRedeem(t, code, testDevice("a"), "workbuddy", "models.json")
 	assert.ErrorIs(t, err, ErrClientLinkUnavailable)
@@ -255,7 +315,7 @@ func TestClientLinkDeviceWithoutWorkBuddy(t *testing.T) {
 	dev := Device{OS: "Darwin", HW: "hw-only"}
 	user := &model.User{Username: "owner2", Password: "password-12345", DisplayName: "owner2", Role: common.RoleCommonUser}
 	require.NoError(t, user.Insert(0))
-	code, err := NewClientLink(user.Id)
+	code, err := NewClientLink(user.Id, 0)
 	require.NoError(t, err)
 	dl, err := ExchangeClientLink(code, "workbuddy", dev)
 	require.NoError(t, err)

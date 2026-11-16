@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -39,12 +40,15 @@ func TestClientLinkEndpoints(t *testing.T) {
 	system_setting.ServerAddress = "https://api.example.com"
 	owner := &model.User{Username: "owner", Password: "password-12345", DisplayName: "owner", Role: common.RoleCommonUser}
 	require.NoError(t, owner.Insert(0))
+	selected := &model.Token{UserId: owner.Id, Name: "laptop", Key: "selected-controller-key", Status: common.TokenStatusEnabled, ExpiredTime: -1}
+	require.NoError(t, selected.Insert())
 
 	router := gin.New()
 	router.GET("/c/:code", ClientLinkGuide)
 	router.GET("/c/:code/code", ClientLinkExchange)
 	router.GET("/k/:dl/:file", ClientLinkRedeem)
 	router.POST("/api/client_link", func(c *gin.Context) { c.Set("id", owner.Id); CreateClientLink(c) })
+	router.GET("/api/client_link/download", func(c *gin.Context) { c.Set("id", owner.Id); DownloadClientConfig(c) })
 	do := func(method, path, body string, headers map[string]string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, strings.NewReader(body))
 		for k, v := range headers {
@@ -95,6 +99,16 @@ func TestClientLinkEndpoints(t *testing.T) {
 	assert.Contains(t, first.Body.String(), `"apiKey":"sk-`)
 	assert.Contains(t, first.Body.String(), "https://api.example.com/v1/chat/completions")
 	assert.Equal(t, http.StatusNotFound, do("GET", "/k/"+dl+"/models.json", "", device).Code, "replay")
+
+	selectedResponse := do("POST", "/api/client_link", `{"target":"workbuddy","token_id":`+strconv.Itoa(selected.Id)+`}`, nil)
+	require.Equal(t, http.StatusOK, selectedResponse.Code)
+	require.NoError(t, common.Unmarshal(selectedResponse.Body.Bytes(), &link))
+	selectedDownload := do("GET", "/c/"+link.Data.Code+"/code?t=workbuddy", "", device)
+	require.Equal(t, http.StatusOK, selectedDownload.Code)
+	selectedBody := do("GET", "/k/"+selectedDownload.Body.String()+"/models.json", "", device)
+	assert.Contains(t, selectedBody.Body.String(), `"apiKey":"sk-selected-controller-key"`)
+	direct := do("GET", "/api/client_link/download?target=workbuddy&token_id="+strconv.Itoa(selected.Id), "", nil)
+	assert.Contains(t, direct.Body.String(), `"apiKey":"sk-selected-controller-key"`)
 
 	// Anonymous sharing stays off until the admin turns it on.
 	share := do("POST", "/api/client_link", `{"target":"workbuddy","share":true}`, nil)
