@@ -28,7 +28,13 @@ import { getClientLinkOptions, type ClientTarget } from './api'
 import { TargetPanel } from './components/target-panel'
 import { CLIENT_PRODUCTS } from './lib/prompt'
 
-const TARGETS: ClientTarget[] = ['workbuddy', 'dsh']
+const ONE_CLICK = ['workbuddy', 'dsh'] as const
+const TABS = [
+  { id: 'claude-code', label: 'Claude Code' },
+  { id: 'workbuddy', label: CLIENT_PRODUCTS.workbuddy },
+  { id: 'dsh', label: CLIENT_PRODUCTS.dsh },
+  { id: 'codex', label: 'Codex' },
+] as const
 
 export function ClientConfig() {
   const { t } = useTranslation()
@@ -40,7 +46,7 @@ export function ClientConfig() {
     workbuddy: options.data?.workbuddy_ready === true,
     dsh: options.data?.dsh_ready === true,
   }
-  const unavailable = options.data != null && !ready.workbuddy && !ready.dsh
+  const unavailable = options.data?.enabled === false
 
   return (
     <SectionPageLayout>
@@ -55,15 +61,22 @@ export function ClientConfig() {
             )}
           />
         ) : (
-          <Tabs defaultValue='workbuddy'>
+          <Tabs defaultValue='claude-code'>
             <TabsList>
-              {TARGETS.map((target) => (
-                <TabsTrigger key={target} value={target} disabled={!ready[target]}>
-                  {CLIENT_PRODUCTS[target]}
+              {TABS.map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  disabled={
+                    (ONE_CLICK as readonly string[]).includes(tab.id) &&
+                    !ready[tab.id as ClientTarget]
+                  }
+                >
+                  {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
-            {TARGETS.map((target) => (
+            {ONE_CLICK.map((target) => (
               <TabsContent key={target} value={target}>
                 <TargetPanel
                   target={target}
