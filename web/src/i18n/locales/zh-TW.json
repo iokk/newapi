@@ -7400,5 +7400,10 @@
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "把這條命令複製到電腦的終端機裡執行，指令碼會自動備份並合併設定。",
     "Generate install command": "產生安裝命令",
     "Install command": "安裝命令"
-  }
+  },
+  "API key name": "API 金鑰名稱",
+  "Failed to load the API key": "讀取 API 金鑰失敗",
+  "Failed to create the API key": "建立 API 金鑰失敗",
+  "Set the environment variables, then start the client.": "設定環境變數，然後啟動用戶端。",
+  "Copy setup command": "複製設定命令"
 }

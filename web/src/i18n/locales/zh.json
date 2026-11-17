@@ -7400,5 +7400,10 @@
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "把这条命令复制到电脑的终端里运行，脚本会自动备份并合并配置。",
     "Generate install command": "生成安装命令",
     "Install command": "安装命令"
-  }
+  },
+  "API key name": "API 密钥名称",
+  "Failed to load the API key": "读取 API 密钥失败",
+  "Failed to create the API key": "创建 API 密钥失败",
+  "Set the environment variables, then start the client.": "设置环境变量，然后启动客户端。",
+  "Copy setup command": "复制配置命令"
 }

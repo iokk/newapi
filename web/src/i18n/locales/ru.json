@@ -7400,5 +7400,10 @@
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "Скопируйте команду и выполните её в Терминале на вашем компьютере. Она сама сделает резервную копию и объединит конфигурацию.",
     "Generate install command": "Создать команду установки",
     "Install command": "Команда установки"
-  }
+  },
+  "API key name": "API key name",
+  "Failed to load the API key": "Failed to load the API key",
+  "Failed to create the API key": "Failed to create the API key",
+  "Set the environment variables, then start the client.": "Set the environment variables, then start the client.",
+  "Copy setup command": "Copy setup command"
 }

@@ -7400,5 +7400,10 @@
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "Sao chép lệnh này và chạy trong Terminal trên máy tính của bạn. Nó sẽ tự sao lưu và gộp cấu hình.",
     "Generate install command": "Tạo lệnh cài đặt",
     "Install command": "Lệnh cài đặt"
-  }
+  },
+  "API key name": "API key name",
+  "Failed to load the API key": "Failed to load the API key",
+  "Failed to create the API key": "Failed to create the API key",
+  "Set the environment variables, then start the client.": "Set the environment variables, then start the client.",
+  "Copy setup command": "Copy setup command"
 }
