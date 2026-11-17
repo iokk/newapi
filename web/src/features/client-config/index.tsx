@@ -25,6 +25,7 @@ import { SectionPageLayout } from '@/components/layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { getClientLinkOptions, type ClientTarget } from './api'
+import { ManualClientPanel } from './components/manual-client-panel'
 import { TargetPanel } from './components/target-panel'
 import { CLIENT_PRODUCTS } from './lib/prompt'
 
@@ -84,6 +85,12 @@ export function ClientConfig() {
                 />
               </TabsContent>
             ))}
+            <TabsContent value='claude-code'>
+              <ManualClientPanel client='claude-code' />
+            </TabsContent>
+            <TabsContent value='codex'>
+              <ManualClientPanel client='codex' />
+            </TabsContent>
           </Tabs>
         )}
       </SectionPageLayout.Content>
