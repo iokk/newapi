@@ -16,11 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { Link } from '@tanstack/react-router'
+import { Plug } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { NotificationPopover } from '@/components/notification-popover'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { buttonVariants } from '@/components/ui/button'
 import { SystemUpdateAction } from '@/features/system-update/system-update-action'
 import { useNotifications } from '@/hooks/use-notifications'
 import { useTopNavLinks } from '@/hooks/use-top-nav-links'
@@ -30,6 +35,19 @@ import type { TopNavLink } from '../types'
 import { Header } from './header'
 import { SystemBrand } from './system-brand'
 import { TopNav } from './top-nav'
+
+export function ClientSetupLink() {
+  const { t } = useTranslation()
+  return (
+    <Link
+      to='/client-config'
+      aria-label={t('Client Setup')}
+      className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+    >
+      <Plug />
+    </Link>
+  )
+}
 
 /**
  * General application Header component
@@ -129,6 +147,7 @@ export function AppHeader({
               <TopNav links={links} />
             </div>
           )}
+          <ClientSetupLink />
           {showSearch && (
             <Search className='w-8 flex-none [&>span]:hidden sm:[&>span]:inline' />
           )}
