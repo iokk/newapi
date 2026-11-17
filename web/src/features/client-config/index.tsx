@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { Plug } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/empty-state'
@@ -25,20 +26,15 @@ import { SectionPageLayout } from '@/components/layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { getClientLinkOptions, type ClientTarget } from './api'
-import { ManualClientPanel } from './components/manual-client-panel'
+import { ApiKeySelector } from './components/api-key-selector'
 import { TargetPanel } from './components/target-panel'
 import { CLIENT_PRODUCTS } from './lib/prompt'
 
-const ONE_CLICK = ['workbuddy', 'dsh'] as const
-const TABS = [
-  { id: 'claude-code', label: 'Claude Code' },
-  { id: 'workbuddy', label: CLIENT_PRODUCTS.workbuddy },
-  { id: 'dsh', label: CLIENT_PRODUCTS.dsh },
-  { id: 'codex', label: 'Codex' },
-] as const
+const TARGETS: ClientTarget[] = ['workbuddy', 'dsh', 'claude', 'codex']
 
 export function ClientConfig() {
   const { t } = useTranslation()
+  const [tokenId, setTokenId] = useState(0)
   const options = useQuery({
     queryKey: ['client-link', 'options'],
     queryFn: getClientLinkOptions,
@@ -46,8 +42,11 @@ export function ClientConfig() {
   const ready = {
     workbuddy: options.data?.workbuddy_ready === true,
     dsh: options.data?.dsh_ready === true,
+    claude: options.data?.claude_ready === true,
+    codex: options.data?.codex_ready === true,
   }
-  const unavailable = options.data?.enabled === false
+  const unavailable =
+    options.data != null && TARGETS.every((target) => !ready[target])
 
   return (
     <SectionPageLayout>
@@ -62,36 +61,32 @@ export function ClientConfig() {
             )}
           />
         ) : (
-          <Tabs defaultValue='claude-code'>
-            <TabsList>
-              {TABS.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  disabled={
-                    (ONE_CLICK as readonly string[]).includes(tab.id) &&
-                    !ready[tab.id as ClientTarget]
-                  }
-                >
-                  {tab.label}
-                </TabsTrigger>
+          <>
+            <ApiKeySelector value={tokenId} onValueChange={setTokenId} />
+            <Tabs defaultValue='workbuddy'>
+              <TabsList className='h-auto flex-wrap'>
+                {TARGETS.map((target) => (
+                  <TabsTrigger
+                    key={target}
+                    value={target}
+                    disabled={!ready[target]}
+                  >
+                    {CLIENT_PRODUCTS[target]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {TARGETS.map((target) => (
+                <TabsContent key={target} value={target}>
+                  <TargetPanel
+                    key={`${target}-${tokenId}`}
+                    target={target}
+                    tokenId={tokenId}
+                    shareEnabled={options.data?.share_enabled === true}
+                  />
+                </TabsContent>
               ))}
-            </TabsList>
-            {ONE_CLICK.map((target) => (
-              <TabsContent key={target} value={target}>
-                <TargetPanel
-                  target={target}
-                  shareEnabled={options.data?.share_enabled === true}
-                />
-              </TabsContent>
-            ))}
-            <TabsContent value='claude-code'>
-              <ManualClientPanel client='claude-code' />
-            </TabsContent>
-            <TabsContent value='codex'>
-              <ManualClientPanel client='codex' />
-            </TabsContent>
-          </Tabs>
+            </Tabs>
+          </>
         )}
       </SectionPageLayout.Content>
     </SectionPageLayout>

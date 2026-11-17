@@ -1,8 +1,10 @@
 # 04 — Release: build our image, stage it, cut over
 
-**Status: planned, not executed.** Nothing in this runbook has changed production.
-Work through the stages in order. Each stage has a gate; do not move on until the
-gate passes and the operator has agreed.
+**Production releases start from `origin/main`, after its PR has been reviewed
+and its CI checks have passed.** Work through the stages in order. Each stage has
+a gate; do not move on until the gate passes and the operator has agreed.
+Merging or pushing `main` does not deploy it. Follow the branch and upstream-sync
+rules in [`../../FORK.md`](../../FORK.md).
 
 ## Why we build our own image
 
@@ -19,19 +21,21 @@ Go), so we use it unchanged and build from our fork's branch.
   migration is tested in isolation.
 - Security fixes in upstream release notes are applied first.
 
-Current gap: production is `rc.44`; upstream latest is `rc.48` (includes a Redis auth
-cache fix, `#8200`).
+Current gap: production is based on `v1.0.0-rc.48`; check the latest upstream
+release and its notes before each upgrade.
 
-## Stage 0 — Prepare the merge (on the operator's Mac, in `bozzii-newapi`)
+## Stage 0 — Prepare the merge (on the operator's Mac)
 
 ```bash
-cd /Users/qi/cludecode/bozzii-newapi
 git fetch upstream --tags
-git checkout brand/bozzii
-git merge v1.0.0-rc.48        # or the tag being targeted
+git switch main
+git pull --ff-only
+git switch -c sync/upstream-v1.0.0-rc.N
+git merge v1.0.0-rc.N           # the tag being targeted
 ```
 
-Resolve conflicts only in files that carry a `CUSTOM(brand)` marker. Search with:
+Expect conflicts around custom `CUSTOM(brand)` hooks, but review every conflicted
+file; never discard an upstream fix just to make the merge pass. Search with:
 
 ```bash
 git grep -n 'CUSTOM(brand)'
@@ -43,26 +47,29 @@ in the commit message.
 
 ## Stage 1 — Build the image
 
-Build from the merged tree. Use the upstream Dockerfile.
+Build from the reviewed `main` commit, in a clean checkout. Use the repository
+script, which selects `linux/amd64` and the required build proxy:
 
 ```bash
-cd /Users/qi/cludecode/bozzii-newapi
-docker build -t ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1 .
+ops/build-image.sh v1.0.0-rc.N N
 ```
 
-Push (after Stage 2 passes, not before):
+This produces `ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.N-bozzii.N`.
+
+Push to GHCR after Stage 2 passes if a registry copy is needed. Production can
+instead load the uploaded image archive; record the image ID separately from any
+registry digest. If pushing, never print the token:
 
 ```bash
-echo "$GHCR_TOKEN" | docker login ghcr.io -u iokk --password-stdin   # token from gh auth, never printed
-docker push ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1
-docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1
+echo "$GHCR_TOKEN" | docker login ghcr.io -u iokk --password-stdin
+docker push ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.N-bozzii.N
+docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.N-bozzii.N
 ```
 
 Registry decision (2026-11-05): **GitHub Container Registry**, image
-`ghcr.io/iokk/bozzii-new-api`, public visibility. Why: same account as the repository,
-the operator's `gh` token already has `write:packages`, and the production host already
-pulls from `ghcr.io` (nezha, skillhub). The image contains no secrets; runtime
-configuration comes from `.env` on the host.
+`ghcr.io/iokk/bozzii-new-api`, **private** (D-006). The production host currently
+receives the image by `docker save`, upload, and `docker load`; do not assume it
+can pull from GHCR. Runtime configuration and secrets come from `.env` on the host.
 
 Tag rule: `<upstream release>-bozzii.<n>`, for example `v1.0.0-rc.48-bozzii.1`.
 Production `compose.yaml` must reference a version tag, never `latest`, and should
@@ -89,7 +96,7 @@ Staging must not connect to production.
    - the home page loads with the Bozzii brand (colour, logo, `HomePageContent`)
    - one real API call through a test token succeeds, if the operator approves a
      test upstream call (it spends upstream quota)
-5. Record the results in `ops/runbooks/release-log.md` (create it for each release).
+5. Record the results in a new file under `ops/releases/`.
 
 Gate: all checks pass and the operator has seen the results.
 
@@ -129,11 +136,10 @@ Keep the old image tag on the host until the new version has run for 24 hours.
 - Keep the pre-cut-over backup for at least 30 days, outside the 30-day R2
   retention window if it is a release backup. Copy it to a separate R2 prefix
   `releases/<tag>/`, which retention does not touch.
-- Update `ops/README.md` "Current status".
+- Update `ops/CONTROL.md` and add a release record in `ops/releases/`.
 
 ## Things the operator still has to decide
 
-- Registry for our image.
 - Maintenance window and customer notice.
 - Whether `SESSION_COOKIE_SECURE` changes from `false` to `true` in the same window.
   Only if the site is HTTPS end to end. Verify first.

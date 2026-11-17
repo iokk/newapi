@@ -7399,11 +7399,11 @@
     "One-step install (no AI needed)": "One-step install (no AI needed)",
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.",
     "Generate install command": "Generate install command",
-    "Install command": "Install command"
-  },
-  "API key name": "API key name",
-  "Failed to load the API key": "Failed to load the API key",
-  "Failed to create the API key": "Failed to create the API key",
-  "Set the environment variables, then start the client.": "Set the environment variables, then start the client.",
-  "Copy setup command": "Copy setup command"
+    "Install command": "Install command",
+    "Automatic per-client key": "Automatic per-client key",
+    "Select an API key": "Select an API key",
+    "No API keys found": "No API keys found",
+    "Could not load API keys. You can still use automatic keys.": "Could not load API keys. You can still use automatic keys.",
+    "Configure {{product}} with the selected API key.": "Configure {{product}} with the selected API key."
+  }
 }

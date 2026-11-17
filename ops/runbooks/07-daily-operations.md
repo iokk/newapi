@@ -3,14 +3,14 @@
 Routine checks for the production deployment. Each check has the command, the expected
 result, and what to do when it fails. Run from the operator's Mac with Termark.
 
-Host asset: `1cc3ef79-f6fe-4aac-913b-34f703da1d8e`
+Host asset: `a1b646cd-1a82-492d-9621-a88c8ed5f905`
 
 ## Daily (automated, check the result)
 
 **Offsite backup ran.** Cron runs at 03:47 server time.
 
 ```bash
-termark exec 1cc3ef79-f6fe-4aac-913b-34f703da1d8e "tail -2 /var/log/xseek-offsite-backup.log"
+termark exec a1b646cd-1a82-492d-9621-a88c8ed5f905 "tail -2 /var/log/xseek-offsite-backup.log"
 ```
 
 Expect: `Offsite backup uploaded: <stamp>`.
@@ -20,7 +20,7 @@ else: stop, follow `06-known-issues.md`, do not change retention settings.
 **Application healthy.**
 
 ```bash
-termark exec 1cc3ef79-f6fe-4aac-913b-34f703da1d8e "cd /opt/xseek-new-api && docker compose ps --format '{{.Name}} {{.Status}}'"
+termark exec a1b646cd-1a82-492d-9621-a88c8ed5f905 "cd /opt/xseek-new-api && docker compose ps --format '{{.Name}} {{.Status}}'"
 ```
 
 Expect: all three containers `Up … (healthy)`.
@@ -28,7 +28,7 @@ Expect: all three containers `Up … (healthy)`.
 **Counts have not dropped.** Users, channels and tokens only grow in normal operation.
 
 ```bash
-termark exec 1cc3ef79-f6fe-4aac-913b-34f703da1d8e "cd /opt/xseek-new-api && docker compose exec -T postgres psql -U newapi -d newapi -tAc \"SELECT (SELECT COUNT(*) FROM users),(SELECT COUNT(*) FROM channels),(SELECT COUNT(*) FROM tokens),(SELECT SUM(quota) FROM users);\""
+termark exec a1b646cd-1a82-492d-9621-a88c8ed5f905 "cd /opt/xseek-new-api && docker compose exec -T postgres psql -U newapi -d newapi -tAc \"SELECT (SELECT COUNT(*) FROM users),(SELECT COUNT(*) FROM channels),(SELECT COUNT(*) FROM tokens),(SELECT SUM(quota) FROM users);\""
 ```
 
 Compare with the last recorded values in `CONTROL.md` §2. A fall in any count is a stop
@@ -39,7 +39,7 @@ condition: do not restart anything; investigate first.
 **Disk and build cache.**
 
 ```bash
-termark exec 1cc3ef79-f6fe-4aac-913b-34f703da1d8e "df -h / | tail -1; docker system df"
+termark exec a1b646cd-1a82-492d-9621-a88c8ed5f905 "df -h / | tail -1; docker system df"
 ```
 
 Act: host disk above 80% → investigate. Build cache above 10 GB on the Mac →
@@ -49,13 +49,13 @@ Act: host disk above 80% → investigate. Build cache above 10 GB on the Mac →
 at most 30 days.
 
 ```bash
-termark exec 1cc3ef79-f6fe-4aac-913b-34f703da1d8e "rclone lsl r2:bozzii/newapi/ | sort -k2,3 | tail -4; rclone size r2:bozzii/newapi/"
+termark exec a1b646cd-1a82-492d-9621-a88c8ed5f905 "rclone lsl r2:bozzii/newapi/ | sort -k2,3 | tail -4; rclone size r2:bozzii/newapi/"
 ```
 
 **Table growth.** The `logs` table grows about 30 MB per month.
 
 ```bash
-termark exec 1cc3ef79-f6fe-4aac-913b-34f703da1d8e "cd /opt/xseek-new-api && docker compose exec -T postgres psql -U newapi -d newapi -tAc \"SELECT relname, pg_size_pretty(pg_total_relation_size(relid)) FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 3;\""
+termark exec a1b646cd-1a82-492d-9621-a88c8ed5f905 "cd /opt/xseek-new-api && docker compose exec -T postgres psql -U newapi -d newapi -tAc \"SELECT relname, pg_size_pretty(pg_total_relation_size(relid)) FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 3;\""
 ```
 
 ## Monthly
@@ -70,11 +70,10 @@ actioned or re-dated.
 **Key review.** Confirm the age private key is still in the password manager, and that
 the R2 token scope is still bucket-only (O-1).
 
-## Quarterly
-
 **Upstream check.** Compare the latest upstream release tag with the one we run. Read its
 release notes for security fixes. A security fix is applied within two weeks; other
-releases on the next planned window. Follow `04-release.md`.
+releases on the next planned window. Create a `sync/upstream-<tag>` branch and follow
+`FORK.md` and `04-release.md`.
 
 ## Never during business hours
 

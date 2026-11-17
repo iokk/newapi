@@ -7399,11 +7399,11 @@
     "One-step install (no AI needed)": "ワンステップインストール（AI 不要）",
     "Copy this command and run it in Terminal on your computer. It backs up and merges the config itself.": "このコマンドをコピーしてパソコンのターミナルで実行してください。設定のバックアップと統合は自動です。",
     "Generate install command": "インストールコマンドを生成",
-    "Install command": "インストールコマンド"
-  },
-  "API key name": "API key name",
-  "Failed to load the API key": "Failed to load the API key",
-  "Failed to create the API key": "Failed to create the API key",
-  "Set the environment variables, then start the client.": "Set the environment variables, then start the client.",
-  "Copy setup command": "Copy setup command"
+    "Install command": "インストールコマンド",
+    "Automatic per-client key": "クライアント専用キーを自動選択または作成",
+    "Select an API key": "API キーを選択",
+    "No API keys found": "API キーが見つかりません",
+    "Could not load API keys. You can still use automatic keys.": "API キーを読み込めませんでした。自動キーは引き続き使用できます。",
+    "Configure {{product}} with the selected API key.": "選択した API キーで {{product}} を設定します。"
+  }
 }

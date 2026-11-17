@@ -40,6 +40,8 @@ var (
 var clientLinkTargets = map[string]struct{ tokenName, file string }{
 	"workbuddy": {"WorkBuddy", "models.json"},
 	"dsh":       {"DSH", "dsh.json"},
+	"claude":    {"Claude Code", "claude-code.json"},
+	"codex":     {"Codex", "codex.json"},
 }
 
 // Device is the client-reported fingerprint. It is a speed bump, not proof:
@@ -64,9 +66,10 @@ func (d Device) Hash() (string, bool) {
 }
 
 type clientLinkEntry struct {
-	UserID int    `json:"user_id"`
-	Target string `json:"target,omitempty"`
-	Device string `json:"device,omitempty"`
+	UserID  int    `json:"user_id"`
+	Target  string `json:"target,omitempty"`
+	Device  string `json:"device,omitempty"`
+	TokenID int    `json:"token_id,omitempty"`
 }
 
 var (
@@ -125,6 +128,25 @@ func clientLinkModelIDs() []string {
 	return ids
 }
 
+func clientLinkCodingModels(target string) []string {
+	prefix := ""
+	if target == "claude" {
+		prefix = "claude-"
+	} else if target == "codex" {
+		prefix = "gpt-"
+	} else {
+		return nil
+	}
+	ids := clientLinkModelIDs()
+	models := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if strings.HasPrefix(id, prefix) && !(target == "codex" && strings.HasPrefix(id, "gpt-image-")) {
+			models = append(models, id)
+		}
+	}
+	return models
+}
+
 // ClientLinkTargetReady reports whether the feature is on and the target has its template.
 func ClientLinkTargetReady(target string) bool {
 	s := operation_setting.GetClientLinkSetting()
@@ -136,20 +158,38 @@ func ClientLinkTargetReady(target string) bool {
 		return len(clientLinkModelIDs()) > 0
 	case "dsh":
 		return s.DshProvidersYaml != "" && s.DshKeyEnv != ""
+	case "claude", "codex":
+		return len(clientLinkCodingModels(target)) > 0
 	}
 	return false
 }
 
+// clientLinkSelectedToken returns a usable token owned by the user, or nil for automatic selection.
+func clientLinkSelectedToken(userID, tokenID int) (*model.Token, error) {
+	if tokenID == 0 {
+		return nil, nil
+	}
+	token, err := model.GetTokenByIds(tokenID, userID)
+	if err != nil || token.Status != common.TokenStatusEnabled ||
+		(token.ExpiredTime != -1 && token.ExpiredTime < common.GetTimestamp()) {
+		return nil, ErrClientLinkUnavailable
+	}
+	return token, nil
+}
+
 // NewClientLink creates a link code for a logged-in user.
-func NewClientLink(userID int) (string, error) {
+func NewClientLink(userID int, tokenID int) (string, error) {
 	if !operation_setting.GetClientLinkSetting().Enabled {
 		return "", ErrClientLinkUnavailable
+	}
+	if _, err := clientLinkSelectedToken(userID, tokenID); err != nil {
+		return "", err
 	}
 	code, err := newClientLinkCode(clientLinkUserPrefix)
 	if err != nil {
 		return "", err
 	}
-	err = getClientLinkCache().SetWithTTL(clientLinkKey("l:", code), clientLinkEntry{UserID: userID}, clientLinkTTL)
+	err = getClientLinkCache().SetWithTTL(clientLinkKey("l:", code), clientLinkEntry{UserID: userID, TokenID: tokenID}, clientLinkTTL)
 	return code, err
 }
 
@@ -182,6 +222,7 @@ func ExchangeClientLink(code, target string, d Device) (string, error) {
 		return "", ErrClientLinkUnavailable
 	}
 	var userID int
+	var tokenID int
 	switch {
 	case strings.HasPrefix(code, clientLinkUserPrefix):
 		entry, found, err := getClientLinkCache().Get(clientLinkKey("l:", code))
@@ -189,7 +230,9 @@ func ExchangeClientLink(code, target string, d Device) (string, error) {
 			return "", ErrClientLinkUnavailable
 		}
 		userID = entry.UserID
-	case strings.HasPrefix(code, clientLinkSharePrefix) && operation_setting.GetClientLinkSetting().AnonymousEnabled:
+		tokenID = entry.TokenID
+	case strings.HasPrefix(code, clientLinkSharePrefix) && operation_setting.GetClientLinkSetting().AnonymousEnabled &&
+		(target == "workbuddy" || target == "dsh"):
 		// Anonymous accounts are limited to the template models, so the template must exist.
 		inviterID, err := model.GetUserIdByAffCode(strings.TrimPrefix(code, clientLinkSharePrefix))
 		if err != nil || len(clientLinkModelIDs()) == 0 {
@@ -205,7 +248,7 @@ func ExchangeClientLink(code, target string, d Device) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = getClientLinkCache().SetWithTTL(clientLinkKey("d:", dl), clientLinkEntry{UserID: userID, Target: target, Device: deviceHash}, clientLinkDownloadTTL)
+	err = getClientLinkCache().SetWithTTL(clientLinkKey("d:", dl), clientLinkEntry{UserID: userID, Target: target, Device: deviceHash, TokenID: tokenID}, clientLinkDownloadTTL)
 	return dl, err
 }
 
@@ -226,11 +269,11 @@ func RedeemClientLink(dl, file string, d Device) ([]byte, error) {
 	if err != nil || !deleted[cache.FullKey(key)] {
 		return nil, ErrClientLinkUnavailable
 	}
-	return ClientConfigBody(entry.UserID, entry.Target)
+	return ClientConfigBody(entry.UserID, entry.Target, entry.TokenID)
 }
 
 // ClientConfigBody builds the config file for a user, creating the dedicated token on first use.
-func ClientConfigBody(userID int, target string) ([]byte, error) {
+func ClientConfigBody(userID int, target string, tokenID int) ([]byte, error) {
 	cfg, known := clientLinkTargets[target]
 	if !known || !ClientLinkTargetReady(target) {
 		return nil, ErrClientLinkUnavailable
@@ -239,22 +282,28 @@ func ClientConfigBody(userID int, target string) ([]byte, error) {
 	if err != nil || user.Status != common.UserStatusEnabled {
 		return nil, ErrClientLinkUnavailable
 	}
-	token, err := model.GetUserTokenByName(user.Id, cfg.tokenName)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		key, keyErr := common.GenerateKey()
-		if keyErr != nil {
-			return nil, keyErr
+	token, err := clientLinkSelectedToken(user.Id, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	if token == nil {
+		token, err = model.GetUserTokenByName(user.Id, cfg.tokenName)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			key, keyErr := common.GenerateKey()
+			if keyErr != nil {
+				return nil, keyErr
+			}
+			token = &model.Token{
+				UserId: user.Id, Name: cfg.tokenName, Key: key,
+				CreatedTime: common.GetTimestamp(), AccessedTime: common.GetTimestamp(),
+				ExpiredTime: -1, UnlimitedQuota: true, AllowUserQuotaQuery: true,
+			}
+			// shortcut: the model limit is fixed at creation; template changes do not reach existing anonymous tokens.
+			if user.Remark == clientLinkAnonRemark {
+				token.ModelLimitsEnabled, token.ModelLimits = true, strings.Join(clientLinkModelIDs(), ",")
+			}
+			err = token.Insert()
 		}
-		token = &model.Token{
-			UserId: user.Id, Name: cfg.tokenName, Key: key,
-			CreatedTime: common.GetTimestamp(), AccessedTime: common.GetTimestamp(),
-			ExpiredTime: -1, UnlimitedQuota: true, AllowUserQuotaQuery: true,
-		}
-		// shortcut: the model limit is fixed at creation; template changes do not reach existing anonymous tokens.
-		if user.Remark == clientLinkAnonRemark {
-			token.ModelLimitsEnabled, token.ModelLimits = true, strings.Join(clientLinkModelIDs(), ",")
-		}
-		err = token.Insert()
 	}
 	if err != nil {
 		return nil, err
@@ -262,6 +311,41 @@ func ClientConfigBody(userID int, target string) ([]byte, error) {
 
 	s := operation_setting.GetClientLinkSetting()
 	apiKey := "sk-" + token.Key
+	if target == "claude" || target == "codex" {
+		models := clientLinkCodingModels(target)
+		if target == "codex" {
+			return common.Marshal(map[string]any{
+				"api_key": apiKey, "base_url": ClientLinkBase() + "/v1",
+				"models": models, "default_model": models[0],
+			})
+		}
+		var opusModel, sonnetModel, haikuModel string
+		for _, model := range models {
+			if opusModel == "" && strings.HasPrefix(model, "claude-opus-") {
+				opusModel = model
+			}
+			if sonnetModel == "" && strings.HasPrefix(model, "claude-sonnet-") {
+				sonnetModel = model
+			}
+			if haikuModel == "" && strings.HasPrefix(model, "claude-haiku-") {
+				haikuModel = model
+			}
+		}
+		if opusModel == "" {
+			opusModel = models[0]
+		}
+		if sonnetModel == "" {
+			sonnetModel = models[0]
+		}
+		if haikuModel == "" {
+			haikuModel = models[0]
+		}
+		return common.Marshal(map[string]any{
+			"api_key": apiKey, "base_url": ClientLinkBase(), "models": models,
+			"default_model": models[0], "opus_model": opusModel,
+			"sonnet_model": sonnetModel, "haiku_model": haikuModel,
+		})
+	}
 	if target == "dsh" {
 		return common.Marshal(map[string]string{"key_env": s.DshKeyEnv, "api_key": apiKey, "providers_yaml": s.DshProvidersYaml})
 	}

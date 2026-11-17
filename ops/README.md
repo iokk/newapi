@@ -54,19 +54,9 @@ decrypted. It must also be kept in the operator's password manager.
 
 ## Current status
 
-| Item | State |
-| ---- | ----- |
-| Production version | `calciumion/new-api:v1.0.0-rc.44` (upstream latest is rc.48) |
-| Production database | PostgreSQL 15 in container `xseek-new-api-postgres`, bind mount `/opt/xseek-new-api/postgres` |
-| Nightly offsite backup | Installed in cron at 03:47 server time; first run verified |
-| Offsite storage | Cloudflare R2 bucket `bozzii`, prefix `newapi/`, public access disabled |
-| Restore test | Passed on a scratch database (12 users, 21 channels, 18 tokens, matching checksums) |
-| Brand build | Branch `brand/bozzii` in `iokk/newapi`: CSS tokens and bilingual landing page |
-| Image registry | **Decided:** GHCR, `ghcr.io/iokk/bozzii-new-api`, public. Tags `<upstream>-bozzii.<n>`, never `latest` |
-| Local image | Built: `ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.1` from commit `50abf2f08`. Verified: version string in binary, landing page and brand CSS embedded, `/api/status` healthy on an empty SQLite database. **Not pushed.** Build with `ops/build-image.sh` |
-| Production image | **Replaced 2026-11-05.** Now `ghcr.io/iokk/bozzii-new-api:v1.0.0-rc.48-bozzii.2` (digest `sha256:f1e7af2c…`). Previous `calciumion/new-api:v1.0.0-rc.44` kept in `compose.yaml.bak-rc44-*` for rollback |
-| Open: R2 keys (O-1 in CONTROL.md) | Keys were pasted into a chat transcript during testing. **Must be rotated.** See `runbooks/02-backup.md` §6 |
-| Open: R2 token scope | The token used for testing covers all buckets on the account. Replace it with a bucket-scoped token |
+[`CONTROL.md`](CONTROL.md) §2 is the only current-state record; do not duplicate
+versions or branch names here. Branch, PR, and upstream-sync rules are in
+[`../FORK.md`](../FORK.md). Releases follow `runbooks/04-release.md`.
 
 ## For agents: how to use this directory
 
