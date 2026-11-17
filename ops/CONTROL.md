@@ -43,12 +43,12 @@ Last full review: 2026-11-05.
 | Item | Value |
 | ---- | ----- |
 | Name | `ghcr.io/iokk/bozzii-new-api` |
-| Running tag | `v1.0.0-rc.48-bozzii.7` |
+| Running tag | `v1.0.0-rc.48-bozzii.8` |
 | Platform | `linux/amd64` (matches host `x86_64`) |
-| Digest | `sha256:7bcebbad2ad3fdfe93ab6b0d907f310a1674a9b84402ff5f95a7e8b7aa7ff150` |
+| Digest | `sha256:5ea9aef216068e723f67c8fbee5b1e93de36f628956413a331df6ce4155c4625` |
 | Registry visibility | **private** (decision D-006) |
-| Built by | `ops/build-image.sh v1.0.0-rc.48 7`; loaded on the host via docker save/load from reviewed commit `9084dd0be` |
-| Previous (rollback) | `bozzii.6`, compose saved as `/opt/xseek-new-api/compose.yaml.pre-bozzii7-20261116T080725Z` |
+| Built by | `ops/build-image.sh v1.0.0-rc.48 8`; loaded on the host via docker save/load from commit `5d3755ccd` |
+| Previous (rollback) | `bozzii.7`, compose saved as `/opt/xseek-new-api/compose.yaml.pre-bozzii8-20261117T160031Z` |
 
 ### Production host
 
@@ -58,9 +58,9 @@ Last full review: 2026-11-05.
 | Termark asset | `a1b646cd-1a82-492d-9621-a88c8ed5f905` |
 | App directory | `/opt/xseek-new-api` (compose project) |
 | Containers | `xseek-new-api` (app), `xseek-new-api-postgres`, `xseek-new-api-redis` |
-| Running since | `bozzii.7` cut over on 2026-11-16; only the app was recreated |
-| Data at last cut-over | 14 users, 23 channels, 26 active tokens; raw token rows include 4 soft-deleted test records from this release |
-| Health | `/api/status` → `success: true`, version `v1.0.0-rc.48-bozzii.7`, system name `Bozzii AI` |
+| Running since | `bozzii.8` cut over on 2026-11-18; only the app was recreated |
+| Data at last cut-over | not recounted; database dump `backups/newapi-pre-bozzii8-20261117T160031Z.dump` (3,259,810 bytes) |
+| Health | `/api/status` → `success: true`, version `v1.0.0-rc.48-bozzii.8`, system name `Bozzii AI` |
 | App port | `BIND_ADDRESS=0.0.0.0`, port 3000 (see open item O-4) |
 
 ### Backups
