@@ -7404,6 +7404,16 @@
     "Select an API key": "Select an API key",
     "No API keys found": "No API keys found",
     "Could not load API keys. You can still use automatic keys.": "Could not load API keys. You can still use automatic keys.",
-    "Configure {{product}} with the selected API key.": "Configure {{product}} with the selected API key."
+    "Configure {{product}} with the selected API key.": "Configure {{product}} with the selected API key.",
+    "Quick Connect": "Quick Connect",
+    "Quick Connect Guide": "Quick Connect Guide",
+    "XSEEK Agent": "XSEEK Agent",
+    "Client Setup Guide & XSEEK Agent": "Client Setup Guide & XSEEK Agent",
+    "Use the tabs above for one-click setup, or open the public Quick Connect Hub for manual client and SDK guides.": "Use the tabs above for one-click setup, or open the public Quick Connect Hub for manual client and SDK guides.",
+    "Choose an existing API key above, or keep Automatic per-client key for isolated, revocable access.": "Choose an existing API key above, or keep Automatic per-client key for isolated, revocable access.",
+    "Pick WorkBuddy, DSH, Claude Code, or Codex to generate a one-time setup prompt, install command, or CC Switch import without exposing raw secrets.": "Pick WorkBuddy, DSH, Claude Code, or Codex to generate a one-time setup prompt, install command, or CC Switch import without exposing raw secrets.",
+    "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://ai.bozzii.com/v1 (OpenAI/Gemini) or https://ai.bozzii.com (Anthropic native).": "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://ai.bozzii.com/v1 (OpenAI/Gemini) or https://ai.bozzii.com (Anthropic native).",
+    "Full Quick Connect Guide": "Full Quick Connect Guide",
+    "Visit XSEEK Agent (Book Demo)": "Visit XSEEK Agent (Book Demo)"
   }
 }

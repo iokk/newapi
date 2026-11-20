@@ -21,6 +21,7 @@ import { Plug } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { ClientConfigGuideCard } from '@/branding/brand-links' // CUSTOM(brand)
 import { EmptyState } from '@/components/empty-state'
 import { SectionPageLayout } from '@/components/layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -88,6 +89,8 @@ export function ClientConfig() {
             </Tabs>
           </>
         )}
+        {/* CUSTOM(brand): setup walkthrough + direct links to Quick Connect Hub & XSEEK Agent */}
+        <ClientConfigGuideCard />
       </SectionPageLayout.Content>
     </SectionPageLayout>
   )

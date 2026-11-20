@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import {
   Activity,
+  BookOpen, // CUSTOM(brand)
   Box,
   ClipboardList,
   CreditCard,
@@ -33,6 +34,7 @@ import {
   ServerCog,
   Settings,
   ShieldCheck,
+  Sparkles, // CUSTOM(brand)
   Ticket,
   User,
   Users,
@@ -40,6 +42,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { QUICK_CONNECT_URL, XSEEK_AGENT_URL } from '@/branding/brand-links' // CUSTOM(brand)
 import type { SidebarBadges, SidebarData } from '@/components/layout/types'
 import { ROLE } from '@/lib/roles'
 
@@ -58,6 +61,13 @@ export function useSidebarData(badges: SidebarBadges = {}): SidebarData {
         id: 'chat',
         title: t('Chat'),
         items: [
+          // CUSTOM(brand): direct link to live XSEEK office agent site
+          {
+            title: t('XSEEK Agent'),
+            url: XSEEK_AGENT_URL,
+            external: true,
+            icon: Sparkles,
+          },
           {
             title: t('Playground'),
             url: '/playground',
@@ -93,6 +103,13 @@ export function useSidebarData(badges: SidebarBadges = {}): SidebarData {
             title: t('Client Setup'),
             url: '/client-config',
             icon: Plug,
+          },
+          // CUSTOM(brand): public standalone configuration guide for all clients & SDKs
+          {
+            title: t('Quick Connect Guide'),
+            url: QUICK_CONNECT_URL,
+            external: true,
+            icon: BookOpen,
           },
           {
             title: t('Usage Logs'),

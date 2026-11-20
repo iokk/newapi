@@ -20,6 +20,7 @@ import { Link } from '@tanstack/react-router'
 import { Plug } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { XseekAgentLink } from '@/branding/brand-links' // CUSTOM(brand)
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { NotificationPopover } from '@/components/notification-popover'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -147,6 +148,8 @@ export function AppHeader({
               <TopNav links={links} />
             </div>
           )}
+          {/* CUSTOM(brand): direct link to live XSEEK office agent site */}
+          <XseekAgentLink />
           <ClientSetupLink />
           {showSearch && (
             <Search className='w-8 flex-none [&>span]:hidden sm:[&>span]:inline' />

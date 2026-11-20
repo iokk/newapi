@@ -41,6 +41,8 @@ type BaseNavItem = {
  */
 export type NavLink = BaseNavItem & {
   url: LinkProps['to'] | (string & {})
+  /** CUSTOM(brand): render as an external anchor opening in a new tab */
+  external?: boolean
   items?: never
   type?: never
 }
