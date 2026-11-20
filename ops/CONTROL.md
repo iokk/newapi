@@ -25,7 +25,7 @@ Last full review: 2026-11-05.
 | Per-release record | `releases/` (one file per release) |
 | Operator-facing summary (Chinese) | `bozzii/docs/newapi-运维与部署.md` (outside this repo) |
 
-## 2. Current state (2026-11-16)
+## 2. Current state (2026-11-21)
 
 ### Code
 
@@ -33,9 +33,9 @@ Last full review: 2026-11-05.
 | ---- | ----- |
 | Upstream | `QuantumNous/new-api`, remote `upstream` |
 | Our fork | `iokk/newapi`, remote `origin` |
-| Working branch | `main` (only integration and image-source branch; see `../FORK.md`) |
-| Upstream base | tag `v1.0.0-rc.48` (commit `706144769`) |
-| Customisations | `web/src/styles/brand.css` (new), `web/src/styles/index.css` (one `@import`), `web/public/brand/home.html` (new), `ops/` (new) |
+| Active prod branch | `upgrade/v1.0.0-rc.51` (brand commits also synced to `main`) |
+| Upstream base | tag `v1.0.0-rc.51` |
+| Customisations | `web/src/styles/brand.css` (new), `web/src/styles/index.css` (one `@import`), `web/public/brand/{home,connect}.html` (new), `web/src/branding/brand-links.tsx` (new), `ops/` (new) |
 | Marker | every change to an upstream file carries `CUSTOM(brand)`; list with `git grep -n 'CUSTOM(brand)'` |
 
 ### Image
@@ -43,12 +43,12 @@ Last full review: 2026-11-05.
 | Item | Value |
 | ---- | ----- |
 | Name | `ghcr.io/iokk/bozzii-new-api` |
-| Running tag | `v1.0.0-rc.48-bozzii.8` |
+| Running tag | `v1.0.0-rc.51-bozzii.2` |
 | Platform | `linux/amd64` (matches host `x86_64`) |
-| Digest | `sha256:5ea9aef216068e723f67c8fbee5b1e93de36f628956413a331df6ce4155c4625` |
+| Digest | `sha256:d85c5ac7804168efbcbe6c0a9c654979d9f7eade06034e3d64a51983e58f63fe` |
 | Registry visibility | **private** (decision D-006) |
-| Built by | `ops/build-image.sh v1.0.0-rc.48 8`; loaded on the host via docker save/load from commit `5d3755ccd` |
-| Previous (rollback) | `bozzii.7`, compose saved as `/opt/xseek-new-api/compose.yaml.pre-bozzii8-20261117T160031Z` |
+| Built by | native `docker build --network=host` on `23.19.228.138` from commit `ff32e1168` |
+| Previous (rollback) | `v1.0.0-rc.51-bozzii.1`, compose saved as `/opt/xseek-new-api/backups/compose.yaml.pre-rc51-bozzii2-20261120T203549Z` |
 
 ### Production host
 
