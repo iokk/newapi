@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { QUICK_CONNECT_URL, XSEEK_AGENT_URL } from '@/branding/brand-links' // CUSTOM(brand)
 import { useStatus } from '@/hooks/use-status'
 import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
 import { useAuthStore } from '@/stores/auth-store'
@@ -99,6 +100,18 @@ export function useTopNavLinks(): TopNavLink[] {
   if (modules?.about !== false) {
     links.push({ title: t('About'), href: '/about' })
   }
+
+  // CUSTOM(brand): expose Quick Connect Hub and live XSEEK Agent site in top nav tabs.
+  links.push({
+    title: t('Quick Connect'),
+    href: QUICK_CONNECT_URL,
+    external: true,
+  })
+  links.push({
+    title: t('XSEEK Agent'),
+    href: XSEEK_AGENT_URL,
+    external: true,
+  })
 
   return links
 }

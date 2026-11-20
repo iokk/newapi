@@ -908,6 +908,7 @@
       </a>
       <div class="nav-links">
         <a class="nav-link active" href="https://ai.bozzii.com/brand/connect.html" target="_top" data-i18n-en="Quick Connect">一键接入</a>
+        <a class="nav-link" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="XSEEK Agent">XSEEK 智能体</a>
         <a class="nav-link" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Client Hub">客户端中心</a>
         <a class="nav-link" href="https://ai.bozzii.com/pricing" target="_top" data-i18n-en="Models & Pricing">模型广场</a>
         <a class="nav-link" href="https://ai.bozzii.com/dashboard" target="_top" data-i18n-en="Console">控制台</a>
@@ -948,8 +949,9 @@
             <div class="hero-actions">
               <a class="btn-primary" href="https://ai.bozzii.com/client-config" target="_top">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
-                <span data-i18n-en="Open Client Hub (Auto Setup)">打开客户端中心（一键自动配置）</span>
+                <span data-i18n-en="Open Client Hub (Auto Setup)">打开控制台客户端中心（一键配置）</span>
               </a>
+              <a class="btn-secondary" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="XSEEK Agent · Book Demo">XSEEK 办公智能体 · 预约演示</a>
               <a class="btn-secondary" href="https://ai.bozzii.com/token" target="_top" data-i18n-en="Manage API Keys">创建 / 管理 API 密钥</a>
               <a class="btn-secondary" href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer" data-i18n-en="Feishu Tech Support">飞书直连协助接入</a>
             </div>
@@ -1066,6 +1068,10 @@
             <span>WorkBuddy / DSH</span>
             <span class="tab-tag" data-i18n-en="1-Click">一键</span>
           </button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="xseek">
+            <span data-i18n-en="XSEEK AI Agent">XSEEK 办公智能体</span>
+            <span class="tab-tag" data-i18n-en="Live">已上线</span>
+          </button>
           <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="codebuddy">
             <span>CodeBuddy</span>
           </button>
@@ -1083,6 +1089,44 @@
           <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="sdk">
             <span data-i18n-en="cURL & SDK">cURL 与 SDK</span>
           </button>
+        </div>
+
+        <!-- Tab 0: XSEEK AI Agent -->
+        <div class="tab-panel" data-panel="xseek">
+          <div class="panel-grid">
+            <div class="card">
+              <h3 data-i18n-en="XSEEK Enterprise AI Agent (Now Live · Book a Demo)">XSEEK 星域求索办公智能体（已正式上线 · 预约演示）</h3>
+              <p data-i18n-en="XSEEK has graduated from private beta! Meet Xiaosuo and digital employees that read your docs, operate desktop apps/web portals, run scheduled tasks, and deliver ready-to-use work.">
+                自研办公智能体产品 <strong>XSEEK 星域求索（AI 同事「小索」与数字员工）</strong> 现已结束内测、正式上线！支持桌面操作、定时日报、企业知识库引用与多岗位协同，可直接前往产品官网查看体验、下载客户端或预约企业专属演示。
+              </p>
+              <ol class="steps-list">
+                <li><span class="step-num">1</span><span>前往官方产品站 <strong>https://xseekai.cn/index.html</strong> 浏览功能案例、下载客户端或提交<strong>预约演示</strong>。</span></li>
+                <li><span class="step-num">2</span><span>如需为团队自建或扩展模型算力，在 Bozzii AI 控制台签发 API 密钥并按右侧标准端点完成自定义模型对接。</span></li>
+                <li><span class="step-num">3</span><span>企业定制部署、行业诊断、培训及对公采购支持，可通过飞书直接联系铂子科技团队。</span></li>
+              </ol>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                <a class="btn-primary" style="height:38px;font-size:13.5px;padding:0 16px;" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="Visit XSEEK Official Site · Book Demo →">前往 XSEEK 官网体验 / 预约演示 →</a>
+                <a class="btn-secondary" style="height:38px;font-size:13.5px;padding:0 14px;" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Open Client Hub">进入控制台客户端中心</a>
+              </div>
+              <div class="tip-box">
+                <strong>说明：</strong>XSEEK 办公智能体与 Bozzii AI 统一大模型 API 网关底层互通；如果您需要直接上手现成的企业级办公智能体应用，推荐直接访问 XSEEK 官网体验与预约演示。
+              </div>
+            </div>
+
+            <div>
+              <div class="card">
+                <h3 data-i18n-en="Bozzii API Custom Gateway Parameters for XSEEK">XSEEK 自定义模型网关对接参数</h3>
+                <p>如需在企业私有环境或自定义模型配置中接入 Bozzii AI 算力网关，请按以下标准参数填写：</p>
+                <table class="param-table">
+                  <tr><th>产品官网与预约演示</th><td><a href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;">https://xseekai.cn/index.html</a></td></tr>
+                  <tr><th>协议类型</th><td><code>OpenAI 兼容 (Chat Completions)</code></td></tr>
+                  <tr><th>接口地址 (Base URL)</th><td><code data-tpl="{HOST}/v1">https://api.bozzii.com/v1</code></td></tr>
+                  <tr><th>API 密钥</th><td><code data-tpl="{KEY}">sk-your-bozzii-api-key</code></td></tr>
+                  <tr><th>主力推荐模型</th><td><code>claude-opus-5-5</code> · <code>claude-sonnet-5-5</code> · <code>gpt-6.1-sol</code> · <code>deepseek-v4-pro</code></td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Tab 1: WorkBuddy / DeepSeek Harness -->
@@ -1555,8 +1599,9 @@ console.log(resp.choices[0].message.content);'></pre>
           <div class="footer-col">
             <h4 data-i18n-en="Connect & Ecosystem">一键接入与生态</h4>
             <ul>
-              <li><a href="https://ai.bozzii.com/brand/connect.html" target="_top" data-i18n-en="Quick Connect Hub">一键接入中心</a></li>
+              <li><a href="https://ai.bozzii.com/brand/connect.html" target="_top" data-i18n-en="Quick Connect Hub">一键接入配置页</a></li>
               <li><a href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Client Hub">客户端中心（自动配置）</a></li>
+              <li><a href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="XSEEK Agent · Book Demo">XSEEK 办公智能体（预约演示）</a></li>
               <li><a href="https://doc.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="API Documentation">API 接入文档</a></li>
               <li><a href="https://status.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Service Status">服务实时状态页</a></li>
             </ul>

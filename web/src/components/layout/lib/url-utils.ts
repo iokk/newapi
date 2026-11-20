@@ -59,6 +59,9 @@ export function checkIsActive(
   item: NavItem,
   mainNav = false
 ): boolean {
+  // CUSTOM(brand): external sidebar links never match internal router paths.
+  if ('external' in item && item.external) return false
+
   const hrefWithoutQuery = href.split('?')[0]
 
   if (item.activeUrls?.some((url) => urlToString(url) === hrefWithoutQuery)) {

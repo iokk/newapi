@@ -7781,6 +7781,16 @@
     "Select an API key": "选择 API 密钥",
     "No API keys found": "未找到 API 密钥",
     "Could not load API keys. You can still use automatic keys.": "无法加载 API 密钥，仍可使用自动专用密钥。",
-    "Configure {{product}} with the selected API key.": "使用选中的 API 密钥配置 {{product}}。"
+    "Configure {{product}} with the selected API key.": "使用选中的 API 密钥配置 {{product}}。",
+    "Quick Connect": "一键接入",
+    "Quick Connect Guide": "接入配置说明",
+    "XSEEK Agent": "XSEEK 智能体",
+    "Client Setup Guide & XSEEK Agent": "接入配置说明与 XSEEK 办公智能体",
+    "Use the tabs above for one-click setup, or open the public Quick Connect Hub for manual client and SDK guides.": "上方可直接一键配置常用客户端；如需手动配置其他工具、查看 API 参数或体验 XSEEK 办公智能体，请参考下方指引。",
+    "Choose an existing API key above, or keep Automatic per-client key for isolated, revocable access.": "先在上方选择已有令牌，或保持「自动选择或创建专用密钥」（推荐，按客户端隔离、可随时吊销）。",
+    "Pick WorkBuddy, DSH, Claude Code, or Codex to generate a one-time setup prompt, install command, or CC Switch import without exposing raw secrets.": "切换 WorkBuddy、DSH、Claude Code 或 Codex 页签，一键生成一次性配置提示词、安装命令或导入 CC Switch，全程不泄露明文密钥。",
+    "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://ai.bozzii.com/v1 (OpenAI/Gemini) or https://ai.bozzii.com (Anthropic native).": "CodeBuddy、Cherry Studio、Cursor 及各类 SDK 请使用通用网关 https://ai.bozzii.com/v1（Anthropic 原生协议使用 https://ai.bozzii.com）。",
+    "Full Quick Connect Guide": "查看完整接入配置说明",
+    "Visit XSEEK Agent (Book Demo)": "前往 XSEEK 办公智能体官网 · 预约演示"
   }
 }
