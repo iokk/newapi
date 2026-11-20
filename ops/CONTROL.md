@@ -167,6 +167,7 @@ Each open item has an owner and a trigger. Close it by changing its status here.
 | 2026-11-16 | Client setup supports per-client API key selection plus Claude Code/Codex/CC Switch; mobile tabs wrap; `bozzii.7` deployed after independent review, encrypted off-host backup and isolated staging | release note `ops/releases/2026-11-16-client-config-keys.md`; source `9084dd0be` |
 
 | 2026-11-16 | Reconciled deployed `bozzii.6` client-link source into `main` via PR #6; retired merged brand/feature branches; established `main` + short-lived PR workflow (D-014) | PR https://github.com/iokk/newapi/pull/6; `../FORK.md`; focused client-link Go and frontend tests passed before merge |
+| 2026-11-21 | Upgraded homepage compliance footer (ICP, Shenzhen Bozzii entity, corporate payment/VAT invoicing, zero-training/90d privacy disclosure, direct Feishu support), removed unused `对话/创作/编程/科研` nav items, added standalone Quick Connect Hub (`/brand/connect.html`) linking to `/client-config`, deployed live via OpenResty origin files + ESA purge (TaskId `1779476503461891`) with zero container restart | release note `ops/releases/2026-11-21-compliance-footer-and-connect-hub.md` |
 
 ## 7. Rules for editing these documents
 
