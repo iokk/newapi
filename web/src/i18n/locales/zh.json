@@ -7846,6 +7846,17 @@
     "Please read and agree to the User Agreement and Privacy Policy": "请先阅读并同意《用户协议》和《隐私政策》",
     "Billed by resolution and duration": "按分辨率与视频时长计费",
     "sec": "秒",
-    "Extra reference image (over {{count}})": "超出 {{count}} 张参考图加收"
+    "Extra reference image (over {{count}})": "超出 {{count}} 张参考图加收",
+    "Contact Support": "联系客服",
+    "Service notices and feedback rewards": "服务通知与有效反馈额度奖励",
+    "Copy email address": "复制邮箱地址",
+    "Copied sanitized diagnostic report": "已复制脱敏排障摘要",
+    "Copy Diagnostic Report": "一键复制排障摘要",
+    "Copy sanitized diagnostic report": "一键复制脱敏排障摘要",
+    "Troubleshooting Docs": "排障文档",
+    "Using wallet balance by default": "默认使用账户余额",
+    "Enterprise dedicated routing": "企业专属高可用通道",
+    "Connect with our team via WeChat, Feishu, or email": "通过微信、飞书或邮件联系专属商务与技术支持",
+    "Support": "支持"
   }
 }

@@ -7846,6 +7846,17 @@
     "Please read and agree to the User Agreement and Privacy Policy": "Please read and agree to the User Agreement and Privacy Policy",
     "Billed by resolution and duration": "Billed by resolution and duration",
     "sec": "sec",
-    "Extra reference image (over {{count}})": "Extra reference image (over {{count}})"
+    "Extra reference image (over {{count}})": "Extra reference image (over {{count}})",
+    "Contact Support": "Contact Support",
+    "Service notices and feedback rewards": "Service notices and feedback rewards",
+    "Copy email address": "Copy email address",
+    "Copied sanitized diagnostic report": "Copied sanitized diagnostic report",
+    "Copy Diagnostic Report": "Copy Diagnostic Report",
+    "Copy sanitized diagnostic report": "Copy sanitized diagnostic report",
+    "Troubleshooting Docs": "Troubleshooting Docs",
+    "Using wallet balance by default": "Using wallet balance by default",
+    "Enterprise dedicated routing": "Enterprise dedicated routing",
+    "Connect with our team via WeChat, Feishu, or email": "Connect with our team via WeChat, Feishu, or email",
+    "Support": "Support"
   }
 }
