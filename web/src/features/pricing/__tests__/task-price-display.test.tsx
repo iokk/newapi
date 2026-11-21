@@ -803,3 +803,43 @@ it('summarises the model-level token price in list and card views when ordinary 
   expect(screen.queryByText(/providers/)).not.toBeInTheDocument()
   expect(screen.queryByText(/price not configured/)).not.toBeInTheDocument()
 })
+
+// CUSTOM(brand): verify group metadata, auto group chain, and group pricing headings remain hidden in model details
+it('hides group labels, auto group chain, and group pricing headings in model details while keeping prices', () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  render(
+    <QueryClientProvider client={client}>
+      <ModelDetailsContent
+        model={{
+          ...model,
+          model_ratio: 1.5,
+          completion_ratio: 4,
+          billing_mode: undefined,
+          billing_expr: undefined,
+          billing_usage_schema: undefined,
+          enable_groups: ['default', 'XSEEK官方', '鹅组开发'],
+        }}
+        groupRatio={{ default: 1, XSEEK官方: 1, 鹅组开发: 0.25 }}
+        usableGroup={{
+          default: { desc: '', ratio: 1 },
+          XSEEK官方: { desc: '', ratio: 1 },
+        }}
+        endpointMap={{}}
+        autoGroups={['default']}
+        priceRate={1}
+        usdExchangeRate={1}
+        tokenUnit='M'
+      />
+    </QueryClientProvider>
+  )
+  expect(screen.queryByText('Groups')).not.toBeInTheDocument()
+  expect(screen.queryByText('Pricing by Group')).not.toBeInTheDocument()
+  expect(screen.queryByText('Auto Group Chain')).not.toBeInTheDocument()
+  expect(screen.queryByText('XSEEK官方')).not.toBeInTheDocument()
+  expect(screen.queryByText('鹅组开发')).not.toBeInTheDocument()
+  expect(screen.queryByText('default')).not.toBeInTheDocument()
+  expect(screen.getAllByText('$3').length).toBeGreaterThan(0)
+  expect(screen.getAllByText('$12').length).toBeGreaterThan(0)
+})

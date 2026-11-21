@@ -33,6 +33,7 @@ import {
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { SHOW_PRICING_GROUPS } from '@/branding/pricing'
 import {
   filterVisibleGroups,
   formatBrandUsdPrice,
@@ -530,10 +531,13 @@ function ModelBackendProviderSection(props: {
 }) {
   const { t } = useTranslation()
   const model = props.model
-  const groups = filterVisibleGroups(
-    normalizeCatalogItems(model.enable_groups),
-    props.usableGroup
-  ) // CUSTOM(brand)
+  // CUSTOM(brand): hide groups metadata in model details when SHOW_PRICING_GROUPS is false
+  const groups = SHOW_PRICING_GROUPS
+    ? filterVisibleGroups(
+        normalizeCatalogItems(model.enable_groups),
+        props.usableGroup
+      )
+    : [] // CUSTOM(brand)
   const endpoints = normalizeCatalogItems(model.supported_endpoint_types)
   const tags = parseTags(model.tags)
   const cells: React.ReactNode[] = []
@@ -1105,7 +1109,8 @@ function AutoGroupChain(props: {
     modelEnableGroups.includes(g)
   )
 
-  if (autoChain.length === 0) return null
+  // CUSTOM(brand): hide auto group chain when SHOW_PRICING_GROUPS is false
+  if (!SHOW_PRICING_GROUPS || autoChain.length === 0) return null
 
   return (
     <div className='text-muted-foreground mb-3 flex flex-wrap items-center gap-1 text-xs'>
@@ -1184,7 +1189,10 @@ function GroupPricingSection(props: GroupPricingSectionProps) {
   const ordinary = props.model.ordinary_pricing
   return (
     <section>
-      <SectionTitle>{t('Pricing by Group')}</SectionTitle>
+      {/* CUSTOM(brand): hide Pricing by Group heading when SHOW_PRICING_GROUPS is false */}
+      {SHOW_PRICING_GROUPS && (
+        <SectionTitle>{t('Pricing by Group')}</SectionTitle>
+      )}
       <Tabs
         key={props.model.model_name}
         defaultValue={ordinary ? ORDINARY_PRICING_TAB : variants[0].plugin_key}
@@ -1252,11 +1260,13 @@ function ProviderGroupPricingSection(
 ) {
   const { t, i18n } = useTranslation()
   const showRechargePrice = props.showRechargePrice ?? false
+  // CUSTOM(brand): hide Pricing by Group title and collapse to one price view when SHOW_PRICING_GROUPS is false
+  const showSectionTitle = SHOW_PRICING_GROUPS && !props.hideTitle
 
-  const availableGroups = useMemo(
-    () => getAvailableGroups(props.model, props.usableGroup || {}),
-    [props.model, props.usableGroup]
-  )
+  const availableGroups = useMemo(() => {
+    const groups = getAvailableGroups(props.model, props.usableGroup || {})
+    return SHOW_PRICING_GROUPS ? groups : groups.slice(0, 1)
+  }, [props.model, props.usableGroup])
 
   const isTokenBased = isTokenBasedModel(props.model)
   const tokenUnitLabel = props.tokenUnit === 'K' ? '1K' : '1M'
@@ -1287,7 +1297,7 @@ function ProviderGroupPricingSection(
   if (availableGroups.length === 0) {
     return (
       <section>
-        {!props.hideTitle && (
+        {showSectionTitle && (
           <SectionTitle>{t('Pricing by Group')}</SectionTitle>
         )}
         <AutoGroupChain
@@ -1309,6 +1319,26 @@ function ProviderGroupPricingSection(
     !props.model.billing_usage_schema && 'tracking-wider uppercase'
   )
 
+  // CUSTOM(brand): share hidden Group/Ratio columns across detail tables
+  const groupLeadColumns = SHOW_PRICING_GROUPS
+    ? [
+        {
+          id: 'group',
+          header: t('Group'),
+          className: thClass,
+          cellClassName: 'py-2.5',
+          cell: (group: string) => <GroupBadge group={group} size='sm' />,
+        },
+        {
+          id: 'ratio',
+          header: t('Ratio'),
+          className: thClass,
+          cellClassName: 'text-muted-foreground py-2.5 font-mono',
+          cell: (group: string) => `${props.groupRatio[group] || 1}x`,
+        },
+      ]
+    : []
+
   if (isDynamicPricingModel(props.model)) {
     const dynamicTiers = props.model.billing_usage_schema
       ? getTaskPricingDisplayTiers(
@@ -1323,7 +1353,7 @@ function ProviderGroupPricingSection(
     if (dynamicTiers.length === 0) {
       return (
         <section>
-          {!props.hideTitle && (
+          {showSectionTitle && (
             <SectionTitle>{t('Pricing by Group')}</SectionTitle>
           )}
           <AutoGroupChain
@@ -1355,20 +1385,7 @@ function ProviderGroupPricingSection(
                     data={availableGroups}
                     getRowKey={(group) => group}
                     columns={[
-                      {
-                        id: 'group',
-                        header: t('Group'),
-                        className: thClass,
-                        cellClassName: 'py-2.5',
-                        cell: (group) => <GroupBadge group={group} size='sm' />,
-                      },
-                      {
-                        id: 'ratio',
-                        header: t('Ratio'),
-                        className: thClass,
-                        cellClassName: 'text-muted-foreground py-2.5 font-mono',
-                        cell: (group) => `${props.groupRatio[group] || 1}x`,
-                      },
+                      ...groupLeadColumns,
                       {
                         id: 'min_image',
                         header: `${t('Min per image')} / ${t('image')}`,
@@ -1452,20 +1469,7 @@ function ProviderGroupPricingSection(
                     data={availableGroups}
                     getRowKey={(group) => group}
                     columns={[
-                      {
-                        id: 'group',
-                        header: t('Group'),
-                        className: thClass,
-                        cellClassName: 'py-2.5',
-                        cell: (group) => <GroupBadge group={group} size='sm' />,
-                      },
-                      {
-                        id: 'ratio',
-                        header: t('Ratio'),
-                        className: thClass,
-                        cellClassName: 'text-muted-foreground py-2.5 font-mono',
-                        cell: (group) => `${props.groupRatio[group] || 1}x`,
-                      },
+                      ...groupLeadColumns,
                       ...videoTiers.map((tier) => ({
                         id: `video-${tier.label}`,
                         header: `${tier.label} / ${t('sec')}`,
@@ -1542,7 +1546,7 @@ function ProviderGroupPricingSection(
 
     return (
       <section>
-        {!props.hideTitle && (
+        {showSectionTitle && (
           <SectionTitle>{t('Pricing by Group')}</SectionTitle>
         )}
         <AutoGroupChain
@@ -1559,12 +1563,14 @@ function ProviderGroupPricingSection(
 
             return (
               <div key={group} className='overflow-hidden rounded-lg border'>
-                <div className='bg-muted/20 flex items-center justify-between gap-3 border-b px-3 py-2'>
-                  <GroupBadge group={group} size='sm' />
-                  <span className='text-muted-foreground font-mono text-xs'>
-                    {ratio}x
-                  </span>
-                </div>
+                {SHOW_PRICING_GROUPS && (
+                  <div className='bg-muted/20 flex items-center justify-between gap-3 border-b px-3 py-2'>
+                    <GroupBadge group={group} size='sm' />
+                    <span className='text-muted-foreground font-mono text-xs'>
+                      {ratio}x
+                    </span>
+                  </div>
+                )}
                 <StaticDataTable
                   className='rounded-none border-0'
                   tableClassName='text-sm'
@@ -1705,7 +1711,7 @@ function ProviderGroupPricingSection(
   if (isUnconfiguredTaskUsageModel(props.model)) {
     return (
       <section>
-        {!props.hideTitle && (
+        {showSectionTitle && (
           <SectionTitle>{t('Pricing by Group')}</SectionTitle>
         )}
         <AutoGroupChain
@@ -1741,7 +1747,7 @@ function ProviderGroupPricingSection(
 
   return (
     <section>
-      {!props.hideTitle && <SectionTitle>{t('Pricing by Group')}</SectionTitle>}
+      {showSectionTitle && <SectionTitle>{t('Pricing by Group')}</SectionTitle>}
       <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
       <StaticDataTable
         className='-mx-4 rounded-none border-0 sm:mx-0'
@@ -1750,20 +1756,7 @@ function ProviderGroupPricingSection(
         data={availableGroups}
         getRowKey={(group) => group}
         columns={[
-          {
-            id: 'group',
-            header: t('Group'),
-            className: thClass,
-            cellClassName: 'py-2.5',
-            cell: (group) => <GroupBadge group={group} size='sm' />,
-          },
-          {
-            id: 'ratio',
-            header: t('Ratio'),
-            className: thClass,
-            cellClassName: 'text-muted-foreground py-2.5 font-mono',
-            cell: (group) => `${props.groupRatio[group] || 1}x`,
-          },
+          ...groupLeadColumns,
           ...(isTokenBased
             ? [
                 {

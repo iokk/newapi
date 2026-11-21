@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useSearch } from '@tanstack/react-router'
 import { useMemo, useCallback, useState } from 'react'
 
+import { SHOW_PRICING_GROUPS } from '@/branding/pricing'
 import { useDebounce } from '@/hooks/use-debounce'
 
 import {
@@ -72,7 +73,10 @@ export function useFilters(models: PricingModel[]) {
   const debouncedSearchInput = useDebounce(searchInput, 200)
   const sortBy = filterState.sort || SORT_OPTIONS.NAME
   const vendorFilter = filterState.vendor || FILTER_ALL
-  const groupFilter = filterState.group || FILTER_ALL
+  // CUSTOM(brand): prevent URL ?group=... probing when pricing groups are hidden
+  const groupFilter = SHOW_PRICING_GROUPS
+    ? filterState.group || FILTER_ALL
+    : FILTER_ALL
   const quotaTypeFilter = filterState.quotaType || QUOTA_TYPES.ALL
   const endpointTypeFilter = filterState.endpointType || ENDPOINT_TYPES.ALL
   const tagFilter = filterState.tag || FILTER_ALL
