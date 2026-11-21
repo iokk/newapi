@@ -197,9 +197,23 @@ function OAuthCallback() {
       void navigate({ href, replace: true })
     }
 
+    // CUSTOM(brand): preserve original redirect target across OAuth failure / email conflict retries.
+    const buildSignInHref = (
+      savedRedirect: string | undefined,
+      conflict?: 'email'
+    ) => {
+      const params = new URLSearchParams()
+      if (savedRedirect) params.set('redirect', savedRedirect)
+      if (conflict) params.set('oauth_conflict', conflict)
+      const qs = params.toString()
+      return qs ? `/sign-in?${qs}` : '/sign-in'
+    }
+
     if (!code && !search.error) {
       toast.error(i18next.t('Missing code'))
-      safeNavigate('/sign-in', '/sign-in')
+      const savedRedirect =
+        search.redirect ?? consumeOAuthLoginRedirect(state) ?? undefined
+      safeNavigate(buildSignInHref(savedRedirect), '/sign-in')
       return
     }
 
@@ -207,6 +221,9 @@ function OAuthCallback() {
     if (completedLogin.current === loginKey) return
     let active = true
     void (async () => {
+      let conflict: 'email' | undefined
+      const consumeRedirect = () =>
+        search.redirect ?? consumeOAuthLoginRedirect(state) ?? undefined
       try {
         const config: OAuthRequestConfig = {
           params: {
@@ -228,22 +245,24 @@ function OAuthCallback() {
         if (!active) return
         if (response.data?.success) {
           completedLogin.current = loginKey
-          if (
-            await handleLoginResult(
-              response.data.data,
-              search.redirect ?? consumeOAuthLoginRedirect(state) ?? undefined
-            )
-          ) {
+          if (await handleLoginResult(response.data.data, consumeRedirect())) {
             toast.success(i18next.t('Signed in successfully!'))
           }
           return
         }
         const messageKey = getServerErrorMessageKey(response.data)
+        const rawMessage = response.data?.message ?? ''
+        if (
+          messageKey === 'Email address is already in use' ||
+          /email address is already in use|邮箱.*已被使用/i.test(rawMessage)
+        ) {
+          conflict = 'email'
+        }
         handleServerError(
           response.data,
           messageKey
             ? i18next.t(messageKey)
-            : response.data?.message || i18next.t('OAuth failed')
+            : rawMessage || i18next.t('OAuth failed')
         )
       } catch (error: unknown) {
         if (!active) return
@@ -251,7 +270,7 @@ function OAuthCallback() {
           AuthOperationError.from(error, i18next.t('OAuth failed'))
         )
       }
-      safeNavigate('/sign-in', '/sign-in')
+      safeNavigate(buildSignInHref(consumeRedirect(), conflict), '/sign-in')
     })()
     return () => {
       active = false

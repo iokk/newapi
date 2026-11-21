@@ -33,6 +33,11 @@ import {
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import {
+  filterVisibleGroups,
+  formatBrandUsdPrice,
+  parseImageFloorBillingExpr,
+} from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { CopyButton } from '@/components/copy-button'
 import { StaticDataTable } from '@/components/data-table'
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
@@ -518,10 +523,16 @@ function ModelBackendSignalsSection(props: { model: PricingModel }) {
   )
 }
 
-function ModelBackendProviderSection(props: { model: PricingModel }) {
+function ModelBackendProviderSection(props: {
+  model: PricingModel
+  usableGroup?: Record<string, unknown> // CUSTOM(brand)
+}) {
   const { t } = useTranslation()
   const model = props.model
-  const groups = normalizeCatalogItems(model.enable_groups)
+  const groups = filterVisibleGroups(
+    normalizeCatalogItems(model.enable_groups),
+    props.usableGroup
+  ) // CUSTOM(brand)
   const endpoints = normalizeCatalogItems(model.supported_endpoint_types)
   const tags = parseTags(model.tags)
   const cells: React.ReactNode[] = []
@@ -584,12 +595,18 @@ function ModelBackendProviderSection(props: { model: PricingModel }) {
   )
 }
 
-function ModelBackendDetailsSection(props: { model: PricingModel }) {
+function ModelBackendDetailsSection(props: {
+  model: PricingModel
+  usableGroup?: Record<string, unknown> // CUSTOM(brand)
+}) {
   return (
     <>
       <ModelBackendQuickStats model={props.model} />
       <ModelBackendSignalsSection model={props.model} />
-      <ModelBackendProviderSection model={props.model} />
+      <ModelBackendProviderSection
+        model={props.model}
+        usableGroup={props.usableGroup}
+      />
     </>
   )
 }
@@ -718,6 +735,97 @@ function PriceSection(props: {
 
   if (dynamicSummary) {
     if (dynamicSummary.isSpecialExpression) {
+      // CUSTOM(brand): render image floor billing formulas in human-readable form
+      const imageFloor = parseImageFloorBillingExpr(
+        dynamicSummary.rawExpression
+      )
+      if (imageFloor) {
+        const formatUsd = (usd: number) =>
+          formatBrandUsdPrice(usd, {
+            showRechargePrice: props.showRechargePrice,
+            priceRate: props.priceRate,
+            usdExchangeRate: props.usdExchangeRate,
+            groupRatioMultiplier: 1,
+            showCurrencySymbol: true,
+          })
+        const unitScale = props.tokenUnit === 'K' ? 1000 : 1
+        const secondaryRows = [
+          imageFloor.inputPerMUsd != null
+            ? {
+                label: t('Input'),
+                value: formatUsd(imageFloor.inputPerMUsd / unitScale),
+              }
+            : null,
+          imageFloor.cacheReadPerMUsd != null
+            ? {
+                label: t('Cached input'),
+                value: formatUsd(imageFloor.cacheReadPerMUsd / unitScale),
+              }
+            : null,
+          imageFloor.imageInputPerMUsd != null
+            ? {
+                label: t('Image input'),
+                value: formatUsd(imageFloor.imageInputPerMUsd / unitScale),
+              }
+            : null,
+        ].filter((row): row is { label: string; value: string } => Boolean(row))
+        return (
+          <section>
+            <SectionTitle>{t('Base Price')}</SectionTitle>
+            <p className='text-muted-foreground mb-2 text-xs'>
+              {t('Higher of token cost or per-image floor')}
+            </p>
+            <div className='grid grid-cols-2 gap-2'>
+              <div className='bg-muted/20 rounded-lg border p-3'>
+                <div className='text-muted-foreground text-xs'>
+                  {t('Min per image')}
+                </div>
+                <div className='text-foreground mt-1 font-mono text-base font-semibold tabular-nums'>
+                  {formatUsd(imageFloor.minPerImageUsd)}
+                  <span className='text-muted-foreground/40 ml-1 text-xs font-normal'>
+                    / {t('image')}
+                  </span>
+                </div>
+              </div>
+              {imageFloor.outputPerMUsd != null && (
+                <div className='bg-muted/20 rounded-lg border p-3'>
+                  <div className='text-muted-foreground text-xs'>
+                    {t('Output')}
+                  </div>
+                  <div className='text-foreground mt-1 font-mono text-base font-semibold tabular-nums'>
+                    {formatUsd(imageFloor.outputPerMUsd / unitScale)}
+                    <span className='text-muted-foreground/40 ml-1 text-xs font-normal'>
+                      / {tokenUnitLabel}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            {secondaryRows.length > 0 && (
+              <div className='bg-muted/20 mt-3 rounded-lg border px-3 py-2.5'>
+                <div className='space-y-1.5'>
+                  {secondaryRows.map((row) => (
+                    <div
+                      key={row.label}
+                      className='flex items-baseline justify-between gap-4'
+                    >
+                      <span className='text-muted-foreground/70 text-sm'>
+                        {row.label}
+                      </span>
+                      <span className='text-muted-foreground font-mono text-sm tabular-nums'>
+                        {row.value}
+                        <span className='text-muted-foreground/40 ml-1 text-xs font-normal'>
+                          / {tokenUnitLabel}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )
+      }
       return (
         <section>
           <SectionTitle>{t('Base Price')}</SectionTitle>
@@ -925,11 +1033,16 @@ function PriceSection(props: {
 // Auto group chain (used inside group pricing section)
 // ----------------------------------------------------------------------------
 
-function AutoGroupChain(props: { model: PricingModel; autoGroups: string[] }) {
+function AutoGroupChain(props: {
+  model: PricingModel
+  autoGroups: string[]
+  usableGroup?: Record<string, unknown> // CUSTOM(brand)
+}) {
   const { t } = useTranslation()
-  const modelEnableGroups = Array.isArray(props.model.enable_groups)
-    ? props.model.enable_groups
-    : []
+  const modelEnableGroups = filterVisibleGroups(
+    props.model.enable_groups,
+    props.usableGroup
+  ) // CUSTOM(brand)
   const autoChain = props.autoGroups.filter((g) =>
     modelEnableGroups.includes(g)
   )
@@ -1119,7 +1232,11 @@ function ProviderGroupPricingSection(
         {!props.hideTitle && (
           <SectionTitle>{t('Pricing by Group')}</SectionTitle>
         )}
-        <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
+        <AutoGroupChain
+          model={props.model}
+          autoGroups={props.autoGroups}
+          usableGroup={props.usableGroup}
+        />
         <p className='text-muted-foreground text-sm'>
           {t(
             'This model is not available in any group, or no group pricing information is configured.'
@@ -1151,28 +1268,135 @@ function ProviderGroupPricingSection(
           {!props.hideTitle && (
             <SectionTitle>{t('Pricing by Group')}</SectionTitle>
           )}
-          <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
-          <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
-            <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
-              {t('Special billing expression')}
-            </div>
-            <p className='text-muted-foreground mt-1 text-xs'>
-              {t(
-                pricingDisplayFallbackKey(
-                  props.model.billing_expr || '',
-                  props.model.billing_usage_schema
-                )
-              )}
-            </p>
-            <div className='mt-3'>
-              <div className='text-muted-foreground mb-1 text-[10px] font-medium tracking-wider uppercase'>
-                {t('Raw expression')}
+          <AutoGroupChain
+            model={props.model}
+            autoGroups={props.autoGroups}
+            usableGroup={props.usableGroup}
+          />
+          {(() => {
+            // CUSTOM(brand): render image floor billing formulas per group
+            const imageFloor = parseImageFloorBillingExpr(
+              props.model.billing_expr
+            )
+            if (imageFloor) {
+              const unitScale = props.tokenUnit === 'K' ? 1000 : 1
+              const formatGroupUsd = (usd: number, group: string) =>
+                formatBrandUsdPrice(usd, {
+                  showRechargePrice,
+                  priceRate: props.priceRate,
+                  usdExchangeRate: props.usdExchangeRate,
+                  groupRatioMultiplier: props.groupRatio[group] || 1,
+                  showCurrencySymbol: true,
+                })
+              return (
+                <>
+                  <StaticDataTable
+                    className='-mx-4 rounded-none border-0 sm:mx-0'
+                    tableClassName='text-sm'
+                    headerRowClassName='hover:bg-transparent'
+                    data={availableGroups}
+                    getRowKey={(group) => group}
+                    columns={[
+                      {
+                        id: 'group',
+                        header: t('Group'),
+                        className: thClass,
+                        cellClassName: 'py-2.5',
+                        cell: (group) => <GroupBadge group={group} size='sm' />,
+                      },
+                      {
+                        id: 'ratio',
+                        header: t('Ratio'),
+                        className: thClass,
+                        cellClassName: 'text-muted-foreground py-2.5 font-mono',
+                        cell: (group) => `${props.groupRatio[group] || 1}x`,
+                      },
+                      {
+                        id: 'min_image',
+                        header: `${t('Min per image')} / ${t('image')}`,
+                        className: `${thClass} text-right`,
+                        cellClassName: 'py-2.5 text-right font-mono',
+                        cell: (group: string) =>
+                          formatGroupUsd(imageFloor.minPerImageUsd, group),
+                      },
+                      ...(imageFloor.inputPerMUsd != null
+                        ? [
+                            {
+                              id: 'input',
+                              header: `${t('Input')} / ${tokenUnitLabel}`,
+                              className: `${thClass} text-right`,
+                              cellClassName: 'py-2.5 text-right font-mono',
+                              cell: (group: string) =>
+                                formatGroupUsd(
+                                  (imageFloor.inputPerMUsd ?? 0) / unitScale,
+                                  group
+                                ),
+                            },
+                          ]
+                        : []),
+                      ...(imageFloor.outputPerMUsd != null
+                        ? [
+                            {
+                              id: 'output',
+                              header: `${t('Output')} / ${tokenUnitLabel}`,
+                              className: `${thClass} text-right`,
+                              cellClassName: 'py-2.5 text-right font-mono',
+                              cell: (group: string) =>
+                                formatGroupUsd(
+                                  (imageFloor.outputPerMUsd ?? 0) / unitScale,
+                                  group
+                                ),
+                            },
+                          ]
+                        : []),
+                      ...(imageFloor.cacheReadPerMUsd != null
+                        ? [
+                            {
+                              id: 'cache',
+                              header: `${t('Cache')} / ${tokenUnitLabel}`,
+                              className: `${thClass} text-right`,
+                              cellClassName: 'py-2.5 text-right font-mono',
+                              cell: (group: string) =>
+                                formatGroupUsd(
+                                  (imageFloor.cacheReadPerMUsd ?? 0) /
+                                    unitScale,
+                                  group
+                                ),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
+                  <p className='text-muted-foreground/60 mt-1.5 text-[11px]'>
+                    {t('Higher of token cost or per-image floor')}
+                  </p>
+                </>
+              )
+            }
+            return (
+              <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
+                <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
+                  {t('Special billing expression')}
+                </div>
+                <p className='text-muted-foreground mt-1 text-xs'>
+                  {t(
+                    pricingDisplayFallbackKey(
+                      props.model.billing_expr || '',
+                      props.model.billing_usage_schema
+                    )
+                  )}
+                </p>
+                <div className='mt-3'>
+                  <div className='text-muted-foreground mb-1 text-[10px] font-medium tracking-wider uppercase'>
+                    {t('Raw expression')}
+                  </div>
+                  <code className='text-muted-foreground bg-background/80 block max-h-28 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs break-all'>
+                    {props.model.billing_expr}
+                  </code>
+                </div>
               </div>
-              <code className='text-muted-foreground bg-background/80 block max-h-28 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs break-all'>
-                {props.model.billing_expr}
-              </code>
-            </div>
-          </div>
+            )
+          })()}
         </section>
       )
     }
@@ -1212,7 +1436,11 @@ function ProviderGroupPricingSection(
         {!props.hideTitle && (
           <SectionTitle>{t('Pricing by Group')}</SectionTitle>
         )}
-        <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
+        <AutoGroupChain
+          model={props.model}
+          autoGroups={props.autoGroups}
+          usableGroup={props.usableGroup}
+        />
         <div className='space-y-3'>
           {availableGroups.map((group) => {
             const ratio = props.groupRatio[group] || 1
@@ -1371,7 +1599,11 @@ function ProviderGroupPricingSection(
         {!props.hideTitle && (
           <SectionTitle>{t('Pricing by Group')}</SectionTitle>
         )}
-        <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
+        <AutoGroupChain
+          model={props.model}
+          autoGroups={props.autoGroups}
+          usableGroup={props.usableGroup}
+        />
         <UnconfiguredTaskPricingNotice model={props.model} />
       </section>
     )
@@ -1571,11 +1803,17 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
             />
           </section>
 
-          <ModelBackendDetailsSection model={props.model} />
+          <ModelBackendDetailsSection
+            model={props.model}
+            usableGroup={props.usableGroup}
+          />
         </TabsContent>
 
         <TabsContent value='performance' className='outline-none'>
-          <ModelDetailsPerformance model={props.model} />
+          <ModelDetailsPerformance
+            model={props.model}
+            usableGroup={props.usableGroup}
+          />
         </TabsContent>
 
         <TabsContent value='api' className='outline-none'>

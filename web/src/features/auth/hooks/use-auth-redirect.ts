@@ -107,9 +107,17 @@ export function useAuthRedirect() {
   /**
    * Redirect to login page
    */
-  const redirectToLogin = useCallback(() => {
-    void navigate({ to: '/sign-in', replace: true })
-  }, [navigate])
+  const redirectToLogin = useCallback(
+    (redirectTo?: string) => {
+      // CUSTOM(brand): preserve redirect query when navigating to /sign-in
+      void navigate({
+        to: '/sign-in',
+        search: redirectTo ? { redirect: redirectTo } : undefined,
+        replace: true,
+      })
+    },
+    [navigate]
+  )
 
   /**
    * Redirect to register page

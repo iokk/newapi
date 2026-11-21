@@ -47,6 +47,7 @@ import {
   revokeLoginSession,
   revokeOtherLoginSessions,
 } from '@/features/profile/api'
+import { useStatus } from '@/hooks/use-status' // CUSTOM(brand)
 import { clearAuthenticatedClientState } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
 import { createServerError } from '@/lib/server-error-message'
@@ -59,6 +60,7 @@ const sessionQueryKey = ['profile', 'login-sessions'] as const
 
 export function LoginSessionsCard() {
   const { t } = useTranslation()
+  const { status } = useStatus() // CUSTOM(brand)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [revokeTarget, setRevokeTarget] = useState<LoginSession | null>(null)
@@ -165,7 +167,11 @@ export function LoginSessionsCard() {
         {sessions.map((session, index) => (
           <div key={session.sid}>
             {index > 0 && <Separator />}
-            <LoginSessionItem session={session} onRevoke={setRevokeTarget} />
+            <LoginSessionItem
+              session={session}
+              oidcDisplayName={status?.oidc_display_name}
+              onRevoke={setRevokeTarget}
+            />
           </div>
         ))}
       </div>

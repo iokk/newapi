@@ -27,7 +27,7 @@ import { UserAuthForm } from './components/user-auth-form'
 
 export function SignIn() {
   const { t } = useTranslation()
-  const { redirect } = useSearch({ from: '/(auth)/sign-in' })
+  const { redirect, oauth_conflict } = useSearch({ from: '/(auth)/sign-in' })
   const { status } = useStatus()
 
   return (
@@ -43,6 +43,7 @@ export function SignIn() {
                 {t("Don't have an account?")}{' '}
                 <Link
                   to='/sign-up'
+                  search={redirect ? { redirect } : undefined} // CUSTOM(brand): preserve redirect
                   className='hover:text-primary font-medium underline underline-offset-4'
                 >
                   {t('Sign up')}
@@ -52,7 +53,7 @@ export function SignIn() {
             )}
         </div>
 
-        <UserAuthForm redirectTo={redirect} />
+        <UserAuthForm redirectTo={redirect} oauthConflict={oauth_conflict} />
 
         <TermsFooter
           variant='sign-in'

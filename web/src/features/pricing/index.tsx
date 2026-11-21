@@ -129,6 +129,7 @@ export function Pricing() {
           tokenUnit={tokenUnit}
           showRechargePrice={showRechargePrice}
           selectedGroup={groupFilter}
+          usableGroup={usableGroup} // CUSTOM(brand)
         />
       )
     }
@@ -141,6 +142,7 @@ export function Pricing() {
         tokenUnit={tokenUnit}
         showRechargePrice={showRechargePrice}
         selectedGroup={groupFilter}
+        usableGroup={usableGroup} // CUSTOM(brand)
         onModelClick={handleModelClick}
       />
     )

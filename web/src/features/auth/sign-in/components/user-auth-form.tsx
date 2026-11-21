@@ -63,8 +63,10 @@ import { cn } from '@/lib/utils'
 export function UserAuthForm({
   className,
   redirectTo,
+  oauthConflict,
   ...props
-}: AuthFormProps) {
+}: AuthFormProps & { oauthConflict?: string }) {
+  // CUSTOM(brand)
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [wechatCode, setWeChatCode] = useState('')
@@ -107,10 +109,16 @@ export function UserAuthForm({
   const hasUserAgreement = Boolean(status?.user_agreement_enabled)
   const hasPrivacyPolicy = Boolean(status?.privacy_policy_enabled)
   const requiresLegalConsent = hasUserAgreement || hasPrivacyPolicy
-  const passkeyButtonDisabled =
-    isPasskeyLoading ||
-    !passkeySupported ||
-    (requiresLegalConsent && !agreedToLegal)
+  const passkeyButtonDisabled = isPasskeyLoading || !passkeySupported // CUSTOM(brand): validate legal consent on click instead of silent disabled deadlock
+  const ensureLegalConsent = () => {
+    if (requiresLegalConsent && !agreedToLegal) {
+      toast.error(legalConsentErrorMessage)
+      return false
+    }
+    return true
+  }
+  const hasOidcPrimary = Boolean(status?.oidc_enabled)
+  const oidcDisplayName = status?.oidc_display_name?.trim() || 'OIDC'
   const hasWeChatLogin = Boolean(status?.wechat_login)
   const hasOAuthLogin = Boolean(
     status?.github_oauth ||
@@ -301,8 +309,23 @@ export function UserAuthForm({
 
   const alternativeLoginMethods = (
     <>
+      {/* CUSTOM(brand): prioritize Unified Auth Center (OIDC) at top with clear divider above demoted password login */}
+      <OAuthProviders
+        status={status}
+        redirectTo={redirectTo}
+        disabled={isLoading}
+        primaryOidc={hasOidcPrimary}
+        dividerPosition={
+          passwordLoginEnabled && !passkeyLoginEnabled ? 'bottom' : 'none'
+        }
+        dividerLabel={t('Or sign in with password')}
+        beforeLogin={ensureLegalConsent}
+        onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
+        isWeChatLoading={isWeChatSubmitting}
+      />
+
       {passkeyLoginEnabled && (
-        <div className='mt-2 space-y-1'>
+        <div className='space-y-1'>
           <Button
             type='button'
             variant='outline'
@@ -331,14 +354,18 @@ export function UserAuthForm({
         </div>
       )}
 
-      {/* OAuth Providers */}
-      <OAuthProviders
-        status={status}
-        redirectTo={redirectTo}
-        disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
-        onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
-        isWeChatLoading={isWeChatSubmitting}
-      />
+      {passwordLoginEnabled && passkeyLoginEnabled && hasAlternativeLogin && (
+        <div className='relative pt-1'>
+          <div className='absolute inset-0 flex items-center pt-1'>
+            <span className='w-full border-t' />
+          </div>
+          <div className='relative flex justify-center text-xs'>
+            <span className='bg-background text-muted-foreground px-2'>
+              {t('Or sign in with password')}
+            </span>
+          </div>
+        </div>
+      )}
     </>
   )
 
@@ -349,6 +376,33 @@ export function UserAuthForm({
         className={cn('grid gap-4', className)}
         {...props}
       >
+        {/* CUSTOM(brand): guide legacy email users to sign in with password and bind Unified Auth Center in /security */}
+        {oauthConflict === 'email' && (
+          <div
+            role='alert'
+            className='text-foreground rounded-lg border border-amber-500/40 bg-amber-500/10 px-3.5 py-3 text-sm leading-relaxed'
+          >
+            <p className='font-medium'>
+              {t('Email already registered with a local account')}
+            </p>
+            <p className='text-muted-foreground mt-1 text-xs'>
+              {t(
+                'Please sign in below using your existing password first, then bind {{name}} under Security & Access (/security).',
+                { name: oidcDisplayName }
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* CUSTOM(brand): place LegalConsent before primary OIDC CTA so users never hit a bottom-checkbox deadlock */}
+        {requiresLegalConsent && (
+          <LegalConsent
+            status={status}
+            checked={agreedToLegal}
+            onCheckedChange={setAgreedToLegal}
+          />
+        )}
+
         {hasAlternativeLogin && alternativeLoginMethods}
 
         {passwordLoginEnabled && (
@@ -395,9 +449,10 @@ export function UserAuthForm({
               )}
             />
 
-            {/* Submit Button */}
+            {/* Submit Button (CUSTOM(brand): visually secondary when Unified Auth Center is primary) */}
             <Button
               type='submit'
+              variant={hasOidcPrimary ? 'outline' : 'default'}
               className='mt-2 w-full justify-center gap-2'
               disabled={isLoading}
             >
@@ -418,13 +473,6 @@ export function UserAuthForm({
             )}
           </>
         )}
-
-        <LegalConsent
-          status={status}
-          checked={agreedToLegal}
-          onCheckedChange={setAgreedToLegal}
-          className='mt-1'
-        />
 
         {!hasAlternativeLogin && alternativeLoginMethods}
       </form>

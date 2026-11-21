@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { Shield } from 'lucide-react' // CUSTOM(brand)
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -39,6 +40,11 @@ type OAuthProvidersProps = {
   onWeChatLogin?: () => void
   isWeChatLoading?: boolean
   redirectTo?: string
+  // CUSTOM(brand): prioritize Unified Auth Center (OIDC) without deadlocking legal consent
+  primaryOidc?: boolean
+  dividerPosition?: 'top' | 'bottom' | 'none'
+  dividerLabel?: string
+  beforeLogin?: () => boolean
 }
 
 type ProviderButton = {
@@ -47,6 +53,7 @@ type ProviderButton = {
   onClick: () => void
   icon?: ReactNode
   disabled?: boolean
+  primary?: boolean
 }
 
 export function OAuthProviders({
@@ -56,6 +63,10 @@ export function OAuthProviders({
   onWeChatLogin,
   isWeChatLoading = false,
   redirectTo,
+  primaryOidc = false,
+  dividerPosition = 'top',
+  dividerLabel,
+  beforeLogin,
 }: OAuthProvidersProps) {
   const { t } = useTranslation()
   const {
@@ -103,13 +114,21 @@ export function OAuthProviders({
 
   if (status?.oidc_enabled) {
     const oidcDisplayName = status.oidc_display_name?.trim() || 'OIDC'
-    providerButtons.push({
+    const oidcButton: ProviderButton = {
       key: 'oidc',
       label: t('Continue with {{name}}', {
         name: oidcDisplayName,
       }),
       onClick: handleOIDCLogin,
-    })
+      // CUSTOM(brand): highlight Unified Auth Center as primary CTA
+      icon: primaryOidc ? <Shield className='h-4 w-4' /> : undefined,
+      primary: primaryOidc,
+    }
+    if (primaryOidc) {
+      providerButtons.unshift(oidcButton)
+    } else {
+      providerButtons.push(oidcButton)
+    }
   }
 
   if (status?.linuxdo_oauth) {
@@ -144,28 +163,37 @@ export function OAuthProviders({
 
   if (providerButtons.length === 0) return null
 
-  return (
-    <div className={cn('space-y-3', className)}>
+  // CUSTOM(brand): place divider accurately (top/bottom/none) and run beforeLogin guard on click
+  const divider =
+    dividerPosition !== 'none' ? (
       <div className='relative'>
         <div className='absolute inset-0 flex items-center'>
           <span className='w-full border-t' />
         </div>
         <div className='relative flex justify-center text-xs uppercase'>
           <span className='bg-background text-muted-foreground px-2'>
-            {t('Or continue with')}
+            {dividerLabel || t('Or continue with')}
           </span>
         </div>
       </div>
+    ) : null
+
+  return (
+    <div className={cn('space-y-3', className)}>
+      {dividerPosition === 'top' && divider}
 
       <div className='flex flex-col gap-2'>
         {providerButtons.map(
-          ({ key, label, onClick, icon, disabled: extraDisabled }) => (
+          ({ key, label, onClick, icon, disabled: extraDisabled, primary }) => (
             <Button
               key={key}
-              variant='outline'
+              variant={primary ? 'default' : 'outline'}
               type='button'
               disabled={disabled || isLoading || extraDisabled}
-              onClick={onClick}
+              onClick={() => {
+                if (beforeLogin && !beforeLogin()) return
+                onClick()
+              }}
               className='h-11 w-full justify-center gap-2 rounded-lg'
             >
               {icon}
@@ -174,6 +202,8 @@ export function OAuthProviders({
           )
         )}
       </div>
+
+      {dividerPosition === 'bottom' && divider}
     </div>
   )
 }

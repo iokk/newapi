@@ -21,6 +21,12 @@ import { AlertTriangle, HeartPulse, Timer } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { BrandTelemetryBanner } from '@/branding/brand-telemetry-banner' // CUSTOM(brand)
+import {
+  filterVisibleGroups,
+  hasVisibleBrandTelemetry,
+  useModelBrandTelemetry,
+} from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import {
   StaticDataTable,
   staticDataTableClassNames as tableStyles,
@@ -121,18 +127,28 @@ function toGroupUptimeSeries(group: PerformanceGroup): UptimeDayPoint[] {
   })
 }
 
-export function ModelDetailsPerformance(props: { model: PricingModel }) {
+export function ModelDetailsPerformance(props: {
+  model: PricingModel
+  usableGroup?: Record<string, unknown> // CUSTOM(brand)
+}) {
   const { t } = useTranslation()
+  const brandTelemetry = useModelBrandTelemetry(props.model.model_name) // CUSTOM(brand)
   const metricsQuery = useQuery({
     queryKey: ['perf-metrics', props.model.model_name],
     queryFn: async () =>
       requireServerSuccess(await getPerfMetrics(props.model.model_name, 24)),
     staleTime: 60 * 1000,
   })
-  const groups = useMemo(
-    () => metricsQuery.data?.data.groups ?? [],
-    [metricsQuery.data]
-  )
+  const groups = useMemo(() => {
+    const raw = metricsQuery.data?.data.groups ?? []
+    const visibleNames = new Set(
+      filterVisibleGroups(
+        raw.map((g) => g.group),
+        props.usableGroup
+      )
+    )
+    return raw.filter((g) => visibleNames.has(g.group))
+  }, [metricsQuery.data, props.usableGroup])
   const summary = metricsQuery.data?.data.summary
   const series = useMemo(
     () => metricsQuery.data?.data.series ?? [],
@@ -161,8 +177,13 @@ export function ModelDetailsPerformance(props: { model: PricingModel }) {
 
   if (metricsQuery.isLoading || performances.length === 0) {
     return (
-      <div className='text-muted-foreground rounded-lg border p-6 text-center text-sm'>
-        {t('Performance data is not yet available for this model.')}
+      <div className='flex flex-col gap-4'>
+        <BrandTelemetryBanner modelName={props.model.model_name} />
+        {!hasVisibleBrandTelemetry(brandTelemetry) && (
+          <div className='text-muted-foreground rounded-lg border p-6 text-center text-sm'>
+            {t('Performance data is not yet available for this model.')}
+          </div>
+        )}
       </div>
     )
   }
@@ -174,6 +195,7 @@ export function ModelDetailsPerformance(props: { model: PricingModel }) {
 
   return (
     <div className='flex flex-col gap-4'>
+      <BrandTelemetryBanner modelName={props.model.model_name} />
       <div className='grid grid-cols-1 gap-2 sm:grid-cols-3'>
         <StatCard
           icon={Timer}

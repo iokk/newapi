@@ -19,6 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import {
+  formatBrandUsdPrice,
+  parseImageFloorBillingExpr,
+} from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { getCurrencyLabel } from '@/lib/currency'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 
@@ -99,6 +103,47 @@ export function ModelPriceCell(props: {
 
   if (dynamic) {
     if (dynamic.isSpecialExpression) {
+      // CUSTOM(brand): render image floor billing formulas in human-readable form
+      const imageFloor = parseImageFloorBillingExpr(dynamic.rawExpression)
+      if (imageFloor) {
+        const groupRatioMultiplier = getDynamicDisplayGroupRatio(
+          model,
+          options.selectedGroup
+        )
+        const formatUsd = (usd: number) =>
+          formatBrandUsdPrice(usd, {
+            showRechargePrice: options.showRechargePrice,
+            priceRate: options.priceRate,
+            usdExchangeRate: options.usdExchangeRate,
+            groupRatioMultiplier,
+            showCurrencySymbol: false,
+          })
+        const minPerImage = `${formatUsd(imageFloor.minPerImageUsd)}/${t('image')}`
+        const floorCaption = `${currencyLabel} · ${t('Higher of token cost or per-image floor')}`
+        return (
+          <span className='block w-full max-w-full min-w-0 space-y-1.5'>
+            <span className='grid'>
+              <span className='flex min-w-0 flex-col items-start gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'>
+                <span className='text-muted-foreground min-w-0 truncate text-xs font-normal'>
+                  {t('Min per image')}
+                </span>
+                <span
+                  className='min-w-0 font-mono text-sm break-words whitespace-normal tabular-nums'
+                  title={minPerImage}
+                >
+                  {minPerImage}
+                </span>
+              </span>
+            </span>
+            <span
+              className='text-muted-foreground block text-xs font-normal break-words whitespace-normal sm:truncate'
+              title={floorCaption}
+            >
+              {floorCaption}
+            </span>
+          </span>
+        )
+      }
       return (
         <span className='block max-w-full min-w-0'>
           <span className='text-muted-foreground block truncate text-sm'>

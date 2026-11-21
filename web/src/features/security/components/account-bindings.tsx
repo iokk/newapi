@@ -278,7 +278,7 @@ export function AccountBindings({ profile, onUpdate }: AccountBindingsProps) {
     },
     {
       id: 'oidc',
-      label: t('OIDC'),
+      label: status?.oidc_display_name?.trim() || t('OIDC'), // CUSTOM(brand)
       icon: Shield,
       value: (profile as unknown as Record<string, unknown>).oidc_id as
         | string

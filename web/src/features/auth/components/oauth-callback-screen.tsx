@@ -21,6 +21,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { IconGithub, IconLinuxDo, IconWeChat } from '@/assets/brand-icons'
+import { useStatus } from '@/hooks/use-status' // CUSTOM(brand)
 
 import { AuthLayout } from '../auth-layout'
 
@@ -62,15 +63,22 @@ export function OAuthCallbackScreen({
   mode,
 }: OAuthCallbackScreenProps) {
   const { t } = useTranslation()
+  const { status } = useStatus() // CUSTOM(brand): show configured OIDC display name
   const { label, Icon } = useMemo(() => {
     const normalized = provider?.toLowerCase() ?? ''
+    if (normalized === 'oidc') {
+      return {
+        label: status?.oidc_display_name?.trim() || 'OIDC',
+        Icon: Shield,
+      }
+    }
     return (
       providerDictionary[normalized] || {
         label: 'account',
         Icon: UserRound,
       }
     )
-  }, [provider])
+  }, [provider, status?.oidc_display_name])
 
   const providerLabel = t(label)
   let headline = t('Signing you in with {{provider}}', {

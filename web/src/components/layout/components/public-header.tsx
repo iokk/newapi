@@ -93,6 +93,11 @@ export function PublicHeader(props: PublicHeaderProps) {
   const notifications = useNotifications()
   const routerState = useRouterState()
   const pathname = routerState.location.pathname
+  const currentHref = routerState.location.href
+  const signInSearch =
+    pathname && pathname !== '/'
+      ? { redirect: currentHref || pathname }
+      : undefined // CUSTOM(brand)
 
   const user = auth.user
   const isAuthenticated = !!user
@@ -114,7 +119,7 @@ export function PublicHeader(props: PublicHeaderProps) {
     <Button
       size='sm'
       className='h-8 rounded-lg px-3.5 text-xs font-medium'
-      render={<Link to='/sign-in' />}
+      render={<Link to='/sign-in' search={signInSearch} />}
     >
       {t('Sign in')}
     </Button>
@@ -419,6 +424,7 @@ export function PublicHeader(props: PublicHeaderProps) {
             {showAuthButtons && (
               <Link
                 to={isAuthenticated ? '/dashboard' : '/sign-in'}
+                search={isAuthenticated ? undefined : signInSearch} // CUSTOM(brand)
                 onClick={() => setMobileOpen(false)}
                 className='bg-foreground text-background inline-flex h-10 items-center justify-center rounded-lg text-sm font-medium transition-opacity hover:opacity-90 active:opacity-80'
               >

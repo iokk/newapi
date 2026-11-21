@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import type { ColumnDef } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 
+import { filterVisibleGroups } from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { DataTableColumnHeader } from '@/components/data-table'
 import { getLobeIcon } from '@/lib/lobe-icon'
 
@@ -31,7 +32,9 @@ import { ModelPriceCell, type ModelPriceCellOptions } from './model-price-cell'
 // Pricing Table Columns
 // ----------------------------------------------------------------------------
 
-export type PricingColumnsOptions = ModelPriceCellOptions
+export type PricingColumnsOptions = ModelPriceCellOptions & {
+  usableGroup?: Record<string, unknown> // CUSTOM(brand)
+}
 
 export function usePricingColumns(
   options: PricingColumnsOptions = {}
@@ -108,7 +111,10 @@ export function usePricingColumns(
       accessorKey: 'enable_groups',
       header: t('Groups'),
       cell: ({ row }) => {
-        const groups = row.original.enable_groups || []
+        const groups = filterVisibleGroups(
+          row.original.enable_groups,
+          options.usableGroup
+        ) // CUSTOM(brand)
         return groups.length > 0 ? groups.join(', ') : '—'
       },
       size: 140,
