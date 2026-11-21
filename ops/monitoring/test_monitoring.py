@@ -54,6 +54,14 @@ ev_nocache = cp.evaluate_pair(
 )
 assert not ev_nocache["passed"] and not ev_nocache["cache_ok"], ev_nocache
 
+# 5b. Multi-slot upstream where R1 hits warm cache and R2 lands on a second slot still passes
+ev_multislot = cp.evaluate_pair(
+    {"answer_ok": True, "total_in": 2474, "cache_read": 2304, "latency_ms": 600},
+    {"answer_ok": True, "total_in": 2474, "cache_read": 0, "latency_ms": 900},
+    baseline_tokens=2474,
+)
+assert ev_multislot["passed"] and ev_multislot["cache_hit_ratio"] > 0.90, ev_multislot
+
 # 6. Public telemetry payload strips secrets and merges canary info
 pub = ta.build_public_payload(
     [{"model": "claude-sonnet-5-5", "ok_requests": 3000, "success_rate_pct": 99.1, "p50_latency_s": 8.2, "cache_hit_rate_pct": 78.5}],
