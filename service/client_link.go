@@ -14,6 +14,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/pkg/cachex"
+	"github.com/QuantumNous/new-api/setting" // CUSTOM(brand)
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/samber/hot"
@@ -297,6 +298,10 @@ func ClientConfigBody(userID int, target string, tokenID int) ([]byte, error) {
 				UserId: user.Id, Name: cfg.tokenName, Key: key,
 				CreatedTime: common.GetTimestamp(), AccessedTime: common.GetTimestamp(),
 				ExpiredTime: -1, UnlimitedQuota: true, AllowUserQuotaQuery: true,
+			}
+			// CUSTOM(brand): align auto-created per-client tokens with DefaultUseAutoGroup (matches controller/user.go).
+			if setting.DefaultUseAutoGroup {
+				token.Group = "auto"
 			}
 			// shortcut: the model limit is fixed at creation; template changes do not reach existing anonymous tokens.
 			if user.Remark == clientLinkAnonRemark {

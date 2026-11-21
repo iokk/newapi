@@ -54,7 +54,8 @@ func (p *OIDCProvider) ExchangeToken(ctx context.Context, code string, c *gin.Co
 	}
 
 	settings := system_setting.GetOIDCSettings()
-	redirectUri := fmt.Sprintf("%s/oauth/oidc", system_setting.ServerAddress)
+	// CUSTOM(brand): trim trailing slash from ServerAddress to avoid redirect_uri_mismatch
+	redirectUri := fmt.Sprintf("%s/oauth/oidc", strings.TrimRight(system_setting.ServerAddress, "/"))
 	values := url.Values{}
 	values.Set("client_id", settings.ClientId)
 	values.Set("client_secret", settings.ClientSecret)

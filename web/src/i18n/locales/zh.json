@@ -7789,7 +7789,6 @@
     "Use the tabs above for one-click setup, or open the public Quick Connect Hub for manual client and SDK guides.": "上方可直接一键配置常用客户端；如需手动配置其他工具、查看 API 参数或体验 XSEEK 办公智能体，请参考下方指引。",
     "Choose an existing API key above, or keep Automatic per-client key for isolated, revocable access.": "先在上方选择已有令牌，或保持「自动选择或创建专用密钥」（推荐，按客户端隔离、可随时吊销）。",
     "Pick WorkBuddy, DSH, Claude Code, or Codex to generate a one-time setup prompt, install command, or CC Switch import without exposing raw secrets.": "切换 WorkBuddy、DSH、Claude Code 或 Codex 页签，一键生成一次性配置提示词、安装命令或导入 CC Switch，全程不泄露明文密钥。",
-    "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://ai.bozzii.com/v1 (OpenAI/Gemini) or https://ai.bozzii.com (Anthropic native).": "CodeBuddy、Cherry Studio、Cursor 及各类 SDK 请使用通用网关 https://ai.bozzii.com/v1（Anthropic 原生协议使用 https://ai.bozzii.com）。",
     "Full Quick Connect Guide": "查看完整接入配置说明",
     "Visit XSEEK Agent (Book Demo)": "前往 XSEEK 办公智能体官网 · 预约演示",
     "Unified SSO": "统一身份认证",
@@ -7827,6 +7826,22 @@
     "Registered via {{method}}": "通过 {{method}} 完成注册",
     "Revoked login session": "吊销单个登录会话",
     "Revoked {{count}} other login sessions": "吊销其余 {{count}} 个登录会话",
-    "Force-revoked {{count}} login sessions for user {{username}}": "管理员强制下线用户 {{username}} 的 {{count}} 个登录会话"
+    "Force-revoked {{count}} login sessions for user {{username}}": "管理员强制下线用户 {{username}} 的 {{count}} 个登录会话",
+    "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://api.bozzii.com/v1 (OpenAI/Gemini) or https://api.bozzii.com (Anthropic native).": "CodeBuddy、Cherry Studio、Cursor 或自定义 SDK 请填写 https://api.bozzii.com/v1（OpenAI/Gemini）或 https://api.bozzii.com（Anthropic 原生）。",
+    "7-Day Real Production Telemetry": "近 7 日真实生产遥测",
+    "7d P50 Latency": "7 日 P50 耗时",
+    "7d Real Cache Hit": "7 日真实缓存命中率",
+    "7d Success Rate": "7 日真实成功率",
+    "7d real cache hit {{rate}}% · Canary verified ({{ratio}}x billing)": "近 7 日真实缓存命中 {{rate}}% · 金丝雀探针已核验（{{ratio}}x 足秤计费）",
+    "7d real production cache hit {{rate}}%": "近 7 日真实生产缓存命中 {{rate}}%",
+    "Billing Integrity Probe": "足秤计费探针核验",
+    "Higher of token cost or per-image floor": "按 Token 与单张保底取高计费",
+    "Live Status Page": "实时状态页",
+    "Min per image": "单张保底",
+    "One-click setup for WorkBuddy, Claude Code & Codex": "一键配置 WorkBuddy、Claude Code 与 Codex",
+    "Probe warning": "探针异常",
+    "Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.": "需要体验额度、对公充值或开具增值税发票？请直接联系铂子飞书专属客服。",
+    "Contact Feishu Support": "联系飞书客服",
+    "{{rate}}% 7d hit": "7日命中 {{rate}}%"
   }
 }

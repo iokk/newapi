@@ -7789,7 +7789,6 @@
     "Use the tabs above for one-click setup, or open the public Quick Connect Hub for manual client and SDK guides.": "Use the tabs above for one-click setup, or open the public Quick Connect Hub for manual client and SDK guides.",
     "Choose an existing API key above, or keep Automatic per-client key for isolated, revocable access.": "Choose an existing API key above, or keep Automatic per-client key for isolated, revocable access.",
     "Pick WorkBuddy, DSH, Claude Code, or Codex to generate a one-time setup prompt, install command, or CC Switch import without exposing raw secrets.": "Pick WorkBuddy, DSH, Claude Code, or Codex to generate a one-time setup prompt, install command, or CC Switch import without exposing raw secrets.",
-    "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://ai.bozzii.com/v1 (OpenAI/Gemini) or https://ai.bozzii.com (Anthropic native).": "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://ai.bozzii.com/v1 (OpenAI/Gemini) or https://ai.bozzii.com (Anthropic native).",
     "Full Quick Connect Guide": "Full Quick Connect Guide",
     "Visit XSEEK Agent (Book Demo)": "Visit XSEEK Agent (Book Demo)",
     "Unified SSO": "Unified SSO",
@@ -7827,6 +7826,22 @@
     "Registered via {{method}}": "Registered via {{method}}",
     "Revoked login session": "Revoked login session",
     "Revoked {{count}} other login sessions": "Revoked {{count}} other login sessions",
-    "Force-revoked {{count}} login sessions for user {{username}}": "Force-revoked {{count}} login sessions for user {{username}}"
+    "Force-revoked {{count}} login sessions for user {{username}}": "Force-revoked {{count}} login sessions for user {{username}}",
+    "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://api.bozzii.com/v1 (OpenAI/Gemini) or https://api.bozzii.com (Anthropic native).": "For CodeBuddy, Cherry Studio, Cursor, or custom SDKs, use https://api.bozzii.com/v1 (OpenAI/Gemini) or https://api.bozzii.com (Anthropic native).",
+    "7-Day Real Production Telemetry": "7-Day Real Production Telemetry",
+    "7d P50 Latency": "7d P50 Latency",
+    "7d Real Cache Hit": "7d Real Cache Hit",
+    "7d Success Rate": "7d Success Rate",
+    "7d real cache hit {{rate}}% · Canary verified ({{ratio}}x billing)": "7d real cache hit {{rate}}% · Canary verified ({{ratio}}x billing)",
+    "7d real production cache hit {{rate}}%": "7d real production cache hit {{rate}}%",
+    "Billing Integrity Probe": "Billing Integrity Probe",
+    "Higher of token cost or per-image floor": "Higher of token cost or per-image floor",
+    "Live Status Page": "Live Status Page",
+    "Min per image": "Min per image",
+    "One-click setup for WorkBuddy, Claude Code & Codex": "One-click setup for WorkBuddy, Claude Code & Codex",
+    "Probe warning": "Probe warning",
+    "Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.": "Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.",
+    "Contact Feishu Support": "Contact Feishu Support",
+    "{{rate}}% 7d hit": "{{rate}}% 7d hit"
   }
 }

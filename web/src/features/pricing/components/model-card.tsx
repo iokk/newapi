@@ -20,6 +20,12 @@ import { ChevronRight } from 'lucide-react'
 import { memo, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import {
+  filterVisibleGroups,
+  formatBrandUsdPrice,
+  parseImageFloorBillingExpr,
+  useModelBrandTelemetry,
+} from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { CopyButton } from '@/components/copy-button'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
@@ -53,6 +59,7 @@ export interface ModelCardProps {
   tokenUnit?: TokenUnit
   showRechargePrice?: boolean
   selectedGroup?: string
+  usableGroup?: Record<string, unknown> // CUSTOM(brand)
   perf?: ModelPerfBadgeData
 }
 
@@ -67,12 +74,16 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   const isTokenBased = isTokenBasedModel(model)
   const tokenUnitLabel = tokenUnit === 'K' ? '1K' : '1M'
   const tags = parseTags(props.model.tags)
-  const groups = props.model.enable_groups || []
+  const groups = filterVisibleGroups(
+    props.model.enable_groups,
+    props.usableGroup
+  ) // CUSTOM(brand)
   const endpoints = props.model.supported_endpoint_types || []
   const modelIconKey = props.model.icon || props.model.vendor_icon
   const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 28) : null
   const initial = props.model.model_name?.charAt(0).toUpperCase() || '?'
   const isUnconfiguredTaskUsage = isUnconfiguredTaskUsageModel(model)
+  const brandTelemetry = useModelBrandTelemetry(model.model_name) // CUSTOM(brand)
   const billingTime = useBillingTime(model.billing_expr)
   const currency = useSystemConfigStore((state) => state.config.currency)
   const dynamicPriceOptions = useMemo(
@@ -115,16 +126,63 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       (entry) => entry.field === 'cacheReadPrice' && entry.unit === 'token'
     )
     if (dynamicSummary.isSpecialExpression) {
-      priceSummary = (
-        <div className='col-span-full min-w-0'>
-          <span className='text-warning'>
-            {t('Special billing expression')}
-          </span>
-          <code className='text-muted-foreground mt-1 line-clamp-2 block font-mono text-xs break-all'>
-            {dynamicSummary.rawExpression}
-          </code>
-        </div>
+      // CUSTOM(brand): render image floor billing formulas in human-readable form
+      const imageFloor = parseImageFloorBillingExpr(
+        dynamicSummary.rawExpression
       )
+      if (imageFloor) {
+        const formatUsd = (usd: number) =>
+          formatBrandUsdPrice(usd, {
+            showRechargePrice,
+            priceRate,
+            usdExchangeRate,
+            groupRatioMultiplier: dynamicPriceOptions.groupRatioMultiplier,
+            showCurrencySymbol: true,
+          })
+        const unitScale = tokenUnit === 'K' ? 1000 : 1
+        priceSummary = (
+          <>
+            <div className='flex min-w-0 flex-col gap-1'>
+              <span className='text-muted-foreground text-xs'>
+                {t('Min per image')}
+              </span>
+              <span className='flex flex-wrap items-baseline gap-x-1 font-mono text-base font-semibold tabular-nums'>
+                <span>{formatUsd(imageFloor.minPerImageUsd)}</span>
+                <span className='text-muted-foreground text-xs font-normal whitespace-nowrap'>
+                  / {t('image')}
+                </span>
+              </span>
+            </div>
+            {imageFloor.outputPerMUsd != null && (
+              <div className='flex min-w-0 flex-col gap-1'>
+                <span className='text-muted-foreground text-xs'>
+                  {t('Output')}
+                </span>
+                <span className='flex flex-wrap items-baseline gap-x-1 font-mono text-base font-semibold tabular-nums'>
+                  <span>{formatUsd(imageFloor.outputPerMUsd / unitScale)}</span>
+                  <span className='text-muted-foreground text-xs font-normal whitespace-nowrap'>
+                    / {tokenUnitLabel}
+                  </span>
+                </span>
+              </div>
+            )}
+            <span className='text-muted-foreground col-span-full text-xs'>
+              {t('Higher of token cost or per-image floor')}
+            </span>
+          </>
+        )
+      } else {
+        priceSummary = (
+          <div className='col-span-full min-w-0'>
+            <span className='text-warning'>
+              {t('Special billing expression')}
+            </span>
+            <code className='text-muted-foreground mt-1 line-clamp-2 block font-mono text-xs break-all'>
+              {dynamicSummary.rawExpression}
+            </code>
+          </div>
+        )
+      }
     } else if (
       dynamicSummary.primaryEntries.length > 0 ||
       cacheReadEntries.length > 0
@@ -348,6 +406,23 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           <div className='grid grid-cols-[repeat(auto-fit,minmax(88px,1fr))] gap-x-3 gap-y-2'>
             {priceSummary}
           </div>
+          {brandTelemetry?.cache_hit_rate_pct != null &&
+            brandTelemetry.cache_hit_rate_pct >= 10 && (
+              <div className='flex flex-wrap items-center gap-1'>
+                <span className='inline-flex items-center rounded bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-emerald-700 tabular-nums dark:text-emerald-400'>
+                  {t('{{rate}}% 7d hit', {
+                    rate: brandTelemetry.cache_hit_rate_pct.toFixed(1),
+                  })}
+                </span>
+                {brandTelemetry.canary?.passed === true && (
+                  <span className='inline-flex items-center rounded bg-emerald-500/15 px-1 py-0.5 font-mono text-[10px] font-semibold text-emerald-700 tabular-nums dark:text-emerald-300'>
+                    {brandTelemetry.canary.integrity_ratio != null
+                      ? `${brandTelemetry.canary.integrity_ratio.toFixed(2)}x`
+                      : '1.00x'}
+                  </span>
+                )}
+              </div>
+            )}
         </div>
         {(groups.length > 0 || endpoints.length > 0) && (
           <dl

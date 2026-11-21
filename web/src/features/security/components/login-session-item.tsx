@@ -22,20 +22,30 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import type { SystemStatus } from '@/features/auth/types' // CUSTOM(brand)
 import { toIntlLocale } from '@/i18n/languages'
 import dayjs from '@/lib/dayjs'
 import { formatTimestampRelative } from '@/lib/format'
+import { readCachedStatus } from '@/lib/status-query' // CUSTOM(brand)
 import type { LoginSession } from '@/stores/auth-store'
 
 import { loginMethodLabel, sessionDevice } from './login-session-utils'
 
 interface LoginSessionItemProps {
   session: LoginSession
+  oidcDisplayName?: string // CUSTOM(brand)
   onRevoke: (session: LoginSession) => void
 }
 
-export function LoginSessionItem({ session, onRevoke }: LoginSessionItemProps) {
+export function LoginSessionItem({
+  session,
+  oidcDisplayName: oidcDisplayNameProp,
+  onRevoke,
+}: LoginSessionItemProps) {
   const { t, i18n } = useTranslation()
+  const oidcDisplayName =
+    oidcDisplayNameProp ??
+    (readCachedStatus() as SystemStatus | null)?.oidc_display_name // CUSTOM(brand)
   const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
   const maxTouchPoints =
     session.current && typeof navigator !== 'undefined'
@@ -62,7 +72,7 @@ export function LoginSessionItem({ session, onRevoke }: LoginSessionItemProps) {
         <p className='text-muted-foreground mt-1 text-xs'>
           {t('IP: {{ip}} · Method: {{method}}', {
             ip: session.ip || t('Unknown'),
-            method: loginMethodLabel(session.login_method, t),
+            method: loginMethodLabel(session.login_method, t, oidcDisplayName),
           })}
         </p>
         <p className='text-muted-foreground mt-1 text-xs'>

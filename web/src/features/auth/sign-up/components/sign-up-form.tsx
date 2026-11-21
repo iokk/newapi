@@ -62,11 +62,7 @@ import { AuthOperationError } from '@/lib/secure-verification'
 import { createServerError } from '@/lib/server-error-message'
 import { cn } from '@/lib/utils'
 
-export function SignUpForm({
-  className,
-  redirectTo,
-  ...props
-}: AuthFormProps) {
+export function SignUpForm({ className, redirectTo, ...props }: AuthFormProps) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
@@ -282,22 +278,31 @@ export function SignUpForm({
     )
   }
 
+  const handleUnifiedSignupClick = () => {
+    if (requiresLegalConsent && !agreedToLegal) {
+      toast.error(
+        t('Please read and agree to the User Agreement and Privacy Policy')
+      )
+      return
+    }
+    void handleOIDCLogin({ mode: 'signup' })
+  }
+
   if (oidcEnabled && oauthRegisterEnabled && !passwordRegisterEnabled) {
     return (
       <div className={cn('grid gap-4', className)}>
-        <UnifiedAuthPrimaryCard
-          mode='signup'
-          displayName={oidcDisplayName}
-          isLoading={isOAuthLoading}
-          disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
-          onPrimaryClick={() => void handleOIDCLogin({ mode: 'signup' })}
-        />
-
         <LegalConsent
           status={status}
           checked={agreedToLegal}
           onCheckedChange={setAgreedToLegal}
-          className='mt-1'
+        />
+
+        <UnifiedAuthPrimaryCard
+          mode='signup'
+          displayName={oidcDisplayName}
+          isLoading={isOAuthLoading}
+          disabled={isLoading}
+          onPrimaryClick={handleUnifiedSignupClick}
         />
 
         <OAuthProviders

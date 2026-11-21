@@ -44,15 +44,29 @@ export function Home() {
 
   if (content) {
     if (isUrl) {
-      // CUSTOM(brand): iframe only. The landing page has its own navigation, theme
-      // and language, so the shell renders no header and posts no preferences
-      // (posting them overwrote the visitor's choice on every load).
-      /*
-        allow-top-navigation-by-user-activation: the custom home page URL is
-        admin-configured (trusted); this lets its target="_top" nav/menu links
-        navigate the top-level window on user click. This token only permits
-        user-activated top-level navigation and does NOT grant same-origin access.
-      */
+      // CUSTOM(brand): first-party same-origin landing pages (/brand/home.html) need
+      // same-origin cookies/localStorage/fetch; third-party URLs stay strictly sandboxed.
+      let isSameOrigin = false
+      try {
+        if (typeof window !== 'undefined') {
+          isSameOrigin =
+            new URL(content, window.location.origin).origin ===
+            window.location.origin
+        }
+      } catch {
+        isSameOrigin = false
+      }
+      if (isSameOrigin) {
+        return (
+          // oxlint-disable-next-line react/iframe-missing-sandbox -- trusted first-party same-origin landing page
+          <iframe
+            src={content}
+            className='h-screen w-full border-none'
+            title={t('Custom Home Page')}
+            allow='clipboard-write'
+          />
+        )
+      }
       return (
         <iframe
           src={content}

@@ -44,7 +44,11 @@ export function sessionDevice(
   return system ? `${browser} · ${system}` : browser
 }
 
-export function loginMethodLabel(method: string, t: TFunction): string {
+export function loginMethodLabel(
+  method: string,
+  t: TFunction,
+  oidcDisplayName?: string
+): string {
   const normalized = method.trim().toLowerCase()
   switch (normalized) {
     case 'password':
@@ -72,7 +76,7 @@ export function loginMethodLabel(method: string, t: TFunction): string {
     discord: 'Discord',
     github: 'GitHub',
     linuxdo: 'LinuxDO',
-    oidc: 'OIDC',
+    oidc: oidcDisplayName?.trim() || 'OIDC', // CUSTOM(brand)
   }
   return `${t('OAuth')} · ${providerNames[provider] || provider}`
 }

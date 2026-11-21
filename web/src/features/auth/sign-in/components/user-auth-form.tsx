@@ -65,12 +65,12 @@ import { cn } from '@/lib/utils'
 export function UserAuthForm({
   className,
   redirectTo,
-  defaultExpandLegacy = false,
+  defaultExpandLegacy = true,
   ...props
 }: AuthFormProps) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
-  // CUSTOM(brand): collapse legacy password/Passkey section by default when Unified Auth (OIDC) is active
+  // CUSTOM(brand): keep legacy password login expanded below but visually demoted per operator preference
   const [legacyExpanded, setLegacyExpanded] = useState(defaultExpandLegacy)
   useEffect(() => {
     if (defaultExpandLegacy) setLegacyExpanded(true)
@@ -373,6 +373,15 @@ export function UserAuthForm({
 
   // CUSTOM(brand): show password/Passkey fields expanded when OIDC is disabled or user explicitly toggles legacy login
   const showSecondaryLogin = !oidcEnabled || legacyExpanded
+  const handleUnifiedLoginClick = (prompt?: 'login') => {
+    if (requiresLegalConsent && !agreedToLegal) {
+      toast.error(
+        t('Please read and agree to the User Agreement and Privacy Policy')
+      )
+      return
+    }
+    void handleOIDCLogin(prompt ? { mode: 'login', prompt } : { mode: 'login' })
+  }
 
   return (
     <Form {...form}>
@@ -381,16 +390,20 @@ export function UserAuthForm({
         className={cn('grid gap-4', className)}
         {...props}
       >
+        <LegalConsent
+          status={status}
+          checked={agreedToLegal}
+          onCheckedChange={setAgreedToLegal}
+        />
+
         {oidcEnabled && (
           <UnifiedAuthPrimaryCard
             mode='login'
             displayName={oidcDisplayName}
             isLoading={isOAuthLoading}
-            disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
-            onPrimaryClick={() => void handleOIDCLogin({ mode: 'login' })}
-            onSwitchAccountClick={() =>
-              void handleOIDCLogin({ mode: 'login', prompt: 'login' })
-            }
+            disabled={isLoading}
+            onPrimaryClick={() => handleUnifiedLoginClick()}
+            onSwitchAccountClick={() => handleUnifiedLoginClick('login')}
           />
         )}
 
@@ -482,13 +495,6 @@ export function UserAuthForm({
             )}
           </>
         )}
-
-        <LegalConsent
-          status={status}
-          checked={agreedToLegal}
-          onCheckedChange={setAgreedToLegal}
-          className='mt-1'
-        />
 
         {showSecondaryLogin && !hasAlternativeLogin && alternativeLoginMethods}
       </form>

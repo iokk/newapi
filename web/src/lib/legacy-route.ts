@@ -75,6 +75,16 @@ export function resolveLegacyRoute(rawHref: string): string | null {
   if (pathname === '/login') {
     return buildTargetHref('/sign-in', source)
   }
+  // CUSTOM(brand): support legacy top-level bookmarks from pre-v1.0 links
+  if (pathname === '/token') {
+    return buildTargetHref('/keys', source)
+  }
+  if (pathname === '/log') {
+    return buildTargetHref('/usage-logs/common', source)
+  }
+  if (pathname === '/topup') {
+    return buildTargetHref('/wallet', source)
+  }
   if (pathname === '/forbidden') {
     return buildTargetHref('/403', source)
   }

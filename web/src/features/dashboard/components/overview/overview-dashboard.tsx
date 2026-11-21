@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
+  ArrowUpRight,
   BookOpen,
   Check,
   ChevronDown,
@@ -41,6 +42,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { FEISHU_SUPPORT_URL } from '@/branding/brand-links' // CUSTOM(brand)
 import { SectionPageLayout } from '@/components/layout'
 import {
   CardStaggerContainer,
@@ -540,6 +542,13 @@ export function OverviewDashboard() {
 
   const quickActions = useMemo<QuickAction[]>(
     () => [
+      // CUSTOM(brand): surface one-click Client Hub prominently on Console Overview
+      {
+        title: t('Client Setup'),
+        description: t('One-click setup for WorkBuddy, Claude Code & Codex'),
+        to: '/client-config',
+        icon: TerminalSquare,
+      },
       {
         title: t('API Keys'),
         description: t('Create a key for your app or service'),
@@ -792,6 +801,26 @@ export function OverviewDashboard() {
                 </div>
               </CardStaggerItem>
             </CardStaggerContainer>
+          )}
+
+          {/* CUSTOM(brand): guide low-balance users to Feishu trial & corporate VAT invoicing when wallet is hidden */}
+          {!isWalletVisible && remainQuota <= 0 && (
+            <div className='bg-muted/40 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-2.5 text-xs'>
+              <span className='text-muted-foreground'>
+                {t(
+                  'Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.'
+                )}
+              </span>
+              <a
+                href={FEISHU_SUPPORT_URL}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-primary inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline'
+              >
+                {t('Contact Feishu Support')}
+                <ArrowUpRight className='size-3.5' aria-hidden='true' />
+              </a>
+            </div>
           )}
 
           <SummaryCards />

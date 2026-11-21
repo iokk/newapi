@@ -48,6 +48,9 @@ export function ClientConfig() {
   }
   const unavailable =
     options.data != null && TARGETS.every((target) => !ready[target])
+  // CUSTOM(brand): default to first ready client target instead of hardcoded 'workbuddy'
+  const firstReadyTarget =
+    TARGETS.find((target) => ready[target]) ?? 'workbuddy'
 
   return (
     <SectionPageLayout>
@@ -64,7 +67,7 @@ export function ClientConfig() {
         ) : (
           <>
             <ApiKeySelector value={tokenId} onValueChange={setTokenId} />
-            <Tabs defaultValue='workbuddy'>
+            <Tabs key={firstReadyTarget} defaultValue={firstReadyTarget}>
               <TabsList className='h-auto flex-wrap'>
                 {TARGETS.map((target) => (
                   <TabsTrigger
