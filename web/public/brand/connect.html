@@ -307,13 +307,19 @@
     }
     .host-select {
       height: 36px;
-      padding: 0 10px;
+      padding: 0 28px 0 11px;
       border-radius: 7px;
       border: 1px solid var(--line);
-      background: var(--surface);
+      background-color: var(--surface);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c646d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 9px center;
       color: var(--ink);
       font-family: var(--font-mono);
       font-size: 12.5px;
+      line-height: 34px;
+      appearance: none;
+      -webkit-appearance: none;
       outline: 0;
     }
     .host-select:focus { border-color: var(--brand); }
@@ -821,11 +827,11 @@ export OPENAI_API_KEY="{KEY}"'></pre>
             <pre data-subpanel="sdk-curl" data-active="true" data-tpl='curl -sS {HOST}/v1/chat/completions \
   -H "Authorization: Bearer {KEY}" \
   -H "Content-Type: application/json" \
-  -d '\''{
+  -d &#39;{
     "model": "gpt-6.1-sol",
     "messages": [{"role": "user", "content": "Hello"}],
     "max_tokens": 64
-  }'\'''></pre>
+  }&#39;'></pre>
             <pre data-subpanel="sdk-py-oai" data-tpl='from openai import OpenAI
 
 client = OpenAI(
