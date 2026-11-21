@@ -21,6 +21,7 @@ import { GitBranch, Sparkles, KeyRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { LogErrorQuickCopyButton } from '@/branding/log-error-helper' // CUSTOM(brand)
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -881,14 +882,18 @@ export function useCommonLogsColumns(
 
           return (
             <>
-              <button
-                type='button'
-                className='group flex max-w-[200px] items-center gap-1 text-left text-xs'
-                onClick={() => setDialogOpen(true)}
-                title={t('Click to view full details')}
-              >
-                {detailPreview}
-              </button>
+              <div className='flex max-w-[220px] items-center gap-1'>
+                <button
+                  type='button'
+                  className='group flex min-w-0 flex-1 items-center gap-1 text-left text-xs'
+                  onClick={() => setDialogOpen(true)}
+                  title={t('Click to view full details')}
+                >
+                  {detailPreview}
+                </button>
+                {/* CUSTOM(brand): 1-click sanitized diagnostic copy for error rows */}
+                <LogErrorQuickCopyButton log={log} other={other} />
+              </div>
               <DetailsDialog
                 log={log}
                 isAdmin={isAdmin}
