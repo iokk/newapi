@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useRouter } from '@tanstack/react-router'
-import { ArrowUpRight, Building2, RefreshCw, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Building2, Check, RefreshCw, Sparkles } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -43,6 +43,8 @@ import {
   computePlanBonusPercent,
   getRecommendedSubscriptionIndex,
   sortSubscriptionPlansAscending,
+  splitPlanSubtitle,
+  splitPlanTitle,
 } from './wallet'
 
 interface EmptySubscriptionStatusBarProps {
@@ -51,8 +53,8 @@ interface EmptySubscriptionStatusBarProps {
 }
 
 /**
- * Compact 1-line status bar shown when the user has no subscriptions yet,
- * replacing the multi-line disabled preference form.
+ * Quiet inline status pill placed in the Subscription section header when the user
+ * has no subscriptions yet, avoiding nested box-in-box chrome.
  */
 export function EmptySubscriptionStatusBar({
   refreshing,
@@ -60,32 +62,31 @@ export function EmptySubscriptionStatusBar({
 }: EmptySubscriptionStatusBarProps) {
   const { t } = useTranslation()
   return (
-    <div className='bg-muted/30 text-muted-foreground flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs'>
-      <span className='flex items-center gap-2'>
-        <span
-          className={cn('size-1.5 shrink-0 rounded-full', dotColorMap.neutral)}
+    <div className='text-muted-foreground inline-flex items-center gap-2 text-xs'>
+      <span
+        className={cn('size-1.5 shrink-0 rounded-full', dotColorMap.neutral)}
+        aria-hidden='true'
+      />
+      <span>{t('No Active')}</span>
+      <span className='text-border' aria-hidden='true'>
+        |
+      </span>
+      <span className='hidden sm:inline'>
+        {t('Using wallet balance by default')}
+      </span>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-6 w-6'
+        onClick={onRefresh}
+        disabled={refreshing}
+        aria-label={t('Refresh')}
+      >
+        <RefreshCw
+          className={cn('h-3 w-3', refreshing && 'animate-spin')}
           aria-hidden='true'
         />
-        <span>
-          {t('My Subscriptions')}: {t('No Active')}
-        </span>
-      </span>
-      <span className='flex items-center gap-2'>
-        <span>{t('Using wallet balance by default')}</span>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-6 w-6'
-          onClick={onRefresh}
-          disabled={refreshing}
-          aria-label={t('Refresh')}
-        >
-          <RefreshCw
-            className={cn('h-3 w-3', refreshing && 'animate-spin')}
-            aria-hidden='true'
-          />
-        </Button>
-      </span>
+      </Button>
     </div>
   )
 }
@@ -97,11 +98,10 @@ interface BrandSubscriptionTierListProps {
 }
 
 /**
- * Redesigned Subscription Store for individual developer 30-day experience tiers:
- * - Explicit scope banner separating personal shared routes from enterprise high-SLA lines
- * - Compact horizontal tier cards with integer bonus pills (+30% / +20% / +30% / +40%)
- * - Clear granted quota + domestic model turn reference + purchase cap status
- * - Dedicated Enterprise High-SLA footer bar linking to /contact
+ * Full-width 4-column SaaS pricing grid for individual developer 30-day plans:
+ * - Side-by-side comparison across Starter / Plus / Pro (recommended) / Max
+ * - Uniform column height with bottom-aligned CTAs and restrained emphasis on Pro
+ * - Quiet dashed-border Enterprise High-SLA strip below linking to /contact
  */
 export function BrandSubscriptionTierList({
   plans,
@@ -131,26 +131,22 @@ export function BrandSubscriptionTierList({
 
   if (sortedPlans.length === 0) {
     return (
-      <p className='text-muted-foreground py-4 text-center text-sm'>
+      <p className='text-muted-foreground py-6 text-center text-sm'>
         {t('No plans available')}
       </p>
     )
   }
 
-  return (
-    <div className='space-y-3'>
-      {/* Scope positioning banner */}
-      <div className='bg-muted/25 rounded-lg border px-3 py-2 text-xs leading-relaxed'>
-        <div className='text-foreground font-medium'>
-          个人开发者专属体验与开发套餐 · 统一 30 天有效 · 超额自动无缝衔接钱包余额
-        </div>
-        <div className='text-muted-foreground mt-0.5'>
-          标准共享路由（不含企业 SLA）；企业高并发、对公开票与高 SLA 纯净专线请通过下方企业入口采购。
-        </div>
-      </div>
+  let gridColsClass = 'grid-cols-1 sm:grid-cols-2'
+  if (sortedPlans.length >= 4) {
+    gridColsClass = 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'
+  } else if (sortedPlans.length === 3) {
+    gridColsClass = 'grid-cols-1 md:grid-cols-3'
+  }
 
-      {/* Compact horizontal tier cards */}
-      <div className='space-y-2.5'>
+  return (
+    <div className='space-y-3.5'>
+      <div className={cn('grid gap-3.5', gridColsClass)}>
         {sortedPlans.map((p, index) => {
           const plan = p?.plan
           if (!plan) return null
@@ -173,32 +169,35 @@ export function BrandSubscriptionTierList({
           const reached = limit > 0 && count >= limit
           const isFirstOrderPromo = index === 0 && limit === 1 && bonusPct
 
+          const { primary: titlePrimary, secondary: titleSecondary } =
+            splitPlanTitle(plan.title || t('Subscription Plans'))
+          const { role: subtitleRole, usage: subtitleUsage } =
+            splitPlanSubtitle(plan.subtitle)
           const durationLabel = formatDuration(plan, t)
           const resetLabel = formatResetPeriod(plan, t)
-          const metaParts: string[] = [durationLabel]
+
+          const footnoteParts: string[] = []
+          if (limit > 0) footnoteParts.push(`限购 ${limit} 次`)
           if (resetLabel !== t('No Reset')) {
-            metaParts.push(`${t('Quota Reset')}: ${resetLabel}`)
-          }
-          if (limit > 0) {
-            metaParts.push(`限购 ${limit} 次`)
+            footnoteParts.push(`${t('Quota Reset')}: ${resetLabel}`)
           }
           if (plan.upgrade_group && SHOW_PRICING_GROUPS) {
-            metaParts.push(`${t('Upgrade Group')}: ${plan.upgrade_group}`)
+            footnoteParts.push(plan.upgrade_group)
           } else {
-            metaParts.push('个人共享通道')
+            footnoteParts.push('个人共享通道')
           }
 
-          let bonusBadge = null
+          let bonusPill = null
           if (isFirstOrderPromo) {
-            bonusBadge = (
-              <span className='inline-flex items-center gap-1 rounded-md bg-amber-500/12 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300'>
+            bonusPill = (
+              <span className='inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300'>
                 <Sparkles className='size-3' aria-hidden='true' />
-                首单加赠 {bonusPct}%
+                首单 +{bonusPct}%
               </span>
             )
           } else if (bonusPct) {
-            bonusBadge = (
-              <span className='rounded-md bg-green-500/12 px-1.5 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-400'>
+            bonusPill = (
+              <span className='shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400'>
                 加赠 {bonusPct}%
               </span>
             )
@@ -209,108 +208,129 @@ export function BrandSubscriptionTierList({
               key={plan.id}
               data-slot='subscription-store-card'
               className={cn(
-                'bg-background rounded-xl border p-3.5 transition-colors',
+                'bg-card relative flex h-full flex-col justify-between rounded-xl border p-5 transition-colors',
                 isPopular
-                  ? 'border-foreground/55 ring-1 ring-foreground/15'
+                  ? 'border-foreground/75 ring-1 ring-foreground/15 shadow-xs'
                   : 'border-border/80 hover:border-foreground/30'
               )}
             >
-              {/* Row 1: Title + Badges | Price */}
-              <div className='flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1'>
-                <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
-                  <h4 className='truncate text-sm font-semibold'>
-                    {(plan.title || t('Subscription Plans')).trim()}
-                  </h4>
-                  {bonusBadge}
-                  {isPopular && (
-                    <span className='bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[11px] font-medium'>
-                      {t('Recommended')}
-                    </span>
-                  )}
+              <div>
+                {/* Tier Name + Bonus Badge */}
+                <div className='flex items-start justify-between gap-2'>
+                  <div className='min-w-0'>
+                    <div className='flex items-center gap-1.5'>
+                      <h3 className='text-foreground truncate text-base font-semibold tracking-tight'>
+                        {titlePrimary}
+                      </h3>
+                      {isPopular && (
+                        <span className='bg-primary/10 text-primary shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium'>
+                          {t('Recommended')}
+                        </span>
+                      )}
+                    </div>
+                    {titleSecondary && (
+                      <p className='text-muted-foreground mt-0.5 text-xs'>
+                        {titleSecondary}
+                      </p>
+                    )}
+                  </div>
+                  {bonusPill}
                 </div>
-                <div className='flex shrink-0 items-baseline gap-1'>
-                  <span className='text-foreground font-mono text-lg font-semibold tracking-tight tabular-nums'>
+
+                {/* Price */}
+                <div className='mt-4 flex items-baseline gap-1'>
+                  <span className='text-foreground font-mono text-[28px] leading-none font-bold tracking-tight tabular-nums'>
                     {formattedPrice}
                   </span>
-                  <span className='text-muted-foreground text-[11px]'>
+                  <span className='text-muted-foreground text-xs'>
                     / {durationLabel}
                   </span>
                 </div>
-              </div>
 
-              {/* Row 2: Granted Quota + Subtitle | Action Button */}
-              <div className='mt-2 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between'>
-                <div className='min-w-0 space-y-0.5'>
-                  <div className='flex flex-wrap items-baseline gap-1.5 text-xs'>
-                    <span className='text-muted-foreground'>到账额度</span>
-                    <span className='text-foreground font-mono text-sm font-semibold tabular-nums'>
-                      {formattedQuota}
-                    </span>
-                  </div>
-                  {plan.subtitle && (
-                    <p className='text-muted-foreground text-xs leading-snug'>
-                      {plan.subtitle}
-                    </p>
-                  )}
-                </div>
-
-                <div className='shrink-0'>
-                  {reached ? (
-                    <Tooltip>
-                      <TooltipTrigger render={<div />}>
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          className='h-8 w-full px-3 text-xs sm:w-auto'
-                          disabled
-                        >
-                          已购 ({count}/{limit})
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {t('Purchase limit reached')} ({count}/{limit})
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <Button
-                      variant={isPopular ? 'default' : 'outline'}
-                      size='sm'
-                      className='h-8 w-full px-3.5 text-xs sm:w-auto'
-                      onClick={() => onSelectPlan(p)}
-                    >
-                      {t('Subscribe Now')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Row 3: Concise micro-meta */}
-              <div className='text-muted-foreground/85 mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t pt-2 text-[11px]'>
-                {metaParts.map((item, idx) => (
-                  <span key={item} className='inline-flex items-center gap-2'>
-                    {idx > 0 && <span aria-hidden='true'>·</span>}
-                    <span>{item}</span>
+                {/* Granted Quota Strip */}
+                <div className='bg-muted/45 mt-3.5 flex items-baseline justify-between rounded-lg px-3 py-2 text-xs'>
+                  <span className='text-muted-foreground'>到账额度</span>
+                  <span className='text-foreground font-mono text-sm font-semibold tabular-nums'>
+                    {formattedQuota}
                   </span>
-                ))}
+                </div>
+
+                {/* Scope & Usage Reference */}
+                {(subtitleRole || subtitleUsage) && (
+                  <div className='mt-4 space-y-1.5 border-t pt-3.5 text-xs'>
+                    {subtitleRole && (
+                      <div className='text-foreground flex items-center gap-1.5 font-medium'>
+                        <Check
+                          className='text-muted-foreground size-3.5 shrink-0'
+                          aria-hidden='true'
+                        />
+                        <span>{subtitleRole}</span>
+                      </div>
+                    )}
+                    {subtitleUsage && (
+                      <p className='text-muted-foreground pl-5 leading-relaxed'>
+                        {subtitleUsage}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Footer pinned to bottom */}
+              <div className='mt-5 space-y-2'>
+                {reached ? (
+                  <Tooltip>
+                    <TooltipTrigger render={<div />}>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        className='h-9 w-full text-xs'
+                        disabled
+                      >
+                        已购 ({count}/{limit})
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {t('Purchase limit reached')} ({count}/{limit})
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    variant={isPopular ? 'default' : 'outline'}
+                    size='sm'
+                    className='h-9 w-full text-xs font-medium'
+                    onClick={() => onSelectPlan(p)}
+                  >
+                    {t('Subscribe Now')}
+                  </Button>
+                )}
+                <p className='text-muted-foreground text-center text-[11px]'>
+                  {footnoteParts.join(' · ')}
+                </p>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Dedicated Enterprise High-SLA Bar */}
-      <div className='bg-muted/30 flex flex-col justify-between gap-3 rounded-xl border p-3.5 sm:flex-row sm:items-center'>
-        <div className='min-w-0 space-y-0.5'>
-          <div className='flex items-center gap-1.5 text-xs font-semibold'>
-            <Building2
-              className='text-muted-foreground size-3.5 shrink-0'
-              aria-hidden='true'
-            />
-            <span>Enterprise · 企业开发者与高 SLA 专线</span>
+      {/* Quiet Enterprise High-SLA Strip */}
+      <div className='bg-card/50 flex flex-col justify-between gap-3 rounded-xl border border-dashed px-4 py-3 sm:flex-row sm:items-center'>
+        <div className='flex min-w-0 items-start gap-2.5 sm:items-center'>
+          <Building2
+            className='text-muted-foreground mt-0.5 size-4 shrink-0 sm:mt-0'
+            aria-hidden='true'
+          />
+          <div className='min-w-0 text-xs leading-relaxed'>
+            <span className='text-foreground font-semibold'>
+              Enterprise · 企业开发者与高 SLA 专线
+            </span>
+            <span className='text-muted-foreground mx-2 hidden sm:inline'>
+              |
+            </span>
+            <span className='text-muted-foreground block sm:inline'>
+              独立纯净官转高可用通道 · 无个人限购 · 1 年有效 · 支持对公付款与专票
+            </span>
           </div>
-          <p className='text-muted-foreground text-[11px] leading-relaxed'>
-            独立纯净官转高可用通道 · 无个人限购约束 · 1 年有效期 · 支持对公付款与增值税专票
-          </p>
         </div>
         <a
           href='/contact'
