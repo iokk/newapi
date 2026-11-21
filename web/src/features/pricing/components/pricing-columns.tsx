@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import type { ColumnDef } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 
+import { SHOW_PRICING_GROUPS } from '@/branding/pricing'
 import { filterVisibleGroups } from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { DataTableColumnHeader } from '@/components/data-table'
 import { getLobeIcon } from '@/lib/lobe-icon'
@@ -107,18 +108,23 @@ export function usePricingColumns(
       size: 120,
       enableSorting: false,
     },
-    {
-      accessorKey: 'enable_groups',
-      header: t('Groups'),
-      cell: ({ row }) => {
-        const groups = filterVisibleGroups(
-          row.original.enable_groups,
-          options.usableGroup
-        ) // CUSTOM(brand)
-        return groups.length > 0 ? groups.join(', ') : '—'
-      },
-      size: 140,
-      enableSorting: false,
-    },
+    // CUSTOM(brand): hide groups column on /pricing when SHOW_PRICING_GROUPS is false
+    ...(SHOW_PRICING_GROUPS
+      ? [
+          {
+            accessorKey: 'enable_groups',
+            header: t('Groups'),
+            cell: ({ row }: { row: { original: PricingModel } }) => {
+              const groups = filterVisibleGroups(
+                row.original.enable_groups,
+                options.usableGroup
+              ) // CUSTOM(brand)
+              return groups.length > 0 ? groups.join(', ') : '—'
+            },
+            size: 140,
+            enableSorting: false,
+          },
+        ]
+      : []),
   ]
 }

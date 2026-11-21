@@ -20,6 +20,7 @@ import { ChevronDown, RotateCcw } from 'lucide-react'
 import { memo, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { SHOW_PRICING_GROUPS } from '@/branding/pricing'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -277,12 +278,15 @@ export const PricingSidebar = memo(function PricingSidebar(
           options={quotaOptions}
           onChange={props.onQuotaTypeChange}
         />
-        <FilterSection
-          title={t('Groups')}
-          value={props.groupFilter}
-          options={groupOptions}
-          onChange={props.onGroupChange}
-        />
+        {/* CUSTOM(brand): hide groups filter on /pricing when SHOW_PRICING_GROUPS is false */}
+        {SHOW_PRICING_GROUPS && (
+          <FilterSection
+            title={t('Groups')}
+            value={props.groupFilter}
+            options={groupOptions}
+            onChange={props.onGroupChange}
+          />
+        )}
       </div>
     </aside>
   )

@@ -20,6 +20,7 @@ import { ChevronRight } from 'lucide-react'
 import { memo, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { SHOW_PRICING_GROUPS } from '@/branding/pricing'
 import {
   filterVisibleGroups,
   formatBrandUsdPrice,
@@ -75,10 +76,10 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   const isTokenBased = isTokenBasedModel(model)
   const tokenUnitLabel = tokenUnit === 'K' ? '1K' : '1M'
   const tags = parseTags(props.model.tags)
-  const groups = filterVisibleGroups(
-    props.model.enable_groups,
-    props.usableGroup
-  ) // CUSTOM(brand)
+  // CUSTOM(brand): hide groups on /pricing card when SHOW_PRICING_GROUPS is false
+  const groups = SHOW_PRICING_GROUPS
+    ? filterVisibleGroups(props.model.enable_groups, props.usableGroup)
+    : [] // CUSTOM(brand)
   const endpoints = props.model.supported_endpoint_types || []
   const modelIconKey = props.model.icon || props.model.vendor_icon
   const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 28) : null

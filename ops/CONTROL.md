@@ -35,7 +35,7 @@ Last full review: 2026-11-05.
 | Our fork | `iokk/newapi`, remote `origin` |
 | Active prod branch | `main` (reconciled with `upgrade/v1.0.0-rc.51` and all `bozzii.2` brand commits) |
 | Upstream base | tag `v1.0.0-rc.51` |
-| Customisations | `web/src/styles/brand.css` (new), `web/src/styles/index.css` (one `@import`), `web/public/brand/{home,connect}.html` (new), `web/src/branding/{brand-links,unified-auth,unified-auth-helpers,pricing-telemetry,brand-telemetry-banner}.*` (new), login/session audit hooks & pricing telemetry (`CUSTOM(brand)`), `ops/` (new) |
+| Customisations | `web/src/styles/brand.css` (new), `web/src/styles/index.css` (one `@import`), `web/public/brand/{home,connect}.html` (new), `web/src/branding/{brand-links,pricing,unified-auth,unified-auth-helpers,pricing-telemetry,brand-telemetry-banner}.*` (new), pricing group hiding & login/session audit hooks & pricing telemetry (`CUSTOM(brand)`), `ops/` (new) |
 | Marker | every change to an upstream file carries `CUSTOM(brand)`; list with `git grep -n 'CUSTOM(brand)'` |
 
 ### Image
@@ -43,12 +43,12 @@ Last full review: 2026-11-05.
 | Item | Value |
 | ---- | ----- |
 | Name | `ghcr.io/iokk/bozzii-new-api` |
-| Running tag | `v1.0.0-rc.51-bozzii.5` |
+| Running tag | `v1.0.0-rc.51-bozzii.6` |
 | Platform | `linux/amd64` (matches host `x86_64`) |
-| Digest | native `linux/amd64` build on `23.19.228.138` (see `ops/releases/2026-11-21-pricing-telemetry-and-brand-onboarding.md`) |
+| Digest | updated on build/push (see `ops/releases/2026-11-21-hide-pricing-groups.md`) |
 | Registry visibility | **private** (decision D-006) |
-| Built by | native `docker build --network=host` on `23.19.228.138` from `main` |
-| Previous (rollback) | `v1.0.0-rc.51-bozzii.4`, compose saved as `/opt/xseek-new-api/backups/compose.yaml.pre-bozzii.3.*` |
+| Built by | `ops/build-image.sh v1.0.0-rc.51 6` (`docker buildx build --platform linux/amd64`) + `docker push` from `main` |
+| Previous (rollback) | `v1.0.0-rc.51-bozzii.5`, compose saved as `/opt/xseek-new-api/backups/compose.yaml.pre-rc51-bozzii6-*` |
 
 ### Production host
 
@@ -58,9 +58,9 @@ Last full review: 2026-11-05.
 | Termark asset | `a1b646cd-1a82-492d-9621-a88c8ed5f905` |
 | App directory | `/opt/xseek-new-api` (compose project) |
 | Containers | `xseek-new-api` (app), `xseek-new-api-postgres`, `xseek-new-api-redis` |
-| Running since | `v1.0.0-rc.51-bozzii.5` cut over on 2026-11-21; only the app was recreated |
-| Data at last cut-over | pre-cut-over dump `/opt/xseek-new-api/backups/newapi-pre-rc51-bozzii4-*` |
-| Health | `/api/status` → `success: true`, version `v1.0.0-rc.51-bozzii.5`, system name `Bozzii AI` |
+| Running since | `v1.0.0-rc.51-bozzii.6` cut over on 2026-11-21; only the app was recreated |
+| Data at last cut-over | pre-cut-over backup `/opt/ops/backups/daily/bozzii-ops-backup-20261121-152418.tar.gz` |
+| Health | `/api/status` → `success: true`, version `v1.0.0-rc.51-bozzii.6`, system name `Bozzii AI` |
 | App port | `BIND_ADDRESS=0.0.0.0`, port 3000 (see open item O-4) |
 
 ### Backups

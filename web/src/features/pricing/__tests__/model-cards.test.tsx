@@ -279,17 +279,13 @@ describe('model cards', () => {
       />
     )
 
-    const groupField = screen.getByText('Groups').parentElement
+    // CUSTOM(brand): groups metadata is hidden on /pricing cards
+    expect(screen.queryByText('Groups')).not.toBeInTheDocument()
     const endpointField = screen.getByText('Endpoints').parentElement
-    if (!groupField || !endpointField) {
-      throw new Error('Expected labeled group and endpoint fields')
+    if (!endpointField) {
+      throw new Error('Expected labeled endpoint field')
     }
     const tagField = screen.getByRole('group', { name: 'Tags' })
-    expect(within(groupField).getByText(groups[0])).toBeVisible()
-    expect(within(groupField).getByText('+2')).toHaveAttribute(
-      'title',
-      groups.slice(1).join(', ')
-    )
     expect(
       within(endpointField).getByText('openai-response, openai')
     ).toHaveAttribute('title', endpoints.join(', '))

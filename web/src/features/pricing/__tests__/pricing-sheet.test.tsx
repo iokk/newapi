@@ -53,7 +53,13 @@ describe('pricing sheet', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole('cell', { name: 'OpenAI' })).toBeVisible()
     expect(screen.getByRole('cell', { name: 'Token-based' })).toBeVisible()
-    expect(screen.getByRole('cell', { name: 'default, vip' })).toBeVisible()
+    // CUSTOM(brand): groups column is hidden on /pricing
+    expect(
+      screen.queryByRole('columnheader', { name: 'Groups' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('cell', { name: 'default, vip' })
+    ).not.toBeInTheDocument()
     expect(screen.getByText('gpt-4o')).toBeVisible()
   })
 })
