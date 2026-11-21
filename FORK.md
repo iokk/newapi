@@ -137,6 +137,18 @@ data, and the steps that matter (backup, staging, cut-over, rollback) are in
 - Building and cutting over a new image: `ops/runbooks/04-release.md`
 - Server layout and secret locations (no values): `ops/runbooks/05-server-inventory.md`
 
+## Unified auth (Casdoor OIDC)
+
+Production (`https://ai.bozzii.com`, container `xseek-new-api`) uses Casdoor at `https://auth.bozzii.com` (organization `bozzii`, application `app-bozzii-api`, callback `https://ai.bozzii.com/oauth/oidc`) as the unified identity provider.
+
+- **No backend fork changes required**: upstream `controller/oauth.go` natively handles OIDC user creation (`users.oidc_id`), skips `EmailDomainWhitelist` for OIDC signups, and rejects duplicate emails via `EnsureEmailAvailable` (`OAuthEmailAlreadyTakenError`) to prevent account takeover.
+- **Current production `options` state (2026-11-19)**:
+  - `oidc.enabled = true`, `oidc.display_name = 铂子统一账号`, endpoints pointing to `https://auth.bozzii.com`.
+  - `RegisterEnabled = true` (required for first-time OIDC user creation).
+  - `PasswordRegisterEnabled = false` (blocks new native signups so all new users register through Casdoor).
+  - `PasswordLoginEnabled = true` (kept enabled during transition so the root admin and existing users can sign in and bind OIDC in Personal Settings -> Security; disable only after admin + active legacy accounts have bound OIDC).
+- **Secrets location (never commit)**: Casdoor admin and OIDC client credentials live only in `/opt/bozzii-auth/CREDENTIALS.txt` (mode `600`) on the Hong Kong host (`server_id: 14`); `oidc.client_secret` is stored in the `options` table of `xseek-new-api-postgres`.
+
 ## Upstream licence
 
 new-api is AGPL-3.0. Serving a modified version over the network obliges us to
