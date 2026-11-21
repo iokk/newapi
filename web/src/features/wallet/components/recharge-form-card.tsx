@@ -596,17 +596,25 @@ export function RechargeFormCard({
           </div>
         )}
 
-      {/* Redemption Code Section */}
+      {/* CUSTOM(brand): refined Redemption Store block with helper copy & monospace code input */}
       {redemptionEnabled ? (
-        <div className='space-y-2.5 border-t pt-4 sm:pt-5'>
-          <div className='flex items-center gap-1.5'>
-            <Gift className='text-muted-foreground size-3.5' aria-hidden='true' />
-            <Label
-              htmlFor='redemption-code'
-              className='text-muted-foreground text-xs font-medium'
-            >
-              {t('Have a Code?')}
-            </Label>
+        <div className='bg-muted/25 space-y-2.5 rounded-xl border p-3.5'>
+          <div className='space-y-0.5'>
+            <div className='flex items-center gap-1.5'>
+              <Gift
+                className='text-muted-foreground size-3.5'
+                aria-hidden='true'
+              />
+              <Label
+                htmlFor='redemption-code'
+                className='text-foreground text-xs font-semibold'
+              >
+                {t('Have a Code?')}
+              </Label>
+            </div>
+            <p className='text-muted-foreground text-[11px]'>
+              输入企业发放或活动兑换码，额度即时入账且永不过期
+            </p>
           </div>
           <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
             <Input
@@ -617,13 +625,13 @@ export function RechargeFormCard({
               value={redemptionCode}
               onChange={(e) => onRedemptionCodeChange(e.target.value)}
               placeholder={t('Enter your redemption code')}
-              className='h-9 min-w-0'
+              className='bg-background h-9 min-w-0 font-mono text-xs tracking-wide'
             />
             <Button
               onClick={onRedeem}
               disabled={redeeming}
-              variant='outline'
-              className='h-9 px-4'
+              variant='default'
+              className='h-9 px-4 text-xs'
             >
               {redeeming && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
               {t('Redeem')}

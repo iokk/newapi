@@ -19,6 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import type { PlanRecord } from '@/features/subscriptions/types'
 import type { PresetAmount, TopupInfo } from '@/features/wallet/types'
 
+// shortcut: backend controller/subscription_payment_epay.go sends raw USD price_amount
+// without multiplying by the CNY exchange rate; re-enable after fixing backend epay math.
+export const ENABLE_SUBSCRIPTION_EPAY_DIRECT = false
+
 /**
  * Default fixed top-up tiers in backend quota units (USD).
  * All multiples of 10 yield exact integer CNY amounts at the 7.30 fixed rate
@@ -100,4 +104,40 @@ export function sortSubscriptionPlansAscending(
     if (priceA !== priceB) return priceA - priceB
     return Number(a?.plan?.id ?? 0) - Number(b?.plan?.id ?? 0)
   })
+}
+
+/**
+ * Compute conservative integer bonus percentage (floored to 5% increments >= 10%)
+ * from a plan's granted quota vs its USD price, so displayed bonus never overstates reality.
+ */
+export function computePlanBonusPercent(
+  priceAmountUsd: number,
+  totalAmountQuota: number,
+  quotaPerUnit: number = 500000
+): number | null {
+  if (
+    !Number.isFinite(priceAmountUsd) ||
+    !Number.isFinite(totalAmountQuota) ||
+    !Number.isFinite(quotaPerUnit) ||
+    priceAmountUsd <= 0 ||
+    totalAmountQuota <= 0 ||
+    quotaPerUnit <= 0
+  ) {
+    return null
+  }
+  const grantedUsd = totalAmountQuota / quotaPerUnit
+  const rawPercent = ((grantedUsd - priceAmountUsd) / priceAmountUsd) * 100
+  if (rawPercent < 5) return null
+  if (rawPercent < 10) return Math.floor(rawPercent)
+  return Math.floor(rawPercent / 5) * 5
+}
+
+/**
+ * Highlight the flagship Pro tier (index 2 in 4-tier Starter/Plus/Pro/Max,
+ * index 1 in 3-tier layouts).
+ */
+export function getRecommendedSubscriptionIndex(planCount: number): number {
+  if (planCount >= 4) return 2
+  if (planCount === 3) return 1
+  return 0
 }

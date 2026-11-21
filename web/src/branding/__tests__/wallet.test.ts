@@ -23,7 +23,9 @@ import type { TopupInfo } from '@/features/wallet/types'
 
 import {
   buildBrandDefaultPresets,
+  computePlanBonusPercent,
   getBrandPresetMeta,
+  getRecommendedSubscriptionIndex,
   pickInitialTopupAmount,
   sortSubscriptionPlansAscending,
 } from '../wallet'
@@ -62,5 +64,18 @@ describe('brand wallet helpers', () => {
 
     const sorted = sortSubscriptionPlansAscending(raw)
     expect(sorted.map((p) => p.plan.id)).toEqual([1, 2, 3])
+  })
+
+  it('computes conservative integer bonus percentages and recommends Pro in 4-tier store', () => {
+    expect(computePlanBonusPercent(2.726027, 1780822, 500000)).toBe(30)
+    expect(computePlanBonusPercent(13.561644, 8219178, 500000)).toBe(20)
+    expect(computePlanBonusPercent(40.958904, 26712329, 500000)).toBe(30)
+    expect(computePlanBonusPercent(95.753425, 67123288, 500000)).toBe(40)
+    expect(computePlanBonusPercent(10, 5000000, 500000)).toBeNull()
+    expect(computePlanBonusPercent(0, 5000000, 500000)).toBeNull()
+
+    expect(getRecommendedSubscriptionIndex(4)).toBe(2)
+    expect(getRecommendedSubscriptionIndex(3)).toBe(1)
+    expect(getRecommendedSubscriptionIndex(2)).toBe(0)
   })
 })
