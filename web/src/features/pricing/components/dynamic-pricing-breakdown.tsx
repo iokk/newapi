@@ -20,7 +20,10 @@ import { Tag as TagIcon } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { parseImageFloorBillingExpr } from '@/branding/pricing-telemetry' // CUSTOM(brand)
+import {
+  parseImageFloorBillingExpr,
+  parseVideoResolutionBillingExpr,
+} from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { StaticDataTable } from '@/components/data-table'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -342,8 +345,14 @@ export function DynamicPricingBreakdown({
   if (!expr) return null
 
   if (!hasTiers) {
-    // CUSTOM(brand): image floor formulas are rendered directly in PriceSection & GroupPricingSection
-    if (!compact && parseImageFloorBillingExpr(expr)) return null
+    // CUSTOM(brand): image floor & video resolution formulas are rendered directly in PriceSection & GroupPricingSection
+    if (
+      !compact &&
+      (parseImageFloorBillingExpr(expr) ||
+        parseVideoResolutionBillingExpr(expr))
+    ) {
+      return null
+    }
     return (
       <section className={cn('min-w-0', !compact && 'py-4')}>
         {!compact && (

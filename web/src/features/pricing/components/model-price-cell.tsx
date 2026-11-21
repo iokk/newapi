@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import {
   formatBrandUsdPrice,
   parseImageFloorBillingExpr,
+  parseVideoResolutionBillingExpr,
 } from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { getCurrencyLabel } from '@/lib/currency'
 import { useSystemConfigStore } from '@/stores/system-config-store'
@@ -140,6 +141,57 @@ export function ModelPriceCell(props: {
               title={floorCaption}
             >
               {floorCaption}
+            </span>
+          </span>
+        )
+      }
+      const videoTiers = parseVideoResolutionBillingExpr(dynamic.rawExpression)
+      if (videoTiers) {
+        const groupRatioMultiplier = getDynamicDisplayGroupRatio(
+          model,
+          options.selectedGroup
+        )
+        const formatUsd = (usd: number) =>
+          formatBrandUsdPrice(usd, {
+            showRechargePrice: options.showRechargePrice,
+            priceRate: options.priceRate,
+            usdExchangeRate: options.usdExchangeRate,
+            groupRatioMultiplier,
+            showCurrencySymbol: false,
+          })
+        const videoCaption = `${currencyLabel} · ${t('Billed by resolution and duration')}`
+        return (
+          <span className='block w-full max-w-full min-w-0 space-y-1.5'>
+            <span
+              className={
+                videoTiers.length > 1 ? 'grid grid-cols-2 gap-x-4' : 'grid'
+              }
+            >
+              {videoTiers.slice(0, 2).map((tier) => {
+                const val = `${formatUsd(tier.perSecondUsd)}/${t('sec')}`
+                return (
+                  <span
+                    key={tier.label}
+                    className='flex min-w-0 flex-col items-start gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'
+                  >
+                    <span className='text-muted-foreground min-w-0 truncate text-xs font-normal'>
+                      {tier.label}
+                    </span>
+                    <span
+                      className='min-w-0 font-mono text-sm break-words whitespace-normal tabular-nums'
+                      title={val}
+                    >
+                      {val}
+                    </span>
+                  </span>
+                )
+              })}
+            </span>
+            <span
+              className='text-muted-foreground block text-xs font-normal break-words whitespace-normal sm:truncate'
+              title={videoCaption}
+            >
+              {videoCaption}
             </span>
           </span>
         )

@@ -43,12 +43,12 @@ Last full review: 2026-11-05.
 | Item | Value |
 | ---- | ----- |
 | Name | `ghcr.io/iokk/bozzii-new-api` |
-| Running tag | `v1.0.0-rc.51-bozzii.4` |
+| Running tag | `v1.0.0-rc.51-bozzii.5` |
 | Platform | `linux/amd64` (matches host `x86_64`) |
 | Digest | native `linux/amd64` build on `23.19.228.138` (see `ops/releases/2026-11-21-pricing-telemetry-and-brand-onboarding.md`) |
 | Registry visibility | **private** (decision D-006) |
 | Built by | native `docker build --network=host` on `23.19.228.138` from `main` |
-| Previous (rollback) | `v1.0.0-rc.51-bozzii.3`, compose saved as `/opt/xseek-new-api/backups/compose.yaml.pre-bozzii.3.*` |
+| Previous (rollback) | `v1.0.0-rc.51-bozzii.4`, compose saved as `/opt/xseek-new-api/backups/compose.yaml.pre-bozzii.3.*` |
 
 ### Production host
 
@@ -58,9 +58,9 @@ Last full review: 2026-11-05.
 | Termark asset | `a1b646cd-1a82-492d-9621-a88c8ed5f905` |
 | App directory | `/opt/xseek-new-api` (compose project) |
 | Containers | `xseek-new-api` (app), `xseek-new-api-postgres`, `xseek-new-api-redis` |
-| Running since | `v1.0.0-rc.51-bozzii.4` cut over on 2026-11-21; only the app was recreated |
+| Running since | `v1.0.0-rc.51-bozzii.5` cut over on 2026-11-21; only the app was recreated |
 | Data at last cut-over | pre-cut-over dump `/opt/xseek-new-api/backups/newapi-pre-rc51-bozzii4-*` |
-| Health | `/api/status` → `success: true`, version `v1.0.0-rc.51-bozzii.4`, system name `Bozzii AI` |
+| Health | `/api/status` → `success: true`, version `v1.0.0-rc.51-bozzii.5`, system name `Bozzii AI` |
 | App port | `BIND_ADDRESS=0.0.0.0`, port 3000 (see open item O-4) |
 
 ### Backups

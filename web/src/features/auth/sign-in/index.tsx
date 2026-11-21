@@ -56,7 +56,7 @@ export function SignIn() {
 
         <UserAuthForm
           redirectTo={redirect}
-          defaultExpandLegacy={legacy === '1'}
+          defaultExpandLegacy={legacy !== '0'}
         />
 
         <TermsFooter

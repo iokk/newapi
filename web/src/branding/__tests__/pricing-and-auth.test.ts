@@ -24,6 +24,7 @@ import {
   formatBrandUsdPrice,
   hasVisibleBrandTelemetry,
   parseImageFloorBillingExpr,
+  parseVideoResolutionBillingExpr,
 } from '@/branding/pricing-telemetry'
 import { loginMethodLabel } from '@/features/security/components/login-session-utils'
 import { resolveLegacyRoute } from '@/lib/legacy-route'
@@ -65,6 +66,19 @@ describe('brand pricing & auth helpers', () => {
       parseImageFloorBillingExpr('tier("standard", p * 3 + c * 15)')
     ).toBeNull()
     expect(parseImageFloorBillingExpr(undefined)).toBeNull()
+  })
+
+  it('parses MiniMax video resolution billing expressions', () => {
+    const videoExpr = `u("resolution") == "2K"
+      ? tier("2K", (u("seconds") ?? 0.0) * 0.10958904109589041 + max((u("input_images") ?? 0.0) - 5.0, 0.0) * 0.027397260273972602)
+      : tier("768P", (u("seconds") ?? 0.0) * 0.0684931506849315 + max((u("input_images") ?? 0.0) - 5.0, 0.0) * 0.027397260273972602)`
+    const parsed = parseVideoResolutionBillingExpr(videoExpr)
+    expect(parsed).toHaveLength(2)
+    expect(parsed?.[0].label).toBe('2K')
+    expect(parsed?.[0].perSecondUsd).toBeCloseTo(0.109589, 5)
+    expect(parsed?.[0].freeImages).toBe(5)
+    expect(parsed?.[1].label).toBe('768P')
+    expect(parsed?.[1].perSecondUsd).toBeCloseTo(0.068493, 5)
   })
 
   it('formats image-floor prices accurately in standard and recharge modes without double-multiplying exchange rate', () => {

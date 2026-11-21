@@ -194,6 +194,55 @@ export function parseImageFloorBillingExpr(
   }
 }
 
+export type VideoResolutionTier = {
+  label: string
+  perSecondUsd: number
+  extraImageUsd?: number
+  freeImages?: number
+}
+
+/**
+ * Parse video task expressions branching on resolution with u("seconds") pricing,
+ * e.g. MiniMax-H3:
+ *   u("resolution") == "2K" ? tier("2K", (u("seconds") ?? 0.0) * 0.109589... + ...) : tier("768P", ...)
+ */
+export function parseVideoResolutionBillingExpr(
+  rawExpr: string | undefined
+): VideoResolutionTier[] | null {
+  if (
+    !rawExpr ||
+    !rawExpr.includes('u("resolution")') ||
+    !rawExpr.includes('u("seconds")')
+  ) {
+    return null
+  }
+  const tierRegex = /tier\(\s*"([^"]+)"\s*,([\s\S]*?)\)\s*(?::|\s*$)/g
+  const tiers: VideoResolutionTier[] = []
+  let match: RegExpExecArray | null
+  while ((match = tierRegex.exec(rawExpr)) !== null) {
+    const label = match[1]
+    const body = match[2]
+    const secMatch = body.match(/u\(\s*"seconds"\s*\)[^*]*\*\s*(\d+(?:\.\d+)?)/)
+    if (!secMatch) continue
+    const perSecondUsd = Number.parseFloat(secMatch[1])
+    if (!Number.isFinite(perSecondUsd) || perSecondUsd <= 0) continue
+    const extraImgMatch = body.match(
+      /u\(\s*"input_images"\s*\)[^-]*-\s*(\d+(?:\.\d+)?)[^*]*\*\s*(\d+(?:\.\d+)?)/
+    )
+    tiers.push({
+      label,
+      perSecondUsd,
+      freeImages: extraImgMatch
+        ? Number.parseFloat(extraImgMatch[1])
+        : undefined,
+      extraImageUsd: extraImgMatch
+        ? Number.parseFloat(extraImgMatch[2])
+        : undefined,
+    })
+  }
+  return tiers.length > 0 ? tiers : null
+}
+
 export function formatBrandUsdPrice(
   usd: number,
   options: {

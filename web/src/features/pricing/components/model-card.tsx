@@ -24,6 +24,7 @@ import {
   filterVisibleGroups,
   formatBrandUsdPrice,
   parseImageFloorBillingExpr,
+  parseVideoResolutionBillingExpr,
   useModelBrandTelemetry,
 } from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { CopyButton } from '@/components/copy-button'
@@ -172,16 +173,50 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           </>
         )
       } else {
-        priceSummary = (
-          <div className='col-span-full min-w-0'>
-            <span className='text-warning'>
-              {t('Special billing expression')}
-            </span>
-            <code className='text-muted-foreground mt-1 line-clamp-2 block font-mono text-xs break-all'>
-              {dynamicSummary.rawExpression}
-            </code>
-          </div>
+        const videoTiers = parseVideoResolutionBillingExpr(
+          dynamicSummary.rawExpression
         )
+        if (videoTiers) {
+          const formatUsd = (usd: number) =>
+            formatBrandUsdPrice(usd, {
+              showRechargePrice,
+              priceRate,
+              usdExchangeRate,
+              groupRatioMultiplier: dynamicPriceOptions.groupRatioMultiplier,
+              showCurrencySymbol: true,
+            })
+          priceSummary = (
+            <>
+              {videoTiers.map((tier) => (
+                <div key={tier.label} className='flex min-w-0 flex-col gap-1'>
+                  <span className='text-muted-foreground text-xs'>
+                    {tier.label}
+                  </span>
+                  <span className='flex flex-wrap items-baseline gap-x-1 font-mono text-base font-semibold tabular-nums'>
+                    <span>{formatUsd(tier.perSecondUsd)}</span>
+                    <span className='text-muted-foreground text-xs font-normal whitespace-nowrap'>
+                      / {t('sec')}
+                    </span>
+                  </span>
+                </div>
+              ))}
+              <span className='text-muted-foreground col-span-full text-xs'>
+                {t('Billed by resolution and duration')}
+              </span>
+            </>
+          )
+        } else {
+          priceSummary = (
+            <div className='col-span-full min-w-0'>
+              <span className='text-warning'>
+                {t('Special billing expression')}
+              </span>
+              <code className='text-muted-foreground mt-1 line-clamp-2 block font-mono text-xs break-all'>
+                {dynamicSummary.rawExpression}
+              </code>
+            </div>
+          )
+        }
       }
     } else if (
       dynamicSummary.primaryEntries.length > 0 ||

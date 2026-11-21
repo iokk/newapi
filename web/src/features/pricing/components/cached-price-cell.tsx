@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import {
   formatBrandUsdPrice,
   parseImageFloorBillingExpr,
+  parseVideoResolutionBillingExpr,
   useModelBrandTelemetry,
   type BrandModelTelemetry,
 } from '@/branding/pricing-telemetry' // CUSTOM(brand)
@@ -147,6 +148,9 @@ export function CachedPriceCell(props: {
             <CacheHitBadge telemetry={telemetry} />
           </div>
         )
+      }
+      if (parseVideoResolutionBillingExpr(dynamicSummary.rawExpression)) {
+        return <span className='text-muted-foreground/30 text-xs'>—</span>
       }
       return (
         <span className='text-muted-foreground/50 text-xs'>

@@ -7842,6 +7842,10 @@
     "Probe warning": "探针异常",
     "Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.": "需要体验额度、对公充值或开具增值税发票？请直接联系铂子飞书专属客服。",
     "Contact Feishu Support": "联系飞书客服",
-    "{{rate}}% 7d hit": "7日命中 {{rate}}%"
+    "{{rate}}% 7d hit": "7日命中 {{rate}}%",
+    "Please read and agree to the User Agreement and Privacy Policy": "请先阅读并同意《用户协议》和《隐私政策》",
+    "Billed by resolution and duration": "按分辨率与视频时长计费",
+    "sec": "秒",
+    "Extra reference image (over {{count}})": "超出 {{count}} 张参考图加收"
   }
 }

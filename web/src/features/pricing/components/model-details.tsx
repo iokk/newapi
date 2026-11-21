@@ -37,6 +37,7 @@ import {
   filterVisibleGroups,
   formatBrandUsdPrice,
   parseImageFloorBillingExpr,
+  parseVideoResolutionBillingExpr,
 } from '@/branding/pricing-telemetry' // CUSTOM(brand)
 import { CopyButton } from '@/components/copy-button'
 import { StaticDataTable } from '@/components/data-table'
@@ -826,6 +827,63 @@ function PriceSection(props: {
           </section>
         )
       }
+      const videoTiers = parseVideoResolutionBillingExpr(
+        dynamicSummary.rawExpression
+      )
+      if (videoTiers) {
+        const formatUsd = (usd: number) =>
+          formatBrandUsdPrice(usd, {
+            showRechargePrice: props.showRechargePrice,
+            priceRate: props.priceRate,
+            usdExchangeRate: props.usdExchangeRate,
+            groupRatioMultiplier: 1,
+            showCurrencySymbol: true,
+          })
+        const firstExtra = videoTiers.find((tier) => tier.extraImageUsd != null)
+        return (
+          <section>
+            <SectionTitle>{t('Base Price')}</SectionTitle>
+            <p className='text-muted-foreground mb-2 text-xs'>
+              {t('Billed by resolution and duration')}
+            </p>
+            <div className='grid grid-cols-2 gap-2'>
+              {videoTiers.map((tier) => (
+                <div
+                  key={tier.label}
+                  className='bg-muted/20 rounded-lg border p-3'
+                >
+                  <div className='text-muted-foreground text-xs'>
+                    {tier.label}
+                  </div>
+                  <div className='text-foreground mt-1 font-mono text-base font-semibold tabular-nums'>
+                    {formatUsd(tier.perSecondUsd)}
+                    <span className='text-muted-foreground/40 ml-1 text-xs font-normal'>
+                      / {t('sec')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {firstExtra?.extraImageUsd != null && (
+              <div className='bg-muted/20 mt-3 rounded-lg border px-3 py-2.5'>
+                <div className='flex items-baseline justify-between gap-4'>
+                  <span className='text-muted-foreground/70 text-sm'>
+                    {t('Extra reference image (over {{count}})', {
+                      count: firstExtra.freeImages ?? 0,
+                    })}
+                  </span>
+                  <span className='text-muted-foreground font-mono text-sm tabular-nums'>
+                    {formatUsd(firstExtra.extraImageUsd)}
+                    <span className='text-muted-foreground/40 ml-1 text-xs font-normal'>
+                      / {t('image')}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </section>
+        )
+      }
       return (
         <section>
           <SectionTitle>{t('Base Price')}</SectionTitle>
@@ -1369,6 +1427,57 @@ function ProviderGroupPricingSection(
                   />
                   <p className='text-muted-foreground/60 mt-1.5 text-[11px]'>
                     {t('Higher of token cost or per-image floor')}
+                  </p>
+                </>
+              )
+            }
+            const videoTiers = parseVideoResolutionBillingExpr(
+              props.model.billing_expr
+            )
+            if (videoTiers) {
+              const formatGroupUsd = (usd: number, group: string) =>
+                formatBrandUsdPrice(usd, {
+                  showRechargePrice,
+                  priceRate: props.priceRate,
+                  usdExchangeRate: props.usdExchangeRate,
+                  groupRatioMultiplier: props.groupRatio[group] || 1,
+                  showCurrencySymbol: true,
+                })
+              return (
+                <>
+                  <StaticDataTable
+                    className='-mx-4 rounded-none border-0 sm:mx-0'
+                    tableClassName='text-sm'
+                    headerRowClassName='hover:bg-transparent'
+                    data={availableGroups}
+                    getRowKey={(group) => group}
+                    columns={[
+                      {
+                        id: 'group',
+                        header: t('Group'),
+                        className: thClass,
+                        cellClassName: 'py-2.5',
+                        cell: (group) => <GroupBadge group={group} size='sm' />,
+                      },
+                      {
+                        id: 'ratio',
+                        header: t('Ratio'),
+                        className: thClass,
+                        cellClassName: 'text-muted-foreground py-2.5 font-mono',
+                        cell: (group) => `${props.groupRatio[group] || 1}x`,
+                      },
+                      ...videoTiers.map((tier) => ({
+                        id: `video-${tier.label}`,
+                        header: `${tier.label} / ${t('sec')}`,
+                        className: `${thClass} text-right`,
+                        cellClassName: 'py-2.5 text-right font-mono',
+                        cell: (group: string) =>
+                          formatGroupUsd(tier.perSecondUsd, group),
+                      })),
+                    ]}
+                  />
+                  <p className='text-muted-foreground/60 mt-1.5 text-[11px]'>
+                    {t('Billed by resolution and duration')}
                   </p>
                 </>
               )

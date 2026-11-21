@@ -7842,6 +7842,10 @@
     "Probe warning": "Probe warning",
     "Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.": "Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.",
     "Contact Feishu Support": "Contact Feishu Support",
-    "{{rate}}% 7d hit": "{{rate}}% 7d hit"
+    "{{rate}}% 7d hit": "{{rate}}% 7d hit",
+    "Please read and agree to the User Agreement and Privacy Policy": "Please read and agree to the User Agreement and Privacy Policy",
+    "Billed by resolution and duration": "Billed by resolution and duration",
+    "sec": "sec",
+    "Extra reference image (over {{count}})": "Extra reference image (over {{count}})"
   }
 }
