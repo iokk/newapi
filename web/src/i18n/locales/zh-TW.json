@@ -7781,6 +7781,17 @@
     "Select an API key": "選擇 API 金鑰",
     "No API keys found": "找不到 API 金鑰",
     "Could not load API keys. You can still use automatic keys.": "無法載入 API 金鑰，仍可使用自動專用金鑰。",
-    "Configure {{product}} with the selected API key.": "使用選取的 API 金鑰設定 {{product}}。"
+    "Configure {{product}} with the selected API key.": "使用選取的 API 金鑰設定 {{product}}。",
+    "Contact Support": "聯繫客服",
+    "Service notices and feedback rewards": "服務通知與有效回饋額度獎勵",
+    "Copy email address": "複製電子郵件地址",
+    "Copied sanitized diagnostic report": "已複製脫敏排障摘要",
+    "Copy Diagnostic Report": "一鍵複製排障摘要",
+    "Copy sanitized diagnostic report": "一鍵複製脫敏排障摘要",
+    "Troubleshooting Docs": "排障文件",
+    "Using wallet balance by default": "預設使用帳戶餘額",
+    "Enterprise dedicated routing": "企業專屬高可用通道",
+    "Connect with our team via WeChat, Feishu, or email": "透過微信、飛書或郵件聯繫專屬商務與技術支援",
+    "Support": "支援"
   }
 }

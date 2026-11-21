@@ -29,6 +29,7 @@ import {
   Copy,
   CreditCard,
   FileText,
+  Headset, // CUSTOM(brand)
   KeyRound,
   ListChecks,
   RadioTower,
@@ -88,6 +89,8 @@ const SETUP_GUIDE_CODE_PATTERN = [
 ].join('\n')
 
 type DashboardActionPath =
+  | '/client-config' // CUSTOM(brand)
+  | '/contact' // CUSTOM(brand)
   | '/keys'
   | '/wallet'
   | '/playground'
@@ -573,6 +576,13 @@ export function OverviewDashboard() {
         description: t('Review model rates before scaling traffic'),
         to: '/pricing',
         icon: BookOpen,
+      },
+      // CUSTOM(brand): direct shortcut to standalone Contact Support page
+      {
+        title: t('Contact Support'),
+        description: t('Connect with our team via WeChat, Feishu, or email'),
+        to: '/contact',
+        icon: Headset,
       },
     ],
     [t]

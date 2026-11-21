@@ -231,14 +231,14 @@ function OAuthCallback() {
             )
             window.location.replace(url)
           } catch {
-            storage.removeItem(OIDC_AUTO_RETRY_KEY)
+            storage.removeItem?.(OIDC_AUTO_RETRY_KEY)
             toast.error(i18next.t('Missing code'))
             safeNavigate('/sign-in', '/sign-in')
           }
         })()
         return
       }
-      storage?.removeItem(OIDC_AUTO_RETRY_KEY)
+      storage?.removeItem?.(OIDC_AUTO_RETRY_KEY)
     }
 
     if (!code && !search.error) {
@@ -272,7 +272,7 @@ function OAuthCallback() {
         if (!active) return
         if (response.data?.success) {
           completedLogin.current = loginKey
-          getOAuthSessionStorage(window)?.removeItem(OIDC_AUTO_RETRY_KEY)
+          getOAuthSessionStorage(window)?.removeItem?.(OIDC_AUTO_RETRY_KEY)
           if (
             await handleLoginResult(
               response.data.data,

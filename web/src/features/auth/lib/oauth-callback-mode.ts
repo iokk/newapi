@@ -46,6 +46,7 @@ export function consumeOAuthLoginRedirect(state: string): string | null {
 export interface OAuthModeStorage {
   getItem: (key: string) => string | null
   setItem: (key: string, value: string) => void
+  removeItem?: (key: string) => void // CUSTOM(brand): support clearing OIDC auto-retry guard
 }
 
 /** Minimal owner shape for safely accessing `sessionStorage`. */

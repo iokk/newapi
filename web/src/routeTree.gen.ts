@@ -38,6 +38,7 @@ import { Route as authUserResetRouteImport } from './routes/(auth)/user/reset'
 import { Route as AuthenticatedChannelsIndexRouteImport } from './routes/_authenticated/channels/index'
 import { Route as AuthenticatedChatChatIdRouteImport } from './routes/_authenticated/chat/$chatId'
 import { Route as AuthenticatedClientConfigIndexRouteImport } from './routes/_authenticated/client-config/index'
+import { Route as AuthenticatedContactIndexRouteImport } from './routes/_authenticated/contact/index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedDashboardSectionRouteImport } from './routes/_authenticated/dashboard/$section'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
@@ -221,6 +222,12 @@ const AuthenticatedClientConfigIndexRoute =
   AuthenticatedClientConfigIndexRouteImport.update({
     id: '/client-config/',
     path: '/client-config/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContactIndexRoute =
+  AuthenticatedContactIndexRouteImport.update({
+    id: '/contact/',
+    path: '/contact/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDashboardIndexRoute =
@@ -482,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/usage-logs/audit': typeof AuthenticatedUsageLogsAuditRoute
   '/channels/': typeof AuthenticatedChannelsIndexRoute
   '/client-config/': typeof AuthenticatedClientConfigIndexRoute
+  '/contact/': typeof AuthenticatedContactIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/keys/': typeof AuthenticatedKeysIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
@@ -548,6 +556,7 @@ export interface FileRoutesByTo {
   '/usage-logs/audit': typeof AuthenticatedUsageLogsAuditRoute
   '/channels': typeof AuthenticatedChannelsIndexRoute
   '/client-config': typeof AuthenticatedClientConfigIndexRoute
+  '/contact': typeof AuthenticatedContactIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/keys': typeof AuthenticatedKeysIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
@@ -618,6 +627,7 @@ export interface FileRoutesById {
   '/_authenticated/usage-logs/audit': typeof AuthenticatedUsageLogsAuditRoute
   '/_authenticated/channels/': typeof AuthenticatedChannelsIndexRoute
   '/_authenticated/client-config/': typeof AuthenticatedClientConfigIndexRoute
+  '/_authenticated/contact/': typeof AuthenticatedContactIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/keys/': typeof AuthenticatedKeysIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
@@ -687,6 +697,7 @@ export interface FileRouteTypes {
     | '/usage-logs/audit'
     | '/channels/'
     | '/client-config/'
+    | '/contact/'
     | '/dashboard/'
     | '/keys/'
     | '/models/'
@@ -753,6 +764,7 @@ export interface FileRouteTypes {
     | '/usage-logs/audit'
     | '/channels'
     | '/client-config'
+    | '/contact'
     | '/dashboard'
     | '/keys'
     | '/models'
@@ -822,6 +834,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usage-logs/audit'
     | '/_authenticated/channels/'
     | '/_authenticated/client-config/'
+    | '/_authenticated/contact/'
     | '/_authenticated/dashboard/'
     | '/_authenticated/keys/'
     | '/_authenticated/models/'
@@ -1080,6 +1093,13 @@ declare module '@tanstack/react-router' {
       path: '/client-config'
       fullPath: '/client-config/'
       preLoaderRoute: typeof AuthenticatedClientConfigIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contact/': {
+      id: '/_authenticated/contact/'
+      path: '/contact'
+      fullPath: '/contact/'
+      preLoaderRoute: typeof AuthenticatedContactIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard/': {
@@ -1451,6 +1471,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUsageLogsAuditRoute: typeof AuthenticatedUsageLogsAuditRoute
   AuthenticatedChannelsIndexRoute: typeof AuthenticatedChannelsIndexRoute
   AuthenticatedClientConfigIndexRoute: typeof AuthenticatedClientConfigIndexRoute
+  AuthenticatedContactIndexRoute: typeof AuthenticatedContactIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
   AuthenticatedKeysIndexRoute: typeof AuthenticatedKeysIndexRoute
   AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
@@ -1480,6 +1501,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsageLogsAuditRoute: AuthenticatedUsageLogsAuditRoute,
   AuthenticatedChannelsIndexRoute: AuthenticatedChannelsIndexRoute,
   AuthenticatedClientConfigIndexRoute: AuthenticatedClientConfigIndexRoute,
+  AuthenticatedContactIndexRoute: AuthenticatedContactIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   AuthenticatedKeysIndexRoute: AuthenticatedKeysIndexRoute,
   AuthenticatedModelsIndexRoute: AuthenticatedModelsIndexRoute,

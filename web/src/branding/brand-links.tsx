@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils'
 
 export const XSEEK_AGENT_URL = 'https://xseekai.cn/index.html'
 export const QUICK_CONNECT_URL = '/brand/connect.html'
+export const SUPPORT_EMAIL = 'support@bozzii.com'
 export const FEISHU_SUPPORT_URL =
   'https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&unique_id=zjiyrPYNA0hoEh1gNlp4Lg=='
 

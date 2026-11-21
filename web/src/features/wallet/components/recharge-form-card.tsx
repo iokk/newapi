@@ -16,14 +16,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Gift, ExternalLink, Loader2, Receipt, WalletCards } from 'lucide-react'
+import {
+  ChevronDown, // CUSTOM(brand)
+  ExternalLink,
+  Gift,
+  Loader2,
+  Receipt,
+  WalletCards,
+} from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 
+import { getBrandPresetMeta } from '@/branding/wallet' // CUSTOM(brand)
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { IconBadge } from '@/components/ui/icon-badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -72,6 +79,8 @@ interface RechargeFormCardProps {
   loading?: boolean
   priceRatio?: number
   usdExchangeRate?: number
+  currencyPrefix?: string // CUSTOM(brand): optional display symbol (e.g. '¥') when site displays CNY
+  collapseCustomAmount?: boolean // CUSTOM(brand): keep focus on fixed presets when enabled
   onOpenBilling?: () => void
   creemProducts?: CreemProduct[]
   enableCreemTopup?: boolean
@@ -102,6 +111,8 @@ export function RechargeFormCard({
   loading,
   priceRatio = 1,
   usdExchangeRate = 1,
+  currencyPrefix = '',
+  collapseCustomAmount = false,
   onOpenBilling,
   creemProducts,
   enableCreemTopup,
@@ -114,6 +125,11 @@ export function RechargeFormCard({
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
   const [localAmount, setLocalAmount] = useState(topupAmount.toString())
+  const [showCustomAmount, setShowCustomAmount] = useState(
+    !collapseCustomAmount
+  )
+  const withPrefix = (formatted: string) =>
+    currencyPrefix ? `${currencyPrefix}${formatted}` : formatted
 
   useEffect(() => {
     // Empty string must survive, otherwise the field can never be cleared
@@ -152,22 +168,16 @@ export function RechargeFormCard({
         </CardHeader>
         <CardContent className='space-y-4 p-3 sm:space-y-6 sm:p-5'>
           <div className='space-y-4 sm:space-y-6'>
-            {/* Preset Amounts Skeleton */}
+            {/* CUSTOM(brand): 3x2 preset skeleton matches fixed tiers layout */}
             <div className='space-y-3'>
               <Skeleton className='h-3 w-16' />
-              <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
-                {Array.from({ length: 8 }, (_, index) => `preset-${index}`).map(
+              <div className='grid grid-cols-2 gap-2.5 sm:grid-cols-3'>
+                {Array.from({ length: 6 }, (_, index) => `preset-${index}`).map(
                   (key) => (
-                    <Skeleton key={key} className='h-[72px] rounded-lg' />
+                    <Skeleton key={key} className='h-[76px] rounded-xl' />
                   )
                 )}
               </div>
-            </div>
-
-            {/* Custom Amount Input Skeleton */}
-            <div className='space-y-3'>
-              <Skeleton className='h-3 w-28' />
-              <Skeleton className='h-[42px] w-full' />
             </div>
 
             {/* Payment Methods Skeleton */}
@@ -222,11 +232,30 @@ export function RechargeFormCard({
           {hasConfigurableTopup && (
             <>
               {presetAmounts.length > 0 && (
-                <div className='space-y-2.5 sm:space-y-3'>
-                  <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                    {t('Amount')}
-                  </Label>
-                  <div className='grid grid-cols-2 gap-1.5 sm:gap-3 md:grid-cols-4'>
+                <div className='space-y-2.5'>
+                  <div className='flex items-center justify-between gap-2'>
+                    <Label className='text-muted-foreground text-xs font-medium'>
+                      {t('Amount')}
+                    </Label>
+                    <button
+                      type='button'
+                      aria-expanded={showCustomAmount}
+                      aria-controls='wallet-custom-amount-panel'
+                      onClick={() => setShowCustomAmount((prev) => !prev)}
+                      className='text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center gap-1 rounded-sm text-xs transition-colors outline-none focus-visible:ring-2'
+                    >
+                      {t('Custom Amount')}
+                      <ChevronDown
+                        className={cn(
+                          'size-3.5 transition-transform',
+                          showCustomAmount && 'rotate-180'
+                        )}
+                        aria-hidden='true'
+                      />
+                    </button>
+                  </div>
+                  {/* CUSTOM(brand): 6 fixed integer-CNY tiers in clean 3x2 OpenAI-style grid */}
+                  <div className='grid grid-cols-2 gap-2.5 sm:grid-cols-3'>
                     {presetAmounts.map((preset) => {
                       const discount =
                         preset.discount ||
@@ -243,105 +272,149 @@ export function RechargeFormCard({
                         discount,
                         usdExchangeRate
                       )
-                      return (
-                        <Button
-                          key={preset.value}
-                          variant='outline'
-                          className={cn(
-                            'flex min-h-16 flex-col items-start rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-[72px] sm:p-4',
-                            selectedPreset === preset.value
-                              ? 'border-foreground bg-foreground/5 dark:border-foreground dark:bg-foreground/10'
-                              : 'border-muted'
-                          )}
-                          onClick={() => onSelectPreset(preset)}
-                        >
-                          <div className='flex w-full items-center justify-between'>
-                            <div className='text-base font-semibold sm:text-lg'>
-                              {formatNumber(displayValue)}
-                            </div>
-                            {hasDiscount && (
-                              <div className='text-xs font-medium text-green-600'>
-                                {getDiscountLabel(discount, t)}
-                              </div>
-                            )}
+                      const isSelected = selectedPreset === preset.value
+                      const presetMeta = currencyPrefix
+                        ? getBrandPresetMeta(preset.value)
+                        : null
+                      let badgeNode = null
+                      if (hasDiscount) {
+                        badgeNode = (
+                          <div className='rounded-md bg-green-500/10 px-1.5 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-400'>
+                            {getDiscountLabel(discount, t)}
                           </div>
-                          <div className='text-muted-foreground mt-1.5 w-full text-xs sm:mt-2'>
+                        )
+                      } else if (presetMeta) {
+                        badgeNode = (
+                          <div
+                            className={cn(
+                              'rounded-md px-1.5 py-0.5 text-[11px] font-medium',
+                              presetMeta.highlight
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted text-muted-foreground'
+                            )}
+                          >
+                            {presetMeta.label}
+                          </div>
+                        )
+                      }
+                      return (
+                        <button
+                          key={preset.value}
+                          type='button'
+                          aria-pressed={isSelected}
+                          className={cn(
+                            'group relative flex min-h-[76px] flex-col justify-between rounded-xl border px-3.5 py-3 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            isSelected
+                              ? 'border-foreground bg-foreground/[0.04] ring-1 ring-foreground dark:bg-foreground/10'
+                              : 'border-border/80 bg-background hover:border-foreground/40 hover:bg-muted/30'
+                          )}
+                          onClick={() => {
+                            onSelectPreset(preset)
+                            if (collapseCustomAmount) setShowCustomAmount(false)
+                          }}
+                        >
+                          <div className='flex w-full items-center justify-between gap-2'>
+                            <div className='text-foreground font-mono text-lg font-semibold tracking-tight tabular-nums'>
+                              {withPrefix(formatNumber(displayValue))}
+                            </div>
+                            {badgeNode}
+                          </div>
+                          <div className='text-muted-foreground mt-1.5 text-xs tabular-nums'>
                             {hasDiscount && savedAmount > 0 ? (
                               <Trans
                                 t={t}
                                 i18nKey='Pay {{amount}} <savings>• Save {{saved}}</savings>'
                                 values={{
-                                  amount: formatCurrency(actualPrice),
-                                  saved: formatCurrency(savedAmount),
+                                  amount: withPrefix(
+                                    formatCurrency(actualPrice)
+                                  ),
+                                  saved: withPrefix(
+                                    formatCurrency(savedAmount)
+                                  ),
                                 }}
                                 components={{
-                                  savings: <span className='text-green-600' />,
+                                  savings: (
+                                    <span className='text-green-600 dark:text-green-400' />
+                                  ),
                                 }}
                               />
                             ) : (
                               t('Pay {{amount}}', {
-                                amount: formatCurrency(actualPrice),
+                                amount: withPrefix(formatCurrency(actualPrice)),
                               })
                             )}
                           </div>
-                        </Button>
+                        </button>
                       )
                     })}
                   </div>
                 </div>
               )}
 
-              <div className='space-y-2.5 sm:space-y-3'>
-                <Label
-                  htmlFor='topup-amount'
-                  className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
+              {/* CUSTOM(brand): collapsible custom amount keeps focus on fixed tiers while preserving power-user input */}
+              {(showCustomAmount || presetAmounts.length === 0) && (
+                <div
+                  id='wallet-custom-amount-panel'
+                  className='bg-muted/25 space-y-2 rounded-xl border p-3'
                 >
-                  {t('Custom Amount')}
-                </Label>
-                <div className='grid grid-cols-[minmax(0,1fr)_minmax(110px,0.55fr)] gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center'>
+                  <Label
+                    htmlFor='topup-amount'
+                    className='text-muted-foreground text-xs font-medium'
+                  >
+                    {t('Custom Amount')}
+                    {currencyPrefix && usdExchangeRate > 1
+                      ? ` (USD · 1 USD = ${currencyPrefix}${usdExchangeRate})`
+                      : ''}
+                  </Label>
                   <Input
                     id='topup-amount'
+                    name='topupAmount'
                     type='number'
+                    inputMode='numeric'
+                    autoComplete='off'
                     value={localAmount}
                     onChange={(e) => handleAmountChange(e.target.value)}
                     min={minTopup}
                     placeholder={t('Minimum {{amount}}', { amount: minTopup })}
-                    className='h-9 text-base sm:h-10 sm:text-lg'
+                    className='bg-background h-9 font-mono text-sm tabular-nums'
                   />
-                  <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
-                    <span className='text-muted-foreground truncate text-xs'>
-                      {t('Amount to pay:')}
-                    </span>
-                    {calculating ? (
-                      <Skeleton className='h-5 w-16' />
-                    ) : (
-                      <span className='text-sm font-semibold'>
-                        {formatCurrency(paymentAmount)}
-                      </span>
-                    )}
-                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className='space-y-2.5 sm:space-y-3'>
-                <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                  {t('Payment Method')}
-                </Label>
+              <div className='space-y-2.5'>
+                <div className='flex items-center justify-between gap-2'>
+                  <Label className='text-muted-foreground text-xs font-medium'>
+                    {t('Payment Method')}
+                  </Label>
+                  <span className='text-muted-foreground text-xs tabular-nums'>
+                    {t('Amount to pay:')}{' '}
+                    <span className='text-foreground font-mono font-semibold'>
+                      {calculating
+                        ? '…'
+                        : withPrefix(formatCurrency(paymentAmount))}
+                    </span>
+                  </span>
+                </div>
                 {hasStandardPaymentMethods ? (
-                  <div className='grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-3'>
+                  <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
                     {topupInfo?.pay_methods?.map((method) => {
-                      const minTopup = Math.max(
+                      const methodMinTopup = Math.max(
                         method.min_topup || 0,
                         getMinTopupAmount(topupInfo)
                       )
-                      const disabled = minTopup > topupAmount
+                      const disabled = methodMinTopup > topupAmount
+                      const minDisplay = currencyPrefix
+                        ? withPrefix(
+                            formatCurrency(methodMinTopup * priceRatio)
+                          )
+                        : String(methodMinTopup)
                       const disabledReason = disabled
                         ? t('Minimum topup amount: {{amount}}', {
-                            amount: minTopup,
+                            amount: minDisplay,
                           })
                         : undefined
                       const disabledLabel = disabled
-                        ? `${t('Minimum:')} ${minTopup}`
+                        ? `${t('Minimum:')} ${minDisplay}`
                         : undefined
 
                       const button = (
@@ -356,28 +429,38 @@ export function RechargeFormCard({
                               ? `${method.name}. ${disabledReason}`
                               : method.name
                           }
-                          className='min-h-14 min-w-0 justify-start gap-2 rounded-lg px-3 py-2 text-left'
-                        >
-                          {paymentLoading === method.type ? (
-                            <Loader2 className='h-4 w-4 animate-spin' />
-                          ) : (
-                            getPaymentIcon(
-                              method.type,
-                              'h-4 w-4',
-                              method.icon,
-                              method.name
-                            )
+                          className={cn(
+                            'h-12 min-w-0 justify-between rounded-xl px-4 text-left font-medium transition-colors',
+                            !disabled &&
+                              'hover:border-foreground/50 hover:bg-muted/40'
                           )}
-                          <span className='flex min-w-0 flex-col items-start gap-0.5'>
-                            <span className='max-w-full truncate'>
+                        >
+                          <span className='flex min-w-0 items-center gap-2.5'>
+                            {paymentLoading === method.type ? (
+                              <Loader2 className='h-4 w-4 animate-spin' />
+                            ) : (
+                              getPaymentIcon(
+                                method.type,
+                                'h-4 w-4 shrink-0',
+                                method.icon,
+                                method.name
+                              )
+                            )}
+                            <span className='truncate text-sm'>
                               {method.name}
                             </span>
-                            {disabledLabel && (
-                              <span className='text-muted-foreground max-w-full truncate text-[11px] leading-4 font-normal'>
-                                {disabledLabel}
-                              </span>
-                            )}
                           </span>
+                          {disabledLabel ? (
+                            <span className='text-muted-foreground shrink-0 text-[11px] font-normal tabular-nums'>
+                              {disabledLabel}
+                            </span>
+                          ) : (
+                            <span className='text-muted-foreground shrink-0 font-mono text-xs tabular-nums'>
+                              {calculating
+                                ? '…'
+                                : withPrefix(formatCurrency(paymentAmount))}
+                            </span>
+                          )}
                         </Button>
                       )
 
@@ -515,14 +598,12 @@ export function RechargeFormCard({
 
       {/* Redemption Code Section */}
       {redemptionEnabled ? (
-        <div className='space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-6'>
-          <div className='flex items-center gap-2'>
-            <IconBadge tone='warning' size='xs'>
-              <Gift />
-            </IconBadge>
+        <div className='space-y-2.5 border-t pt-4 sm:pt-5'>
+          <div className='flex items-center gap-1.5'>
+            <Gift className='text-muted-foreground size-3.5' aria-hidden='true' />
             <Label
               htmlFor='redemption-code'
-              className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
+              className='text-muted-foreground text-xs font-medium'
             >
               {t('Have a Code?')}
             </Label>
@@ -530,6 +611,9 @@ export function RechargeFormCard({
           <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
             <Input
               id='redemption-code'
+              name='redemptionCode'
+              autoComplete='off'
+              spellCheck={false}
               value={redemptionCode}
               onChange={(e) => onRedemptionCodeChange(e.target.value)}
               placeholder={t('Enter your redemption code')}

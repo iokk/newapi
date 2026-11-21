@@ -24,6 +24,7 @@ import {
   CreditCard,
   FileText,
   FlaskConical,
+  Headset, // CUSTOM(brand)
   Key,
   LayoutDashboard,
   ListTodo,
@@ -149,6 +150,18 @@ export function useSidebarData(badges: SidebarBadges = {}): SidebarData {
             title: t('Security & Access'),
             url: '/security',
             icon: ShieldCheck,
+          },
+        ],
+      },
+      // CUSTOM(brand): standalone Contact Support group (exact 4-char zh label "联系客服")
+      {
+        id: 'support',
+        title: t('Support'),
+        items: [
+          {
+            title: t('Contact Support'),
+            url: '/contact',
+            icon: Headset,
           },
         ],
       },

@@ -315,7 +315,8 @@ export function CommonLogMobileCard<TData>(props: {
         </div>
       )}
       {contentCell && (
-        <div className='relative min-w-0 border-t pt-2 [&_button]:min-h-8 [&_button]:w-full [&_button]:max-w-full [&_button]:pr-5 [&_button]:text-sm [&_button>span]:line-clamp-2 [&_button>span]:[overflow-wrap:anywhere] [&_button>span]:whitespace-normal'>
+        // CUSTOM(brand): preserve full mobile width and avoid stretching the inline quick-copy icon button
+        <div className='relative min-w-0 border-t pt-2 [&>div]:max-w-full [&>div]:pr-5 [&_button:not([data-slot=log-error-quick-copy])]:min-h-8 [&_button:not([data-slot=log-error-quick-copy])]:w-full [&_button:not([data-slot=log-error-quick-copy])]:max-w-full [&_button:not([data-slot=log-error-quick-copy])]:text-sm [&_button:not([data-slot=log-error-quick-copy])>span]:line-clamp-2 [&_button:not([data-slot=log-error-quick-copy])>span]:[overflow-wrap:anywhere] [&_button:not([data-slot=log-error-quick-copy])>span]:whitespace-normal'>
           {flexRender(
             contentCell.column.columnDef.cell,
             contentCell.getContext()

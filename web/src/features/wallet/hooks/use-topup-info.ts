@@ -18,14 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useCallback } from 'react'
 
+import { buildBrandDefaultPresets } from '@/branding/wallet' // CUSTOM(brand)
 import { handleServerError } from '@/lib/handle-server-error'
 
 import { getTopupInfo } from '../api'
-import {
-  generatePresetAmounts,
-  mergePresetAmounts,
-  getMinTopupAmount,
-} from '../lib'
+import { mergePresetAmounts, getMinTopupAmount } from '../lib'
 import type {
   TopupInfo,
   PresetAmount,
@@ -205,7 +202,11 @@ export function useTopupInfo() {
         setPresetAmounts(customPresets)
       } else {
         const minTopup = getMinTopupAmount(processedData)
-        const defaultPresets = generatePresetAmounts(minTopup)
+        // CUSTOM(brand): use clean fixed integer-CNY presets instead of 8 fractional multipliers
+        const defaultPresets = buildBrandDefaultPresets(
+          minTopup,
+          processedData.discount || {}
+        )
         setPresetAmounts(defaultPresets)
       }
     } catch (err) {

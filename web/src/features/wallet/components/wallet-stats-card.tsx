@@ -16,10 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Activity, BarChart3, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatQuota } from '@/lib/format'
 
@@ -33,12 +31,13 @@ interface WalletStatsCardProps {
 export function WalletStatsCard(props: WalletStatsCardProps) {
   const { t } = useTranslation()
   if (props.loading) {
+    // CUSTOM(brand): responsive monochrome stats skeleton without mobile overflow
     return (
-      <div className='grid grid-cols-3 divide-x rounded-lg border'>
+      <div className='bg-card grid grid-cols-3 divide-x rounded-xl border'>
         {['balance', 'usage', 'requests'].map((key) => (
-          <div key={key} className='min-w-0 px-2.5 py-2.5 sm:px-5 sm:py-4'>
-            <Skeleton className='h-3.5 w-full' />
-            <Skeleton className='mt-2 h-6 w-full sm:h-7' />
+          <div key={key} className='min-w-0 px-3 py-3 sm:px-6 sm:py-5'>
+            <Skeleton className='h-3.5 w-full max-w-20' />
+            <Skeleton className='mt-2 h-7 w-full max-w-28 sm:h-8' />
             <Skeleton className='mt-1.5 hidden h-3.5 w-24 md:block' />
           </div>
         ))}
@@ -50,49 +49,43 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     label: string
     value: string
     description: string
-    icon: typeof WalletCards
-    tone: IconBadgeTone
   }[] = [
     {
       label: t('Current Balance'),
       value: formatQuota(props.user?.quota ?? 0),
       description: t('Remaining quota'),
-      icon: WalletCards,
-      tone: 'success',
     },
     {
       label: t('Total Usage'),
       value: formatQuota(props.user?.used_quota ?? 0),
       description: t('Total consumed quota'),
-      icon: BarChart3,
-      tone: 'info',
     },
     {
       label: t('API Requests'),
       value: (props.user?.request_count ?? 0).toLocaleString(),
       description: t('Total requests made'),
-      icon: Activity,
-      tone: 'chart-4',
     },
   ]
 
   return (
-    <div className='grid grid-cols-3 divide-x rounded-lg border'>
-      {stats.map((item) => (
-        <div key={item.label} className='min-w-0 px-2.5 py-2.5 sm:px-5 sm:py-4'>
-          <div className='flex items-center gap-1.5 sm:gap-2.5'>
-            <IconBadge tone={item.tone} size='stat'>
-              <item.icon />
-            </IconBadge>
-            <div className='text-muted-foreground truncate text-[11px] font-medium tracking-wider uppercase sm:text-xs'>
-              {item.label}
-            </div>
+    // CUSTOM(brand): OpenAI-inspired clean monochrome stats bar without noisy icon badges
+    <div className='bg-card grid grid-cols-3 divide-x rounded-xl border'>
+      {stats.map((item, index) => (
+        <div key={item.label} className='min-w-0 px-3 py-3 sm:px-6 sm:py-5'>
+          <div className='text-muted-foreground truncate text-xs font-medium'>
+            {item.label}
           </div>
 
-          <div className='text-foreground mt-1.5 font-mono text-sm font-bold tracking-tight break-all tabular-nums sm:mt-2.5 sm:text-2xl'>
+          <div
+            className={
+              index === 0
+                ? 'text-foreground mt-1.5 font-mono text-sm font-semibold tracking-tight break-all tabular-nums sm:mt-2 sm:text-3xl'
+                : 'text-foreground/90 mt-1.5 font-mono text-sm font-semibold tracking-tight break-all tabular-nums sm:mt-2 sm:text-2xl'
+            }
+          >
             {item.value}
           </div>
-          <div className='text-muted-foreground/60 mt-1 hidden text-xs md:block'>
+          <div className='text-muted-foreground mt-1 hidden text-xs md:block'>
             {item.description}
           </div>
         </div>

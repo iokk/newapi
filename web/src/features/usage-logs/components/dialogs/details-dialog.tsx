@@ -53,6 +53,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { LogErrorDiagnosticCard } from '@/branding/log-error-helper' // CUSTOM(brand)
 import { Dialog } from '@/components/dialog'
 import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
@@ -1406,6 +1407,9 @@ export function DetailsDialog(props: DetailsDialogProps) {
             })}
           </DetailSection>
         )}
+
+        {/* CUSTOM(brand): 1-click sanitized diagnostic report & self-fix hints on failed logs */}
+        <LogErrorDiagnosticCard log={props.log} other={other} />
 
         {/* Content */}
         {details && (
