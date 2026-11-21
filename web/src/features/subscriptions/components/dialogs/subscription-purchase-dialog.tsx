@@ -22,6 +22,10 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { SHOW_PRICING_GROUPS } from '@/branding/pricing' // CUSTOM(brand)
+import {
+  computePlanBonusPercent,
+  ENABLE_SUBSCRIPTION_EPAY_DIRECT,
+} from '@/branding/wallet' // CUSTOM(brand)
 import { Dialog } from '@/components/dialog'
 import { GroupBadge } from '@/components/group-badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -86,7 +90,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const hasWaffoPancake =
     props.enableWaffoPancake && !!plan.waffo_pancake_product_id
   const hasEpay =
-    props.enableOnlineTopUp && (props.epayMethods || []).length > 0
+    ENABLE_SUBSCRIPTION_EPAY_DIRECT && // CUSTOM(brand): guard Epay until backend applies CNY rate multiplier
+    props.enableOnlineTopUp &&
+    (props.epayMethods || []).length > 0
   const hasAnyPayment = hasStripe || hasCreem || hasWaffoPancake || hasEpay
   const totalAmount = Number(plan.total_amount || 0)
   // CUSTOM(brand): format plan price using site billing currency (matches balance cost)
@@ -98,6 +104,11 @@ export function SubscriptionPurchaseDialog(props: Props) {
     currency?.quotaPerUnit && currency.quotaPerUnit > 0
       ? currency.quotaPerUnit
       : DEFAULT_CURRENCY_CONFIG.quotaPerUnit
+  const bonusPct = computePlanBonusPercent(
+    Number(plan.price_amount || 0),
+    totalAmount,
+    quotaPerUnit
+  ) // CUSTOM(brand)
   const balanceCost = Math.max(
     0,
     Math.ceil(Number(plan.price_amount || 0) * quotaPerUnit)
@@ -276,9 +287,15 @@ export function SubscriptionPurchaseDialog(props: Props) {
             <span className='text-muted-foreground text-sm'>
               {t('Plan Quota')}
             </span>
-            <span className='flex items-center gap-1 text-sm'>
+            <span className='flex items-center gap-1.5 text-sm font-medium tabular-nums'>
               <Package className='h-3.5 w-3.5' />
               {totalAmount > 0 ? formatQuota(totalAmount) : t('Unlimited')}
+              {/* CUSTOM(brand): echo integer bonus badge in checkout confirmation */}
+              {bonusPct && (
+                <span className='rounded-md bg-green-500/12 px-1.5 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-400'>
+                  加赠 {bonusPct}%
+                </span>
+              )}
             </span>
           </div>
           {/* CUSTOM(brand): respect SHOW_PRICING_GROUPS when displaying upgrade group */}

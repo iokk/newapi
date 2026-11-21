@@ -16,12 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Check, RefreshCw } from 'lucide-react'
+import { useRouter } from '@tanstack/react-router'
+import { ArrowUpRight, Building2, RefreshCw, Sparkles } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { dotColorMap } from '@/components/status-badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
@@ -32,9 +33,17 @@ import type { PlanRecord } from '@/features/subscriptions/types'
 import { formatBillingCurrencyFromUSD } from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import {
+  DEFAULT_CURRENCY_CONFIG,
+  useSystemConfigStore,
+} from '@/stores/system-config-store'
 
 import { SHOW_PRICING_GROUPS } from './pricing'
-import { sortSubscriptionPlansAscending } from './wallet'
+import {
+  computePlanBonusPercent,
+  getRecommendedSubscriptionIndex,
+  sortSubscriptionPlansAscending,
+} from './wallet'
 
 interface EmptySubscriptionStatusBarProps {
   refreshing: boolean
@@ -88,9 +97,11 @@ interface BrandSubscriptionTierListProps {
 }
 
 /**
- * OpenAI-inspired ascending vertical subscription tier list:
- * eliminates the 2+1 orphan card, unifies local currency formatting,
- * and hides internal group identifiers when SHOW_PRICING_GROUPS is false.
+ * Redesigned Subscription Store for individual developer 30-day experience tiers:
+ * - Explicit scope banner separating personal shared routes from enterprise high-SLA lines
+ * - Compact horizontal tier cards with integer bonus pills (+30% / +20% / +30% / +40%)
+ * - Clear granted quota + domestic model turn reference + purchase cap status
+ * - Dedicated Enterprise High-SLA footer bar linking to /contact
  */
 export function BrandSubscriptionTierList({
   plans,
@@ -98,11 +109,25 @@ export function BrandSubscriptionTierList({
   onSelectPlan,
 }: BrandSubscriptionTierListProps) {
   const { t } = useTranslation()
+  const router = useRouter({ warn: false })
+  const quotaPerUnit = useSystemConfigStore(
+    (state) =>
+      state.config.currency?.quotaPerUnit ||
+      DEFAULT_CURRENCY_CONFIG.quotaPerUnit
+  )
   const sortedPlans = useMemo(
     () => sortSubscriptionPlansAscending(plans),
     [plans]
   )
-  const recommendedIndex = sortedPlans.length >= 3 ? 1 : 0
+  const recommendedIndex = getRecommendedSubscriptionIndex(sortedPlans.length)
+
+  const handleEnterpriseContact = (
+    event: React.MouseEvent<HTMLAnchorElement>
+  ) => {
+    if (!router) return
+    event.preventDefault()
+    void router.navigate({ to: '/contact' })
+  }
 
   if (sortedPlans.length === 0) {
     return (
@@ -114,118 +139,191 @@ export function BrandSubscriptionTierList({
 
   return (
     <div className='space-y-3'>
-      {sortedPlans.map((p, index) => {
-        const plan = p?.plan
-        if (!plan) return null
-        const totalAmount = Number(plan.total_amount || 0)
-        const formattedPrice = formatBillingCurrencyFromUSD(
-          Number(plan.price_amount || 0),
-          { digitsLarge: 2, abbreviate: false }
-        )
-        const isPopular = sortedPlans.length > 1 && index === recommendedIndex
-        const limit = Number(plan.max_purchase_per_user || 0)
-        const count = planPurchaseCountMap.get(plan.id) || 0
-        const reached = limit > 0 && count >= limit
+      {/* Scope positioning banner */}
+      <div className='bg-muted/25 rounded-lg border px-3 py-2 text-xs leading-relaxed'>
+        <div className='text-foreground font-medium'>
+          个人开发者专属体验与开发套餐 · 统一 30 天有效 · 超额自动无缝衔接钱包余额
+        </div>
+        <div className='text-muted-foreground mt-0.5'>
+          标准共享路由（不含企业 SLA）；企业高并发、对公开票与高 SLA 纯净专线请通过下方企业入口采购。
+        </div>
+      </div>
 
-        let groupBenefit: string | null = null
-        if (plan.upgrade_group) {
-          groupBenefit = SHOW_PRICING_GROUPS
-            ? `${t('Upgrade Group')}: ${plan.upgrade_group}`
-            : t('Enterprise dedicated routing')
-        }
-        const benefits = [
-          `${t('Validity Period')}: ${formatDuration(plan, t)}`,
-          formatResetPeriod(plan, t) !== t('No Reset')
-            ? `${t('Quota Reset')}: ${formatResetPeriod(plan, t)}`
-            : null,
-          totalAmount > 0
-            ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
-            : `${t('Total Quota')}: ${t('Unlimited')}`,
-          limit > 0 ? `${t('Purchase Limit')}: ${limit}` : null,
-          groupBenefit,
-        ].filter(Boolean) as string[]
+      {/* Compact horizontal tier cards */}
+      <div className='space-y-2.5'>
+        {sortedPlans.map((p, index) => {
+          const plan = p?.plan
+          if (!plan) return null
+          const totalAmount = Number(plan.total_amount || 0)
+          const priceUsd = Number(plan.price_amount || 0)
+          const formattedPrice = formatBillingCurrencyFromUSD(priceUsd, {
+            digitsLarge: 2,
+            abbreviate: false,
+          })
+          const formattedQuota =
+            totalAmount > 0 ? formatQuota(totalAmount) : t('Unlimited')
+          const bonusPct = computePlanBonusPercent(
+            priceUsd,
+            totalAmount,
+            quotaPerUnit
+          )
+          const isPopular = sortedPlans.length > 1 && index === recommendedIndex
+          const limit = Number(plan.max_purchase_per_user || 0)
+          const count = planPurchaseCountMap.get(plan.id) || 0
+          const reached = limit > 0 && count >= limit
+          const isFirstOrderPromo = index === 0 && limit === 1 && bonusPct
 
-        return (
-          <div
-            key={plan.id}
-            className={cn(
-              'bg-background rounded-xl border p-4 transition-colors',
-              isPopular
-                ? 'border-foreground/50 ring-1 ring-foreground/15'
-                : 'border-border/80'
-            )}
-          >
-            <div className='flex items-start justify-between gap-4'>
-              <div className='min-w-0 space-y-0.5'>
-                <div className='flex flex-wrap items-center gap-2'>
+          const durationLabel = formatDuration(plan, t)
+          const resetLabel = formatResetPeriod(plan, t)
+          const metaParts: string[] = [durationLabel]
+          if (resetLabel !== t('No Reset')) {
+            metaParts.push(`${t('Quota Reset')}: ${resetLabel}`)
+          }
+          if (limit > 0) {
+            metaParts.push(`限购 ${limit} 次`)
+          }
+          if (plan.upgrade_group && SHOW_PRICING_GROUPS) {
+            metaParts.push(`${t('Upgrade Group')}: ${plan.upgrade_group}`)
+          } else {
+            metaParts.push('个人共享通道')
+          }
+
+          let bonusBadge = null
+          if (isFirstOrderPromo) {
+            bonusBadge = (
+              <span className='inline-flex items-center gap-1 rounded-md bg-amber-500/12 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300'>
+                <Sparkles className='size-3' aria-hidden='true' />
+                首单加赠 {bonusPct}%
+              </span>
+            )
+          } else if (bonusPct) {
+            bonusBadge = (
+              <span className='rounded-md bg-green-500/12 px-1.5 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-400'>
+                加赠 {bonusPct}%
+              </span>
+            )
+          }
+
+          return (
+            <div
+              key={plan.id}
+              data-slot='subscription-store-card'
+              className={cn(
+                'bg-background rounded-xl border p-3.5 transition-colors',
+                isPopular
+                  ? 'border-foreground/55 ring-1 ring-foreground/15'
+                  : 'border-border/80 hover:border-foreground/30'
+              )}
+            >
+              {/* Row 1: Title + Badges | Price */}
+              <div className='flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1'>
+                <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
                   <h4 className='truncate text-sm font-semibold'>
                     {(plan.title || t('Subscription Plans')).trim()}
                   </h4>
+                  {bonusBadge}
                   {isPopular && (
-                    <span className='bg-primary/10 text-primary rounded-md px-2 py-0.5 text-[11px] font-medium'>
+                    <span className='bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[11px] font-medium'>
                       {t('Recommended')}
                     </span>
                   )}
                 </div>
-                {plan.subtitle && (
-                  <p className='text-muted-foreground text-xs'>
-                    {plan.subtitle}
-                  </p>
-                )}
-              </div>
-              <div className='shrink-0 text-right'>
-                <span className='text-foreground font-mono text-xl font-semibold tracking-tight tabular-nums'>
-                  {formattedPrice}
-                </span>
-              </div>
-            </div>
-
-            <div className='mt-3 flex flex-wrap gap-x-4 gap-y-1.5'>
-              {benefits.map((label) => (
-                <div
-                  key={label}
-                  className='text-muted-foreground flex items-center gap-1.5 text-xs'
-                >
-                  <Check
-                    className='text-foreground/70 size-3.5 shrink-0'
-                    aria-hidden='true'
-                  />
-                  <span>{label}</span>
+                <div className='flex shrink-0 items-baseline gap-1'>
+                  <span className='text-foreground font-mono text-lg font-semibold tracking-tight tabular-nums'>
+                    {formattedPrice}
+                  </span>
+                  <span className='text-muted-foreground text-[11px]'>
+                    / {durationLabel}
+                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div className='mt-3.5'>
-              {reached ? (
-                <Tooltip>
-                  <TooltipTrigger render={<div />}>
+              {/* Row 2: Granted Quota + Subtitle | Action Button */}
+              <div className='mt-2 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between'>
+                <div className='min-w-0 space-y-0.5'>
+                  <div className='flex flex-wrap items-baseline gap-1.5 text-xs'>
+                    <span className='text-muted-foreground'>到账额度</span>
+                    <span className='text-foreground font-mono text-sm font-semibold tabular-nums'>
+                      {formattedQuota}
+                    </span>
+                  </div>
+                  {plan.subtitle && (
+                    <p className='text-muted-foreground text-xs leading-snug'>
+                      {plan.subtitle}
+                    </p>
+                  )}
+                </div>
+
+                <div className='shrink-0'>
+                  {reached ? (
+                    <Tooltip>
+                      <TooltipTrigger render={<div />}>
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          className='h-8 w-full px-3 text-xs sm:w-auto'
+                          disabled
+                        >
+                          已购 ({count}/{limit})
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {t('Purchase limit reached')} ({count}/{limit})
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
                     <Button
-                      variant='outline'
+                      variant={isPopular ? 'default' : 'outline'}
                       size='sm'
-                      className='w-full'
-                      disabled
+                      className='h-8 w-full px-3.5 text-xs sm:w-auto'
+                      onClick={() => onSelectPlan(p)}
                     >
-                      {t('Limit Reached')}
+                      {t('Subscribe Now')}
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {t('Purchase limit reached')} ({count}/{limit})
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Button
-                  variant={isPopular ? 'default' : 'outline'}
-                  size='sm'
-                  className='w-full'
-                  onClick={() => onSelectPlan(p)}
-                >
-                  {t('Subscribe Now')}
-                </Button>
-              )}
+                  )}
+                </div>
+              </div>
+
+              {/* Row 3: Concise micro-meta */}
+              <div className='text-muted-foreground/85 mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t pt-2 text-[11px]'>
+                {metaParts.map((item, idx) => (
+                  <span key={item} className='inline-flex items-center gap-2'>
+                    {idx > 0 && <span aria-hidden='true'>·</span>}
+                    <span>{item}</span>
+                  </span>
+                ))}
+              </div>
             </div>
+          )
+        })}
+      </div>
+
+      {/* Dedicated Enterprise High-SLA Bar */}
+      <div className='bg-muted/30 flex flex-col justify-between gap-3 rounded-xl border p-3.5 sm:flex-row sm:items-center'>
+        <div className='min-w-0 space-y-0.5'>
+          <div className='flex items-center gap-1.5 text-xs font-semibold'>
+            <Building2
+              className='text-muted-foreground size-3.5 shrink-0'
+              aria-hidden='true'
+            />
+            <span>Enterprise · 企业开发者与高 SLA 专线</span>
           </div>
-        )
-      })}
+          <p className='text-muted-foreground text-[11px] leading-relaxed'>
+            独立纯净官转高可用通道 · 无个人限购约束 · 1 年有效期 · 支持对公付款与增值税专票
+          </p>
+        </div>
+        <a
+          href='/contact'
+          onClick={handleEnterpriseContact}
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'sm' }),
+            'h-8 shrink-0 gap-1 px-3 text-xs'
+          )}
+        >
+          <span>联系大客户商务</span>
+          <ArrowUpRight className='size-3.5' aria-hidden='true' />
+        </a>
+      </div>
     </div>
   )
 }
