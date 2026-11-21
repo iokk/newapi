@@ -342,11 +342,16 @@ export function SubscriptionPurchaseDialog(props: Props) {
               </AlertDescription>
             </Alert>
           ) : (
-            insufficientBalance && (
+            insufficientBalance &&
+            (hasAnyPayment ? (
+              <p className='text-muted-foreground text-xs'>
+                {t('Insufficient balance')}，可直接使用下方在线支付
+              </p>
+            ) : (
               <Alert variant='destructive'>
                 <AlertDescription>{t('Insufficient balance')}</AlertDescription>
               </Alert>
-            )
+            ))
           )}
           <Button
             variant='outline'
@@ -398,26 +403,39 @@ export function SubscriptionPurchaseDialog(props: Props) {
                 )}
               </div>
             )}
-            {hasEpay && (
-              <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
-                <Combobox
-                  options={(props.epayMethods || []).map((m) => ({
-                    value: m.type,
-                    label: m.name || m.type,
-                  }))}
-                  value={selectedEpayMethod}
-                  onValueChange={(v) => v !== null && setSelectedEpayMethod(v)}
-                  disabled={limitReached}
-                  className='flex-1'
-                />
+            {/* CUSTOM(brand): render direct 1-click CTA when a single Epay method is available */}
+            {hasEpay &&
+              ((props.epayMethods || []).length === 1 ? (
                 <Button
+                  className='w-full'
                   onClick={handlePayEpay}
                   disabled={paying || !selectedEpayMethod || limitReached}
                 >
-                  {t('Pay')}
+                  {props.epayMethods?.[0]?.name || selectedEpayMethod}{' '}
+                  {t('Pay')} {formattedPrice}
                 </Button>
-              </div>
-            )}
+              ) : (
+                <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
+                  <Combobox
+                    options={(props.epayMethods || []).map((m) => ({
+                      value: m.type,
+                      label: m.name || m.type,
+                    }))}
+                    value={selectedEpayMethod}
+                    onValueChange={(v) =>
+                      v !== null && setSelectedEpayMethod(v)
+                    }
+                    disabled={limitReached}
+                    className='flex-1'
+                  />
+                  <Button
+                    onClick={handlePayEpay}
+                    disabled={paying || !selectedEpayMethod || limitReached}
+                  >
+                    {t('Pay')}
+                  </Button>
+                </div>
+              ))}
           </div>
         )}
       </div>

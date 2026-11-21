@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Crown, RefreshCw } from 'lucide-react' // CUSTOM(brand)
+import { RefreshCw } from 'lucide-react' // CUSTOM(brand)
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -25,6 +25,7 @@ import {
   BrandSubscriptionTierList,
   EmptySubscriptionStatusBar,
 } from '@/branding/subscription-tier-list' // CUSTOM(brand)
+import { filterSubscriptionEpayMethods } from '@/branding/wallet' // CUSTOM(brand)
 
 import {
   StatusBadge,
@@ -32,7 +33,6 @@ import {
   textColorMap,
 } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import {
   Select,
@@ -44,7 +44,6 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TitledCard } from '@/components/ui/titled-card'
 import {
   Tooltip,
   TooltipContent,
@@ -65,19 +64,13 @@ import { handleServerError } from '@/lib/handle-server-error'
 import { requireServerSuccess } from '@/lib/server-error-message'
 import { cn } from '@/lib/utils'
 
-import type { PaymentMethod, TopupInfo } from '../types'
+import type { TopupInfo } from '../types'
 
 interface SubscriptionPlansCardProps {
   topupInfo: TopupInfo | null
   onAvailabilityChange?: (available: boolean) => void
   userQuota?: number
   onPurchaseSuccess?: () => void | Promise<void>
-}
-
-function getEpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
-  return payMethods.filter(
-    (m) => m?.type && m.type !== 'stripe' && m.type !== 'creem'
-  )
 }
 
 function getBillingPreferenceLabel(
@@ -126,7 +119,7 @@ export function SubscriptionPlansCard({
   const enableWaffoPancake = !!topupInfo?.enable_waffo_pancake_topup
   const enableOnlineTopUp = !!topupInfo?.enable_online_topup
   const epayMethods = useMemo(
-    () => getEpayMethods(topupInfo?.pay_methods),
+    () => filterSubscriptionEpayMethods(topupInfo?.pay_methods), // CUSTOM(brand): exclude non-Epay & soft-disabled methods
     [topupInfo?.pay_methods]
   )
 
@@ -242,20 +235,21 @@ export function SubscriptionPlansCard({
 
   if (loading) {
     return (
-      <Card data-card-hover='false' className='gap-0 overflow-hidden py-0'>
-        <CardHeader className='border-b p-3 !pb-3 sm:p-5 sm:!pb-5'>
-          <Skeleton className='h-6 w-32' />
-        </CardHeader>
-        <CardContent className='space-y-3 p-3 sm:p-5'>
-          <Skeleton className='h-10 w-full rounded-lg' />
-          {/* CUSTOM(brand): vertical stack skeleton matches BrandSubscriptionTierList */}
-          <div className='space-y-3'>
-            {['first', 'second', 'third'].map((key) => (
-              <Skeleton key={key} className='h-36 w-full rounded-xl' />
-            ))}
+      // CUSTOM(brand): full-width 4-column pricing grid skeleton without outer box-in-box chrome
+      <section className='space-y-4'>
+        <div className='flex items-center justify-between gap-4'>
+          <div className='space-y-1.5'>
+            <Skeleton className='h-5 w-36' />
+            <Skeleton className='h-3.5 w-72' />
           </div>
-        </CardContent>
-      </Card>
+          <Skeleton className='h-6 w-32' />
+        </div>
+        <div className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4'>
+          {['first', 'second', 'third', 'fourth'].map((key) => (
+            <Skeleton key={key} className='h-72 w-full rounded-xl' />
+          ))}
+        </div>
+      </section>
     )
   }
 
@@ -265,23 +259,32 @@ export function SubscriptionPlansCard({
 
   return (
     <>
-      <TitledCard
-        title={t('Subscription Plans')}
-        description={t('Subscribe to a plan for model access')}
-        icon={<Crown className='h-4 w-4' />}
-        iconTone='warning'
-        disableHoverEffect
-        contentClassName='space-y-4 sm:space-y-5'
-      >
-        {/* CUSTOM(brand): compact 1-line status bar when empty; hide multi-line controls via hidden class to avoid re-indenting 240 upstream lines */}
-        {!hasAny && (
-          <EmptySubscriptionStatusBar
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-          />
-        )}
-        {/* My subscriptions & billing preference */}
-        <div className={cn('rounded-xl border p-3 sm:p-4', !hasAny && 'hidden')}>
+      {/* CUSTOM(brand): clean borderless Subscription-first section eliminating nested card chrome */}
+      <section className='space-y-4'>
+        <div className='flex flex-col justify-between gap-2 sm:flex-row sm:items-end'>
+          <div className='space-y-0.5'>
+            <h2 className='text-foreground text-base font-semibold tracking-tight'>
+              {t('Subscription Plans')}
+            </h2>
+            <p className='text-muted-foreground text-xs leading-relaxed'>
+              个人开发者 30 天体验与开发套餐，超额自动无缝衔接钱包余额。
+            </p>
+          </div>
+          {!hasAny && (
+            <EmptySubscriptionStatusBar
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />
+          )}
+        </div>
+
+        {/* My subscriptions & billing preference (shown when user has active or past subscriptions) */}
+        <div
+          className={cn(
+            'bg-card rounded-xl border p-3.5 sm:p-4',
+            !hasAny && 'hidden'
+          )}
+        >
           <div className='flex flex-wrap items-center justify-between gap-2.5 sm:gap-3'>
             <div className='flex min-w-0 flex-wrap items-center gap-2'>
               <span className='text-sm font-medium'>
@@ -534,7 +537,7 @@ export function SubscriptionPlansCard({
           )}
         </div>
 
-        {/* CUSTOM(brand): OpenAI-inspired ascending vertical tier list */}
+        {/* CUSTOM(brand): full-width 4-column SaaS pricing matrix */}
         <BrandSubscriptionTierList
           plans={plans}
           planPurchaseCountMap={planPurchaseCountMap}
@@ -543,7 +546,7 @@ export function SubscriptionPlansCard({
             setPurchaseOpen(true)
           }}
         />
-      </TitledCard>
+      </section>
 
       <SubscriptionPurchaseDialog
         open={purchaseOpen}

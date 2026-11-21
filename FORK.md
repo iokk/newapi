@@ -151,6 +151,28 @@ Production (`https://ai.bozzii.com`, container `xseek-new-api`) uses Casdoor at 
   - `PasswordLoginEnabled = true` (kept enabled during transition so the root admin and existing users can sign in and bind OIDC in Personal Settings -> Security; disable only after admin + active legacy accounts have bound OIDC).
 - **Secrets location (never commit)**: Casdoor admin and OIDC client credentials live only in `/opt/bozzii-auth/CREDENTIALS.txt` (mode `600`) on the Hong Kong host (`server_id: 14`); `oidc.client_secret` is stored in the `options` table of `xseek-new-api-postgres`.
 
+## Billing, Subscription Epay & Wallet UX (v1.0.0-rc.51-bozzii.9)
+
+To keep upstream `sync/upstream-*` merges low-friction while delivering a Subscription-first SaaS experience and safe CNY Epay settlement:
+
+- **Backend Epay Subscription Fix (`CUSTOM(brand)`)**:
+  - `controller/subscription_payment_epay.go`: converts USD `plan.PriceAmount` into Epay settlement fiat via `operation_setting.Price` (`getSubscriptionEpayPayMoney`, rounded to 2 dp via `shopspring/decimal`, matching `controller/topup.go:getPayMoney`), stores actual charged fiat in `SubscriptionOrder.Money` (consistent with `top_ups.money` and `BillingHistoryDialog`), gates both `SubscriptionEpayNotify` and `SubscriptionEpayReturn` on `isEpayWebhookEnabled()`, and verifies callback `verifyInfo.Money` against `order.Money` under `LockOrder` (`verifySubscriptionEpayMoney`) before calling `model.CompleteSubscriptionOrder`.
+  - Regression suite: `controller/subscription_payment_epay_bozzii_test.go` (run `go test -v ./controller -run 'TestGetSubscriptionEpayPayMoney|TestSubscriptionEpayEndToEnd|TestEpay'`).
+  - Zero edits to `model/subscription.go` or `router/api-router.go`.
+- **Frontend Subscription-First `/wallet` Architecture (`CUSTOM(brand)`)**:
+  - Brand modules (new files, zero upstream conflict): `web/src/branding/wallet.ts`, `web/src/branding/subscription-tier-list.tsx`, `web/src/branding/__tests__/wallet.test.ts`.
+  - Thin upstream hooks (all tagged `CUSTOM(brand)`, preserving 100% of native NewAPI wallet features & upstream `web/src/features/wallet/__tests__/copy.test.tsx`):
+    - `web/src/features/wallet/index.tsx`: reorders page to `WalletStatsCard` (with quick-jump actions) → `SubscriptionPlansCard` (full-width 4-column pricing matrix) → `RechargeFormCard` (`compactLayout` + `collapseCustomAmount`) → `AffiliateRewardsCard`.
+    - `web/src/features/wallet/components/wallet-stats-card.tsx`: monochrome KPI strip + optional `actions` slot.
+    - `web/src/features/wallet/components/subscription-plans-card.tsx`: removes nested `TitledCard` chrome; uses `filterSubscriptionEpayMethods` (excludes non-Epay & soft-disabled `min_topup >= $1,000` methods) and mounts `BrandSubscriptionTierList`.
+    - `web/src/features/wallet/components/recharge-form-card.tsx`: optional `compactLayout` (defaults to `false` so upstream tests stay green) renders a balanced 2-column Pay-as-you-go + Redemption band and hides soft-disabled payment methods (`filterVisibleTopupMethods`) until custom amount reaches their threshold.
+    - `web/src/features/subscriptions/components/dialogs/subscription-purchase-dialog.tsx`: enables direct Epay (`ENABLE_SUBSCRIPTION_EPAY_DIRECT = true`) with a 1-click primary pay button when a single Epay method is available, while retaining multi-method Combobox, Balance, Stripe, Creem, and Waffo Pancake paths.
+- **Upgrade & Roadmap Checklist**:
+  1. **Upstream sync**: When merging a newer upstream tag (`sync/upstream-<tag>`), check whether upstream fixes `SubscriptionRequestEpay` currency conversion; if upstream adopts a different setting/formula, reconcile `getSubscriptionEpayPayMoney` and re-run `controller/subscription_payment_epay_bozzii_test.go`.
+  2. **Alipay cleanup**: Production `options.PayMethods` currently soft-disables Alipay via `min_topup = 4999` USD. If Alipay is permanently retired, remove the `alipay` entry from `PayMethods` in Admin Settings so it is also blocked at the API layer (`ContainsPayMethod`).
+  3. **30-day Plan Wave Rotation**: `model/subscription.go:CountUserSubscriptionsByPlan` enforces `max_purchase_per_user = 1` per `(user_id, plan_id)`. To launch a new promotional wave for returning individual developers without backend changes, disable old `plan_id`s and insert new rows in `subscription_plans`.
+  4. **Phase-2 Billing Roadmap**: Add conversion telemetry (Starter → Plus/Pro/Max → wallet overflow rate), automated VAT invoicing / corporate top-up workflow for Enterprise High-SLA lines, and reconcile the pre-existing upstream `router` package SQLite test failure during the next upstream sync.
+
 ## Upstream licence
 
 new-api is AGPL-3.0. Serving a modified version over the network obliges us to

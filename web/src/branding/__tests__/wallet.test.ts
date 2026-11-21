@@ -24,10 +24,15 @@ import type { TopupInfo } from '@/features/wallet/types'
 import {
   buildBrandDefaultPresets,
   computePlanBonusPercent,
+  ENABLE_SUBSCRIPTION_EPAY_DIRECT,
+  filterSubscriptionEpayMethods,
+  filterVisibleTopupMethods,
   getBrandPresetMeta,
   getRecommendedSubscriptionIndex,
   pickInitialTopupAmount,
   sortSubscriptionPlansAscending,
+  splitPlanSubtitle,
+  splitPlanTitle,
 } from '../wallet'
 
 describe('brand wallet helpers', () => {
@@ -77,5 +82,50 @@ describe('brand wallet helpers', () => {
     expect(getRecommendedSubscriptionIndex(4)).toBe(2)
     expect(getRecommendedSubscriptionIndex(3)).toBe(1)
     expect(getRecommendedSubscriptionIndex(2)).toBe(0)
+  })
+
+  it('filters soft-disabled payment methods while keeping usable WeChat Pay for subscriptions and topups', () => {
+    expect(ENABLE_SUBSCRIPTION_EPAY_DIRECT).toBe(true)
+    const methods = [
+      { name: '支付宝', type: 'alipay', min_topup: 4999 },
+      { name: '微信', type: 'wxpay', min_topup: 10 },
+      { name: 'Stripe', type: 'stripe', min_topup: 5 },
+      { name: 'Waffo Pancake', type: 'waffo_pancake', min_topup: 5 },
+    ]
+
+    expect(filterSubscriptionEpayMethods(methods).map((m) => m.type)).toEqual([
+      'wxpay',
+    ])
+
+    // Hides soft-disabled Alipay for normal preset range ($10..$500)
+    expect(
+      filterVisibleTopupMethods(methods.slice(0, 2), 10, 500).map((m) => m.type)
+    ).toEqual(['wxpay'])
+
+    // Automatically reveals Alipay when user enters custom amount >= $4,999
+    expect(
+      filterVisibleTopupMethods(methods.slice(0, 2), 5000, 500).map(
+        (m) => m.type
+      )
+    ).toEqual(['alipay', 'wxpay'])
+  })
+
+  it('splits plan titles and subtitles cleanly for 4-column card typography', () => {
+    expect(splitPlanTitle('Starter · 体验版')).toEqual({
+      primary: 'Starter',
+      secondary: '体验版',
+    })
+    expect(splitPlanTitle('Pro')).toEqual({
+      primary: 'Pro',
+      secondary: null,
+    })
+    expect(
+      splitPlanSubtitle(
+        '个人快速验证｜常规对话约合 3,000 轮 DeepSeek Flash 或 700 轮 GLM-5.3'
+      )
+    ).toEqual({
+      role: '个人快速验证',
+      usage: '常规对话约合 3,000 轮 DeepSeek Flash 或 700 轮 GLM-5.3',
+    })
   })
 })

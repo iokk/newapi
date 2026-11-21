@@ -17,11 +17,103 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { PlanRecord } from '@/features/subscriptions/types'
-import type { PresetAmount, TopupInfo } from '@/features/wallet/types'
+import type {
+  PaymentMethod,
+  PresetAmount,
+  TopupInfo,
+} from '@/features/wallet/types'
 
-// shortcut: backend controller/subscription_payment_epay.go sends raw USD price_amount
-// without multiplying by the CNY exchange rate; re-enable after fixing backend epay math.
-export const ENABLE_SUBSCRIPTION_EPAY_DIRECT = false
+// CUSTOM(brand): backend controller/subscription_payment_epay.go now converts USD price_amount
+// via operation_setting.Price and verifies callback money against order.Money.
+export const ENABLE_SUBSCRIPTION_EPAY_DIRECT = true
+
+/**
+ * Payment methods whose min_topup is set >= $1,000 USD (e.g. Alipay min_topup=4999 -> ¥36,492.7)
+ * are treated as soft-disabled for standard personal plans and default top-up presets.
+ */
+export const SOFT_DISABLED_METHOD_MIN_USD = 1000
+
+const NON_EPAY_METHOD_TYPES = new Set([
+  'stripe',
+  'creem',
+  'waffo',
+  'waffo_pancake',
+])
+
+/**
+ * Filter Epay methods suitable for direct subscription checkout:
+ * excludes non-Epay gateways and soft-disabled methods (min_topup >= $1,000 USD),
+ * while keeping normal methods (e.g. wxpay with wallet min_topup=10) available for Starter ¥19.9.
+ */
+export function filterSubscriptionEpayMethods(
+  methods: PaymentMethod[] = []
+): PaymentMethod[] {
+  return methods.filter((m) => {
+    if (!m?.type || NON_EPAY_METHOD_TYPES.has(m.type)) return false
+    const min = Number(m.min_topup || 0)
+    if (Number.isFinite(min) && min >= SOFT_DISABLED_METHOD_MIN_USD) {
+      return false
+    }
+    return true
+  })
+}
+
+/**
+ * Hide soft-disabled top-up methods (e.g. Alipay min_topup=4999) when they are far above
+ * both the current amount and highest preset, so users never see broken-looking disabled buttons.
+ * If the user enters a custom amount >= that threshold, the method reappears automatically.
+ */
+export function filterVisibleTopupMethods(
+  methods: PaymentMethod[] = [],
+  currentAmount: number,
+  maxPresetAmount: number
+): PaymentMethod[] {
+  const reach = Math.max(currentAmount || 0, maxPresetAmount || 0)
+  const visible = methods.filter((m) => {
+    const min = Number(m.min_topup || 0)
+    if (
+      Number.isFinite(min) &&
+      min >= SOFT_DISABLED_METHOD_MIN_USD &&
+      min > reach
+    ) {
+      return false
+    }
+    return true
+  })
+  return visible.length > 0 ? visible : methods
+}
+
+/**
+ * Split a plan title like "Starter · 体验版" into primary tier name and localized tag.
+ */
+export function splitPlanTitle(title: string): {
+  primary: string
+  secondary: string | null
+} {
+  const trimmed = title.trim()
+  const parts = trimmed.split(/\s*[·|｜]\s*/)
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return { primary: parts[0], secondary: parts.slice(1).join(' · ') }
+  }
+  return { primary: trimmed, secondary: null }
+}
+
+/**
+ * Split a plan subtitle like "个人快速验证｜常规对话约合 3,000 轮 DeepSeek Flash 或 700 轮 GLM-5.3"
+ * into audience role + model usage estimate for clean multi-line card typography.
+ */
+export function splitPlanSubtitle(subtitle?: string): {
+  role: string | null
+  usage: string | null
+} {
+  const trimmed = (subtitle || '').trim()
+  if (!trimmed) return { role: null, usage: null }
+  const parts = trimmed.split(/\s*[｜|]\s*/)
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return { role: parts[0], usage: parts.slice(1).join(' · ') }
+  }
+  return { role: trimmed, usage: null }
+}
 
 /**
  * Default fixed top-up tiers in backend quota units (USD).

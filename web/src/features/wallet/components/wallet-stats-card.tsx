@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import type { ReactNode } from 'react' // CUSTOM(brand)
 import { useTranslation } from 'react-i18next'
 
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,6 +27,7 @@ import type { UserWalletData } from '../types'
 interface WalletStatsCardProps {
   user: UserWalletData | null
   loading?: boolean
+  actions?: ReactNode // CUSTOM(brand): optional quick-jump actions on the right of balance strip
 }
 
 export function WalletStatsCard(props: WalletStatsCardProps) {
@@ -35,10 +37,9 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     return (
       <div className='bg-card grid grid-cols-3 divide-x rounded-xl border'>
         {['balance', 'usage', 'requests'].map((key) => (
-          <div key={key} className='min-w-0 px-3 py-3 sm:px-6 sm:py-5'>
+          <div key={key} className='min-w-0 px-3 py-3 sm:px-5 sm:py-4'>
             <Skeleton className='h-3.5 w-full max-w-20' />
-            <Skeleton className='mt-2 h-7 w-full max-w-28 sm:h-8' />
-            <Skeleton className='mt-1.5 hidden h-3.5 w-24 md:block' />
+            <Skeleton className='mt-2 h-7 w-full max-w-28' />
           </div>
         ))}
       </div>
@@ -48,48 +49,47 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   const stats: {
     label: string
     value: string
-    description: string
   }[] = [
     {
       label: t('Current Balance'),
       value: formatQuota(props.user?.quota ?? 0),
-      description: t('Remaining quota'),
     },
     {
       label: t('Total Usage'),
       value: formatQuota(props.user?.used_quota ?? 0),
-      description: t('Total consumed quota'),
     },
     {
       label: t('API Requests'),
       value: (props.user?.request_count ?? 0).toLocaleString(),
-      description: t('Total requests made'),
     },
   ]
 
   return (
-    // CUSTOM(brand): OpenAI-inspired clean monochrome stats bar without noisy icon badges
-    <div className='bg-card grid grid-cols-3 divide-x rounded-xl border'>
-      {stats.map((item, index) => (
-        <div key={item.label} className='min-w-0 px-3 py-3 sm:px-6 sm:py-5'>
-          <div className='text-muted-foreground truncate text-xs font-medium'>
-            {item.label}
+    // CUSTOM(brand): sleek OpenAI-inspired monochrome KPI strip with optional quick actions
+    <div className='bg-card flex flex-col justify-between divide-y rounded-xl border lg:flex-row lg:items-center lg:divide-x lg:divide-y-0'>
+      <div className='grid flex-1 grid-cols-3 divide-x'>
+        {stats.map((item, index) => (
+          <div key={item.label} className='min-w-0 px-3 py-3 sm:px-5 sm:py-4'>
+            <div className='text-muted-foreground truncate text-xs font-medium'>
+              {item.label}
+            </div>
+            <div
+              className={
+                index === 0
+                  ? 'text-foreground mt-1 font-mono text-base font-semibold tracking-tight break-all tabular-nums sm:text-2xl'
+                  : 'text-foreground/90 mt-1 font-mono text-sm font-semibold tracking-tight break-all tabular-nums sm:text-xl'
+              }
+            >
+              {item.value}
+            </div>
           </div>
-
-          <div
-            className={
-              index === 0
-                ? 'text-foreground mt-1.5 font-mono text-sm font-semibold tracking-tight break-all tabular-nums sm:mt-2 sm:text-3xl'
-                : 'text-foreground/90 mt-1.5 font-mono text-sm font-semibold tracking-tight break-all tabular-nums sm:mt-2 sm:text-2xl'
-            }
-          >
-            {item.value}
-          </div>
-          <div className='text-muted-foreground mt-1 hidden text-xs md:block'>
-            {item.description}
-          </div>
+        ))}
+      </div>
+      {props.actions && (
+        <div className='flex shrink-0 flex-wrap items-center gap-2 px-3 py-2.5 sm:px-5 lg:py-0'>
+          {props.actions}
         </div>
-      ))}
+      )}
     </div>
   )
 }
