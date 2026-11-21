@@ -21,6 +21,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { SHOW_PRICING_GROUPS } from '@/branding/pricing' // CUSTOM(brand)
 import { Dialog } from '@/components/dialog'
 import { GroupBadge } from '@/components/group-badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -28,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Separator } from '@/components/ui/separator'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { formatBillingCurrencyFromUSD } from '@/lib/currency' // CUSTOM(brand)
 import { formatQuota } from '@/lib/format'
 import { handleServerError } from '@/lib/handle-server-error'
 import { DEFAULT_CURRENCY_CONFIG } from '@/stores/system-config-store'
@@ -87,7 +89,11 @@ export function SubscriptionPurchaseDialog(props: Props) {
     props.enableOnlineTopUp && (props.epayMethods || []).length > 0
   const hasAnyPayment = hasStripe || hasCreem || hasWaffoPancake || hasEpay
   const totalAmount = Number(plan.total_amount || 0)
-  const price = Number(plan.price_amount || 0).toFixed(2)
+  // CUSTOM(brand): format plan price using site billing currency (matches balance cost)
+  const formattedPrice = formatBillingCurrencyFromUSD(
+    Number(plan.price_amount || 0),
+    { digitsLarge: 2, abbreviate: false }
+  )
   const quotaPerUnit =
     currency?.quotaPerUnit && currency.quotaPerUnit > 0
       ? currency.quotaPerUnit
@@ -275,7 +281,8 @@ export function SubscriptionPurchaseDialog(props: Props) {
               {totalAmount > 0 ? formatQuota(totalAmount) : t('Unlimited')}
             </span>
           </div>
-          {plan.upgrade_group && (
+          {/* CUSTOM(brand): respect SHOW_PRICING_GROUPS when displaying upgrade group */}
+          {plan.upgrade_group && SHOW_PRICING_GROUPS && (
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>
                 {t('Upgrade Group')}
@@ -286,7 +293,10 @@ export function SubscriptionPurchaseDialog(props: Props) {
           <Separator />
           <div className='flex items-center justify-between'>
             <span className='text-sm font-medium'>{t('Amount Due')}</span>
-            <span className='text-primary text-lg font-bold'>${price}</span>
+            {/* CUSTOM(brand): unified local currency display */}
+            <span className='text-primary font-mono text-lg font-bold tabular-nums'>
+              {formattedPrice}
+            </span>
           </div>
         </div>
 

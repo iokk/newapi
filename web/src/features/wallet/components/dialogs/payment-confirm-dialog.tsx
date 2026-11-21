@@ -33,7 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatLocalCurrencyAmount } from '@/lib/currency'
 
 import { DEFAULT_DISCOUNT_RATE } from '../../constants'
-import { formatCurrency, getPaymentIcon } from '../../lib'
+import { getPaymentIcon } from '../../lib' // CUSTOM(brand): formatLocalCurrencyAmount replaces raw formatCurrency
 import type { PaymentMethod } from '../../types'
 
 interface PaymentConfirmDialogProps {
@@ -99,13 +99,22 @@ export function PaymentConfirmDialog({
             {calculating ? (
               <Skeleton className='h-6 w-24' />
             ) : (
+              // CUSTOM(brand): show local currency symbol and tabular numerals
               <div className='flex items-baseline gap-2'>
-                <span className='text-2xl font-semibold'>
-                  {formatCurrency(paymentAmount)}
+                <span className='font-mono text-2xl font-semibold tabular-nums'>
+                  {formatLocalCurrencyAmount(paymentAmount, {
+                    digitsLarge: 2,
+                    digitsSmall: 2,
+                    abbreviate: false,
+                  })}
                 </span>
                 {hasDiscount && (
-                  <span className='text-muted-foreground text-sm line-through'>
-                    {formatCurrency(originalAmount)}
+                  <span className='text-muted-foreground font-mono text-sm line-through tabular-nums'>
+                    {formatLocalCurrencyAmount(originalAmount, {
+                      digitsLarge: 2,
+                      digitsSmall: 2,
+                      abbreviate: false,
+                    })}
                   </span>
                 )}
               </div>
@@ -116,8 +125,12 @@ export function PaymentConfirmDialog({
             <div className='bg-muted/50 rounded-lg p-3'>
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>{t('You save')}</span>
-                <span className='font-semibold text-green-600'>
-                  {formatCurrency(discountAmount)}
+                <span className='font-mono font-semibold text-green-600 tabular-nums dark:text-green-400'>
+                  {formatLocalCurrencyAmount(discountAmount, {
+                    digitsLarge: 2,
+                    digitsSmall: 2,
+                    abbreviate: false,
+                  })}
                 </span>
               </div>
             </div>
