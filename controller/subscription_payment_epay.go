@@ -1,20 +1,60 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Calcium-Ion/go-epay/epay"
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 )
+
+// CUSTOM(brand): convert USD plan price_amount to Epay settlement currency using operation_setting.Price (matching topup.go:getPayMoney).
+func getSubscriptionEpayPayMoney(priceAmountUSD float64) (decimal.Decimal, error) {
+	if math.IsNaN(priceAmountUSD) || math.IsInf(priceAmountUSD, 0) || priceAmountUSD < 0.01 {
+		return decimal.Zero, errors.New("plan amount is too low")
+	}
+	priceRatio := operation_setting.Price
+	if math.IsNaN(priceRatio) || math.IsInf(priceRatio, 0) || priceRatio <= 0 {
+		return decimal.Zero, errors.New("payment price ratio is invalid")
+	}
+	payMoney := decimal.NewFromFloat(priceAmountUSD).Mul(decimal.NewFromFloat(priceRatio)).Round(2)
+	if payMoney.LessThan(decimal.NewFromFloat(0.01)) {
+		return decimal.Zero, errors.New("plan amount is too low")
+	}
+	return payMoney, nil
+}
+
+// CUSTOM(brand): verify Epay callback settlement amount matches the immutable SubscriptionOrder.Money before granting quota.
+func verifySubscriptionEpayMoney(tradeNo string, paidMoneyStr string) error {
+	order := model.GetSubscriptionOrderByTradeNo(tradeNo)
+	if order == nil {
+		return model.ErrSubscriptionOrderNotFound
+	}
+	if order.PaymentProvider != model.PaymentProviderEpay {
+		return model.ErrPaymentMethodMismatch
+	}
+	paidMoney, err := decimal.NewFromString(strings.TrimSpace(paidMoneyStr))
+	if err != nil || !paidMoney.IsPositive() {
+		return fmt.Errorf("invalid callback money: %q", paidMoneyStr)
+	}
+	expected := decimal.NewFromFloat(order.Money).Round(2)
+	if !paidMoney.Round(2).Equal(expected) {
+		return fmt.Errorf("callback money mismatch: expected=%s got=%s", expected.StringFixed(2), paidMoney.Round(2).StringFixed(2))
+	}
+	return nil
+}
 
 type SubscriptionEpayPayRequest struct {
 	PlanId        int    `json:"plan_id"`
@@ -41,7 +81,9 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		common.ApiErrorT(c, "Subscription plan is not enabled")
 		return
 	}
-	if plan.PriceAmount < 0.01 {
+	// CUSTOM(brand): compute Epay settlement amount via operation_setting.Price (USD -> fiat)
+	payMoney, err := getSubscriptionEpayPayMoney(plan.PriceAmount)
+	if err != nil {
 		common.ApiErrorT(c, "Plan amount is too low")
 		return
 	}
@@ -87,7 +129,7 @@ func SubscriptionRequestEpay(c *gin.Context) {
 	order := &model.SubscriptionOrder{
 		UserId:          userId,
 		PlanId:          plan.Id,
-		Money:           plan.PriceAmount,
+		Money:           payMoney.InexactFloat64(), // CUSTOM(brand): store charged fiat amount (matches model.TopUp.Money)
 		TradeNo:         tradeNo,
 		PaymentMethod:   req.PaymentMethod,
 		PaymentProvider: model.PaymentProviderEpay,
@@ -95,6 +137,7 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		Status:          common.TopUpStatusPending,
 	}
 	if err := order.Insert(); err != nil {
+		logger.LogError(c.Request.Context(), common.LogText("Subscription Epay failed to create order user_id=%d plan_id=%d trade_no=%s error=%q", userId, plan.Id, tradeNo, err.Error()))
 		common.ApiErrorT(c, "Failed to create order")
 		return
 	}
@@ -102,20 +145,29 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		Type:           req.PaymentMethod,
 		ServiceTradeNo: tradeNo,
 		Name:           fmt.Sprintf("SUB:%s", plan.Title),
-		Money:          strconv.FormatFloat(plan.PriceAmount, 'f', 2, 64),
+		Money:          payMoney.StringFixed(2), // CUSTOM(brand): send converted fiat amount instead of raw USD
 		Device:         epay.PC,
 		NotifyUrl:      notifyUrl,
 		ReturnUrl:      returnUrl,
 	})
 	if err != nil {
+		logger.LogError(c.Request.Context(), common.LogText("Subscription Epay failed to start payment user_id=%d plan_id=%d trade_no=%s money=%s error=%q", userId, plan.Id, tradeNo, payMoney.StringFixed(2), err.Error()))
 		_ = model.ExpireSubscriptionOrder(tradeNo, model.PaymentProviderEpay)
 		common.ApiErrorT(c, "Failed to start payment")
 		return
 	}
+	logger.LogInfo(c.Request.Context(), common.LogText("Subscription Epay order created user_id=%d plan_id=%d trade_no=%s payment_method=%s money=%s", userId, plan.Id, tradeNo, req.PaymentMethod, payMoney.StringFixed(2)))
 	c.JSON(http.StatusOK, gin.H{"message": "success", "data": params, "url": uri})
 }
 
 func SubscriptionEpayNotify(c *gin.Context) {
+	// CUSTOM(brand): gate subscription Epay webhook on compliance & gateway availability (matches topup.go:EpayNotify)
+	if !isEpayWebhookEnabled() {
+		logger.LogWarn(c.Request.Context(), common.LogText("Subscription Epay webhook rejected reason=webhook_disabled path=%q client_ip=%s", c.Request.RequestURI, c.ClientIP()))
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
 	var params map[string]string
 
 	if c.Request.Method == "POST" {
@@ -160,17 +212,33 @@ func SubscriptionEpayNotify(c *gin.Context) {
 	LockOrder(verifyInfo.ServiceTradeNo)
 	defer UnlockOrder(verifyInfo.ServiceTradeNo)
 
-	if err := model.CompleteSubscriptionOrder(verifyInfo.ServiceTradeNo, common.GetJsonString(verifyInfo), model.PaymentProviderEpay, verifyInfo.Type); err != nil {
+	// CUSTOM(brand): verify callback settlement amount matches order.Money before completing subscription
+	if err := verifySubscriptionEpayMoney(verifyInfo.ServiceTradeNo, verifyInfo.Money); err != nil {
+		logger.LogWarn(c.Request.Context(), common.LogText("Subscription Epay notify rejected trade_no=%s money=%q client_ip=%s error=%q", verifyInfo.ServiceTradeNo, verifyInfo.Money, c.ClientIP(), err.Error()))
 		_, _ = c.Writer.Write([]byte("fail"))
 		return
 	}
 
+	if err := model.CompleteSubscriptionOrder(verifyInfo.ServiceTradeNo, common.GetJsonString(verifyInfo), model.PaymentProviderEpay, verifyInfo.Type); err != nil {
+		logger.LogError(c.Request.Context(), common.LogText("Subscription Epay notify completion failed trade_no=%s client_ip=%s error=%q", verifyInfo.ServiceTradeNo, c.ClientIP(), err.Error()))
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	logger.LogInfo(c.Request.Context(), common.LogText("Subscription Epay notify completed trade_no=%s money=%q callback_type=%s client_ip=%s", verifyInfo.ServiceTradeNo, verifyInfo.Money, verifyInfo.Type, c.ClientIP()))
 	_, _ = c.Writer.Write([]byte("success"))
 }
 
 // SubscriptionEpayReturn handles browser return after payment.
 // It verifies the payload and completes the order, then redirects to console.
 func SubscriptionEpayReturn(c *gin.Context) {
+	// CUSTOM(brand): gate subscription Epay return on compliance & gateway availability
+	if !isEpayWebhookEnabled() {
+		logger.LogWarn(c.Request.Context(), common.LogText("Subscription Epay return rejected reason=webhook_disabled path=%q client_ip=%s", c.Request.RequestURI, c.ClientIP()))
+		c.Redirect(http.StatusFound, paymentReturnPath("/wallet?pay=fail"))
+		return
+	}
+
 	var params map[string]string
 
 	if c.Request.Method == "POST" {
@@ -209,10 +277,18 @@ func SubscriptionEpayReturn(c *gin.Context) {
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
-		if err := model.CompleteSubscriptionOrder(verifyInfo.ServiceTradeNo, common.GetJsonString(verifyInfo), model.PaymentProviderEpay, verifyInfo.Type); err != nil {
+		// CUSTOM(brand): verify callback settlement amount matches order.Money before completing subscription
+		if err := verifySubscriptionEpayMoney(verifyInfo.ServiceTradeNo, verifyInfo.Money); err != nil {
+			logger.LogWarn(c.Request.Context(), common.LogText("Subscription Epay return rejected trade_no=%s money=%q client_ip=%s error=%q", verifyInfo.ServiceTradeNo, verifyInfo.Money, c.ClientIP(), err.Error()))
 			c.Redirect(http.StatusFound, paymentReturnPath("/wallet?pay=fail"))
 			return
 		}
+		if err := model.CompleteSubscriptionOrder(verifyInfo.ServiceTradeNo, common.GetJsonString(verifyInfo), model.PaymentProviderEpay, verifyInfo.Type); err != nil {
+			logger.LogError(c.Request.Context(), common.LogText("Subscription Epay return completion failed trade_no=%s client_ip=%s error=%q", verifyInfo.ServiceTradeNo, c.ClientIP(), err.Error()))
+			c.Redirect(http.StatusFound, paymentReturnPath("/wallet?pay=fail"))
+			return
+		}
+		logger.LogInfo(c.Request.Context(), common.LogText("Subscription Epay return completed trade_no=%s money=%q callback_type=%s client_ip=%s", verifyInfo.ServiceTradeNo, verifyInfo.Money, verifyInfo.Type, c.ClientIP()))
 		c.Redirect(http.StatusFound, paymentReturnPath("/wallet?pay=success"))
 		return
 	}
