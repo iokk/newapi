@@ -88,6 +88,8 @@ const SETUP_GUIDE_CODE_PATTERN = [
 ].join('\n')
 
 type DashboardActionPath =
+  | '/client-config' // CUSTOM(brand)
+  | '/contact' // CUSTOM(brand)
   | '/keys'
   | '/wallet'
   | '/playground'
