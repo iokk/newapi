@@ -304,7 +304,7 @@ export function BrandSubscriptionTierList({
                     {t('Subscribe Now')}
                   </Button>
                 )}
-                <p className='text-muted-foreground/80 text-center text-[11px]'>
+                <p className='text-muted-foreground text-center text-[11px]'>
                   {footnoteParts.join(' · ')}
                 </p>
               </div>

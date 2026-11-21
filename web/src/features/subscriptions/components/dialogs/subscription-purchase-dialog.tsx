@@ -75,24 +75,32 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('')
 
   useEffect(() => {
-    if (props.open && props.epayMethods && props.epayMethods.length > 0) {
-      setSelectedEpayMethod(props.epayMethods[0].type)
-    } else if (!props.open) {
+    const methods = props.epayMethods || []
+    if (!props.open || methods.length === 0) {
       setSelectedEpayMethod('')
+      return
     }
+    // CUSTOM(brand): preserve user-selected method across async updates
+    setSelectedEpayMethod((prev) =>
+      prev && methods.some((m) => m.type === prev) ? prev : methods[0].type
+    )
   }, [props.open, props.epayMethods])
 
   const plan = props.plan?.plan
   if (!plan) return null
+
+  const epayMethods = props.epayMethods || []
+  const effectiveEpayMethod =
+    epayMethods.length === 1 ? epayMethods[0].type : selectedEpayMethod // CUSTOM(brand): avoid initial disabled flash in single-method mode
 
   const hasStripe = props.enableStripe && !!plan.stripe_price_id
   const hasCreem = props.enableCreem && !!plan.creem_product_id
   const hasWaffoPancake =
     props.enableWaffoPancake && !!plan.waffo_pancake_product_id
   const hasEpay =
-    ENABLE_SUBSCRIPTION_EPAY_DIRECT && // CUSTOM(brand): guard Epay until backend applies CNY rate multiplier
+    ENABLE_SUBSCRIPTION_EPAY_DIRECT && // CUSTOM(brand): gated on verified backend CNY Epay conversion
     props.enableOnlineTopUp &&
-    (props.epayMethods || []).length > 0
+    epayMethods.length > 0
   const hasAnyPayment = hasStripe || hasCreem || hasWaffoPancake || hasEpay
   const totalAmount = Number(plan.total_amount || 0)
   // CUSTOM(brand): format plan price using site billing currency (matches balance cost)
@@ -180,7 +188,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
   const handlePayEpay = async () => {
-    if (!selectedEpayMethod) {
+    if (!effectiveEpayMethod) {
       toast.error(t('Please select a payment method'))
       return
     }
@@ -188,7 +196,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     try {
       const res = await paySubscriptionEpay({
         plan_id: plan.id,
-        payment_method: selectedEpayMethod,
+        payment_method: effectiveEpayMethod,
       })
       if (res.message === 'success' && res.url) {
         const form = document.createElement('form')
@@ -405,23 +413,23 @@ export function SubscriptionPurchaseDialog(props: Props) {
             )}
             {/* CUSTOM(brand): render direct 1-click CTA when a single Epay method is available */}
             {hasEpay &&
-              ((props.epayMethods || []).length === 1 ? (
+              (epayMethods.length === 1 ? (
                 <Button
                   className='w-full'
                   onClick={handlePayEpay}
-                  disabled={paying || !selectedEpayMethod || limitReached}
+                  disabled={paying || !effectiveEpayMethod || limitReached}
                 >
-                  {props.epayMethods?.[0]?.name || selectedEpayMethod}{' '}
-                  {t('Pay')} {formattedPrice}
+                  {epayMethods[0]?.name || effectiveEpayMethod} {t('Pay')}{' '}
+                  {formattedPrice}
                 </Button>
               ) : (
                 <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
                   <Combobox
-                    options={(props.epayMethods || []).map((m) => ({
+                    options={epayMethods.map((m) => ({
                       value: m.type,
                       label: m.name || m.type,
                     }))}
-                    value={selectedEpayMethod}
+                    value={effectiveEpayMethod}
                     onValueChange={(v) =>
                       v !== null && setSelectedEpayMethod(v)
                     }
@@ -430,7 +438,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                   />
                   <Button
                     onClick={handlePayEpay}
-                    disabled={paying || !selectedEpayMethod || limitReached}
+                    disabled={paying || !effectiveEpayMethod || limitReached}
                   >
                     {t('Pay')}
                   </Button>

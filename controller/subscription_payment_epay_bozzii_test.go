@@ -144,6 +144,7 @@ func TestSubscriptionEpayEndToEndCurrencyAndAmountVerification(t *testing.T) {
 		SubscriptionRequestEpay(c)
 	})
 	router.POST("/api/subscription/epay/notify", SubscriptionEpayNotify)
+	router.GET("/api/subscription/epay/return", SubscriptionEpayReturn)
 
 	// 1. Create order: must convert $2.726027 * 7.3 -> "19.90" CNY (not "2.73")
 	bodyBytes, err := json.Marshal(SubscriptionEpayPayRequest{
@@ -190,14 +191,34 @@ func TestSubscriptionEpayEndToEndCurrencyAndAmountVerification(t *testing.T) {
 		return nRec.Body.String()
 	}
 
-	// 2. Reject validly signed underpayment ("2.73" instead of "19.90")
-	assert.Equal(t, "fail", postNotify(map[string]string{
+	// 2. Reject validly signed underpayment ("2.73") and fractional-cent ("19.895")
+	for _, badMoney := range []string{"2.73", "19.895"} {
+		assert.Equal(t, "fail", postNotify(map[string]string{
+			"type":         "wxpay",
+			"money":        badMoney,
+			"name":         "SUB:Starter",
+			"out_trade_no": tradeNo,
+			"trade_status": epay.StatusTradeSuccess,
+		}))
+	}
+	// Also verify GET /api/subscription/epay/return rejects mismatched money with /wallet?pay=fail
+	badReturnParams, err := client.SignParams(map[string]string{
 		"type":         "wxpay",
 		"money":        "2.73",
 		"name":         "SUB:Starter",
 		"out_trade_no": tradeNo,
 		"trade_status": epay.StatusTradeSuccess,
-	}))
+	})
+	require.NoError(t, err)
+	badQ := url.Values{}
+	for k, v := range badReturnParams {
+		badQ.Set(k, v)
+	}
+	badRetRec := httptest.NewRecorder()
+	router.ServeHTTP(badRetRec, httptest.NewRequest(http.MethodGet, "/api/subscription/epay/return?"+badQ.Encode(), nil))
+	assert.Equal(t, http.StatusFound, badRetRec.Code)
+	assert.Equal(t, "https://ai.bozzii.com/wallet?pay=fail", badRetRec.Header().Get("Location"))
+
 	var subCount int64
 	require.NoError(t, db.Model(&model.UserSubscription{}).Count(&subCount).Error)
 	assert.Equal(t, int64(0), subCount)
@@ -233,7 +254,7 @@ func TestSubscriptionEpayEndToEndCurrencyAndAmountVerification(t *testing.T) {
 	require.NoError(t, db.Where("trade_no = ?", tradeNo).First(&topup).Error)
 	assert.InDelta(t, 19.90, topup.Money, 0.0001)
 
-	// 5. Duplicate callback stays idempotent
+	// 5. Duplicate callback & browser return stay idempotent
 	assert.Equal(t, "success", postNotify(map[string]string{
 		"type":         "wxpay",
 		"money":        "19.90",
@@ -241,6 +262,23 @@ func TestSubscriptionEpayEndToEndCurrencyAndAmountVerification(t *testing.T) {
 		"out_trade_no": tradeNo,
 		"trade_status": epay.StatusTradeSuccess,
 	}))
+	okReturnParams, err := client.SignParams(map[string]string{
+		"type":         "wxpay",
+		"money":        "19.9",
+		"name":         "SUB:Starter",
+		"out_trade_no": tradeNo,
+		"trade_status": epay.StatusTradeSuccess,
+	})
+	require.NoError(t, err)
+	okQ := url.Values{}
+	for k, v := range okReturnParams {
+		okQ.Set(k, v)
+	}
+	okRetRec := httptest.NewRecorder()
+	router.ServeHTTP(okRetRec, httptest.NewRequest(http.MethodGet, "/api/subscription/epay/return?"+okQ.Encode(), nil))
+	assert.Equal(t, http.StatusFound, okRetRec.Code)
+	assert.Equal(t, "https://ai.bozzii.com/wallet?pay=success", okRetRec.Header().Get("Location"))
+
 	require.NoError(t, db.Model(&model.UserSubscription{}).Count(&subCount).Error)
 	assert.Equal(t, int64(1), subCount)
 }

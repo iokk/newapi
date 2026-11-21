@@ -50,8 +50,8 @@ func verifySubscriptionEpayMoney(tradeNo string, paidMoneyStr string) error {
 		return fmt.Errorf("invalid callback money: %q", paidMoneyStr)
 	}
 	expected := decimal.NewFromFloat(order.Money).Round(2)
-	if !paidMoney.Round(2).Equal(expected) {
-		return fmt.Errorf("callback money mismatch: expected=%s got=%s", expected.StringFixed(2), paidMoney.Round(2).StringFixed(2))
+	if !paidMoney.Equal(expected) {
+		return fmt.Errorf("callback money mismatch: expected=%s got=%s", expected.StringFixed(2), paidMoney.String())
 	}
 	return nil
 }
@@ -84,7 +84,12 @@ func SubscriptionRequestEpay(c *gin.Context) {
 	// CUSTOM(brand): compute Epay settlement amount via operation_setting.Price (USD -> fiat)
 	payMoney, err := getSubscriptionEpayPayMoney(plan.PriceAmount)
 	if err != nil {
-		common.ApiErrorT(c, "Plan amount is too low")
+		logger.LogWarn(c.Request.Context(), common.LogText("Subscription Epay rejected invalid price plan_id=%d price_amount=%.6f price_ratio=%.6f error=%q", plan.Id, plan.PriceAmount, operation_setting.Price, err.Error()))
+		if operation_setting.Price <= 0 {
+			common.ApiErrorT(c, "Payment information has not been configured by administrator")
+		} else {
+			common.ApiErrorT(c, "Plan amount is too low")
+		}
 		return
 	}
 	if !operation_setting.ContainsPayMethod(req.PaymentMethod) {

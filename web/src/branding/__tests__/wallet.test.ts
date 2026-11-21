@@ -58,6 +58,18 @@ describe('brand wallet helpers', () => {
       amount: 10,
       presetValue: 10,
     })
+
+    // Method with min_topup=0 inherits global minTopup rather than falling back to high-min method
+    const zeroMinInfo = {
+      pay_methods: [
+        { name: '支付宝', type: 'alipay', min_topup: 4999 },
+        { name: '微信', type: 'wxpay', min_topup: 0 },
+      ],
+    } as TopupInfo
+    expect(pickInitialTopupAmount(zeroMinInfo, presets, 1)).toEqual({
+      amount: 10,
+      presetValue: 10,
+    })
   })
 
   it('sorts subscription plans ascending by price', () => {

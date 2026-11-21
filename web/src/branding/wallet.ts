@@ -167,11 +167,16 @@ export function pickInitialTopupAmount(
   presets: PresetAmount[],
   minTopup: number
 ): { amount: number; presetValue: number | null } {
-  const methodMins = (topupInfo?.pay_methods ?? [])
-    .map((m) => Number(m.min_topup || 0))
-    .filter((n) => Number.isFinite(n) && n > 0)
+  const methods = topupInfo?.pay_methods ?? []
+  const effectiveMins = methods.map((m) => {
+    const methodMin = Number(m.min_topup || 0)
+    return Math.max(
+      Number.isFinite(methodMin) && methodMin > 0 ? methodMin : 0,
+      minTopup
+    )
+  })
   const lowestUsableMin =
-    methodMins.length > 0 ? Math.max(minTopup, Math.min(...methodMins)) : minTopup
+    effectiveMins.length > 0 ? Math.min(...effectiveMins) : minTopup
 
   const matched = presets.find((p) => p.value >= lowestUsableMin)
   if (matched) {

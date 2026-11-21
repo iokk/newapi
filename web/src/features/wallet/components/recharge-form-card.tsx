@@ -542,12 +542,19 @@ export function RechargeFormCard({
                             )}
                             <span className='truncate'>
                               {compactLayout
-                                ? `${method.name}${t('Pay')}`
+                                ? `${method.name} ${t('Pay')}`
                                 : method.name}
                             </span>
                           </span>
                           {disabledLabel ? (
-                            <span className='text-muted-foreground shrink-0 text-[11px] font-normal tabular-nums'>
+                            <span
+                              className={cn(
+                                'shrink-0 text-[11px] font-normal tabular-nums',
+                                compactLayout
+                                  ? 'opacity-85'
+                                  : 'text-muted-foreground'
+                              )}
+                            >
                               {disabledLabel}
                             </span>
                           ) : (
