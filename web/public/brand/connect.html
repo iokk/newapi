@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>一键接入中心 · Bozzii AI — 深圳市铂子科技有限责任公司</title>
-  <meta name="description" content="Bozzii AI 企业级统一大模型 API 网关一键接入中心：覆盖 WorkBuddy、CodeBuddy、DeepSeek Harness、Claude Code、Codex、Cherry Studio、Cursor 与标准 SDK，直达客户端中心自动配置。" />
+  <title>快速接入 · Bozzii AI</title>
+  <meta name="description" content="Bozzii AI 统一大模型 API 网关快速接入指南：OpenAI / Anthropic 协议端点、WorkBuddy、Claude Code、Codex、CodeBuddy、Cherry Studio、SDK 与 XSEEK 办公智能体。" />
   <link rel="icon" type="image/png" href="https://picgocloud.com/m/8a04a208-adab-4904-92b3-bfbf8cd7e710.png" />
   <script>
     (function () {
@@ -20,48 +20,33 @@
   <style>
     :root {
       --brand: #0a7a64;
-      --brand-contrast: #ffffff;
-      --brand-soft: rgba(10, 122, 100, 0.08);
-      --brand-border: rgba(10, 122, 100, 0.24);
-      --background: #ffffff;
-      --surface: #fafafa;
-      --card: #ffffff;
-      --foreground: #0a0a0a;
-      --muted: #f4f4f5;
-      --muted-foreground: #5c5c66;
-      --border: #e6e6e9;
-      --code-bg: #f6f7f8;
-      --status-green: #16a34a;
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.06);
-      --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --brand-ink: #ffffff;
+      --bg: #ffffff;
+      --surface: #f7f8fa;
+      --ink: #111315;
+      --muted: #5c646d;
+      --line: #e6e8ec;
+      --line-strong: #cfd4dc;
+      --font-sans: "Inter", "PingFang SC", "Hiragino Sans GB", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     html.dark {
       --brand: #34c79b;
-      --brand-contrast: #081512;
-      --brand-soft: rgba(52, 199, 155, 0.11);
-      --brand-border: rgba(52, 199, 155, 0.28);
-      --background: #0a0a0b;
-      --surface: #111113;
-      --card: #131316;
-      --foreground: #f5f5f7;
-      --muted: #1b1b1f;
-      --muted-foreground: #a1a1aa;
-      --border: rgba(255, 255, 255, 0.1);
-      --code-bg: #0f1013;
-      --status-green: #34d399;
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
-      --shadow-md: 0 14px 36px rgba(0, 0, 0, 0.45);
+      --brand-ink: #071511;
+      --bg: #0d0f12;
+      --surface: #14171c;
+      --ink: #f0f2f5;
+      --muted: #8b949e;
+      --line: #222730;
+      --line-strong: #323946;
     }
 
     *, *::before, *::after { box-sizing: border-box; }
     html {
       font-family: var(--font-sans);
-      background: var(--background);
-      color: var(--foreground);
-      scroll-behavior: smooth;
+      background: var(--bg);
+      color: var(--ink);
       -webkit-font-smoothing: antialiased;
     }
     body {
@@ -69,822 +54,482 @@
       min-height: 100svh;
       display: flex;
       flex-direction: column;
-      background: var(--background);
-      color: var(--foreground);
-      line-height: 1.65;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.6;
     }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; }
     code, pre { font-family: var(--font-mono); }
 
-    /* Top Header */
-    .site-header {
+    /* Header */
+    .header {
       position: sticky;
       top: 0;
-      z-index: 50;
-      background: color-mix(in oklab, var(--background) 82%, transparent);
-      backdrop-filter: blur(18px) saturate(150%);
-      border-bottom: 1px solid var(--border);
+      z-index: 40;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
     }
-    .announce-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-height: 38px;
-      padding: 6px 16px;
-      background: #0b0d0b;
-      color: #ffffff;
-      font-size: 12.5px;
-      font-weight: 500;
-      text-align: center;
-    }
-    html.dark .announce-bar {
-      background: var(--brand);
-      color: var(--brand-contrast);
-    }
-    .announce-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #34c79b;
-      flex-shrink: 0;
-    }
-    html.dark .announce-dot { background: currentColor; }
-    .announce-bar a {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      max-width: 100%;
-    }
-    .announce-bar a:hover .announce-cta { text-decoration: underline; }
-
-    .nav-inner {
-      max-width: 1240px;
+    .header-inner {
+      max-width: 960px;
       margin: 0 auto;
       height: 56px;
-      padding: 0 20px;
+      padding: 0 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
     }
-    .brand-link {
+    .brand {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      font-size: 14.5px;
+      gap: 9px;
+      font-size: 14px;
       font-weight: 600;
       letter-spacing: -0.01em;
       white-space: nowrap;
     }
-    .brand-link img {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
+    .brand img {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
       object-fit: contain;
     }
-    .nav-links {
+    .nav {
       display: none;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
-    @media (min-width: 1024px) {
-      .nav-links { display: flex; }
-    }
-    .nav-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      height: 32px;
-      padding: 0 12px;
+    @media (min-width: 820px) { .nav { display: flex; } }
+    .nav a {
+      padding: 6px 10px;
       border-radius: 6px;
-      font-size: 13.5px;
-      font-weight: 500;
-      color: var(--muted-foreground);
+      font-size: 13px;
+      color: var(--muted);
       white-space: nowrap;
-      transition: color 0.15s ease, background-color 0.15s ease;
+      transition: color 0.15s ease;
     }
-    .nav-link:hover { color: var(--foreground); background: var(--muted); }
-    .nav-link.active {
-      color: var(--brand);
-      background: var(--brand-soft);
-      font-weight: 600;
-    }
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--status-green);
-      display: inline-block;
-    }
-    .nav-actions {
+    .nav a:hover { color: var(--ink); }
+    .nav a.active { color: var(--ink); font-weight: 600; }
+
+    .header-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
     }
     .icon-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      height: 32px;
-      padding: 0 10px;
-      border-radius: 7px;
+      height: 30px;
+      padding: 0 8px;
+      border-radius: 6px;
       border: 1px solid transparent;
       background: transparent;
-      color: var(--muted-foreground);
+      color: var(--muted);
       font-size: 12px;
       font-weight: 500;
-      transition: background-color 0.15s ease, color 0.15s ease;
     }
-    .icon-btn:hover { background: var(--muted); color: var(--foreground); }
-    .btn-nav-primary {
+    .icon-btn:hover { background: var(--surface); color: var(--ink); }
+    .btn-sm {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 32px;
-      padding: 0 14px;
-      border-radius: 8px;
-      background: var(--brand);
-      color: var(--brand-contrast);
-      font-size: 12.5px;
-      font-weight: 600;
-      white-space: nowrap;
-      transition: opacity 0.15s ease;
-    }
-    .btn-nav-primary:hover { opacity: 0.9; }
-    .btn-nav-ghost {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      height: 32px;
-      padding: 0 11px;
-      border-radius: 8px;
-      color: var(--muted-foreground);
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 6px;
       font-size: 12.5px;
       font-weight: 500;
-      transition: background-color 0.15s ease, color 0.15s ease;
+      white-space: nowrap;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
     }
-    .btn-nav-ghost:hover { background: var(--muted); color: var(--foreground); }
-    @media (min-width: 640px) { .btn-nav-ghost { display: inline-flex; } }
+    .btn-sm:hover { border-color: var(--line-strong); background: var(--surface); }
 
-    /* Main Container */
+    /* Main Column */
     main {
       flex: 1;
       width: 100%;
     }
-    .container {
-      max-width: 1200px;
+    .wrap {
+      max-width: 960px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 44px 24px 64px;
     }
 
-    /* Hero Section */
-    .hero {
-      position: relative;
-      padding: 56px 0 36px;
-      background:
-        radial-gradient(60% 60% at 50% 0%, var(--brand-soft), transparent 72%);
-      border-bottom: 1px solid var(--border);
-    }
-    .hero-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--brand-border);
-      background: var(--brand-soft);
-      color: var(--brand);
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 28px;
-      align-items: end;
-      margin-top: 16px;
-    }
-    @media (min-width: 960px) {
-      .hero-grid {
-        grid-template-columns: 1.35fr 0.85fr;
-      }
-    }
-    .hero h1 {
-      margin: 0;
-      font-size: clamp(28px, 4vw, 44px);
-      line-height: 1.18;
-      letter-spacing: -0.025em;
-      font-weight: 700;
-    }
-    .hero h1 span { color: var(--brand); }
-    .hero-desc {
-      margin: 14px 0 0;
-      max-width: 640px;
-      color: var(--muted-foreground);
-      font-size: 15px;
-      line-height: 1.75;
-    }
-    .hero-actions {
+    /* Page Head */
+    .page-head {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 24px;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .page-head h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+    .page-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .head-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
     }
     .btn-primary {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      height: 44px;
-      padding: 0 22px;
-      border-radius: 10px;
+      height: 36px;
+      padding: 0 15px;
+      border-radius: 7px;
       border: 1px solid var(--brand);
       background: var(--brand);
-      color: var(--brand-contrast);
-      font-size: 14.5px;
+      color: var(--brand-ink);
+      font-size: 13px;
       font-weight: 600;
-      transition: opacity 0.15s ease, transform 0.15s ease;
+      white-space: nowrap;
+      transition: opacity 0.15s ease;
     }
-    .btn-primary:hover { opacity: 0.92; }
-    .btn-secondary {
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-outline {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      height: 44px;
-      padding: 0 18px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--foreground);
-      font-size: 14px;
-      font-weight: 500;
-      transition: background-color 0.15s ease, border-color 0.15s ease;
-    }
-    .btn-secondary:hover { background: var(--muted); border-color: color-mix(in oklab, var(--foreground) 22%, transparent); }
-
-    /* Client Center Fast-Track Card */
-    .hub-callout {
-      padding: 20px 22px;
-      border-radius: 14px;
-      border: 1px solid var(--brand-border);
-      background: var(--card);
-      box-shadow: var(--shadow-sm);
-    }
-    .hub-callout-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--brand);
-      margin-bottom: 8px;
-    }
-    .hub-callout h2 {
-      margin: 0;
-      font-size: 16.5px;
-      font-weight: 650;
-    }
-    .hub-callout p {
-      margin: 8px 0 14px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
       font-size: 13px;
-      color: var(--muted-foreground);
-      line-height: 1.65;
-    }
-    .hub-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-    .hub-pill {
-      font-size: 11.5px;
-      padding: 2px 9px;
-      border-radius: 999px;
-      background: var(--muted);
-      color: var(--foreground);
       font-weight: 500;
-    }
-    .hub-callout-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13.5px;
-      font-weight: 600;
-      color: var(--brand);
-    }
-    .hub-callout-link:hover { text-decoration: underline; }
-
-    /* Section Blocks */
-    .section {
-      padding: 40px 0;
-    }
-    .section-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .section-title {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.015em;
-    }
-    .section-sub {
-      margin: 4px 0 0;
-      font-size: 13.5px;
-      color: var(--muted-foreground);
-    }
-
-    /* Interactive Config Bar (local-only key preview + endpoint selector) */
-    .config-bar {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      padding: 18px 20px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      margin-bottom: 24px;
-    }
-    @media (min-width: 820px) {
-      .config-bar {
-        grid-template-columns: 1.25fr 1fr;
-        align-items: end;
-      }
-    }
-    .field-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 12.5px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .field-hint {
-      font-size: 11.5px;
-      font-weight: 400;
-      color: var(--muted-foreground);
-    }
-    .input-row {
-      display: flex;
-      gap: 8px;
-    }
-    .text-input, .select-input {
-      width: 100%;
-      height: 38px;
-      padding: 0 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--foreground);
-      font-family: var(--font-mono);
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.15s ease;
-    }
-    .text-input:focus, .select-input:focus {
-      border-color: var(--brand);
-    }
-
-    /* Endpoint Grid */
-    .endpoint-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-bottom: 34px;
-    }
-    @media (min-width: 768px) {
-      .endpoint-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    .endpoint-card {
-      padding: 14px 16px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .endpoint-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 12.5px;
-      font-weight: 600;
-    }
-    .endpoint-badge {
-      font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: var(--muted);
-      color: var(--muted-foreground);
-      font-weight: 500;
-    }
-    .endpoint-box {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 7px 10px;
-      border-radius: 8px;
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-    }
-    .endpoint-box code {
-      font-size: 12.5px;
-      overflow-x: auto;
       white-space: nowrap;
     }
-    .endpoint-note {
-      font-size: 12px;
-      color: var(--muted-foreground);
-      margin: 0;
+    .btn-outline:hover { background: var(--surface); border-color: var(--line-strong); }
+
+    /* Block spacing */
+    .block {
+      margin-top: 32px;
+    }
+    .block-label {
+      margin: 0 0 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
     }
 
-    /* Client Tabs */
-    .tabs-bar {
+    /* Hairline Endpoint Table */
+    .kv-list {
+      border-top: 1px solid var(--line);
+    }
+    .kv-row {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    @media (max-width: 600px) {
+      .kv-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+      .kv-key { grid-column: 1 / -1; }
+    }
+    .kv-key {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .kv-val {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 8px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
-      margin-bottom: 22px;
+      min-width: 0;
+      font-size: 13px;
     }
-    .tab-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      height: 38px;
-      padding: 0 15px;
-      border-radius: 9px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--muted-foreground);
-      font-size: 13.5px;
-      font-weight: 500;
-      transition: all 0.15s ease;
+    .kv-val code {
+      font-size: 13px;
+      color: var(--ink);
+      word-break: break-all;
     }
-    .tab-btn:hover { color: var(--foreground); background: var(--muted); }
-    .tab-btn[aria-selected="true"] {
-      border-color: var(--brand);
-      background: var(--brand-soft);
-      color: var(--brand);
-      font-weight: 650;
-    }
-    .tab-tag {
-      font-size: 10.5px;
-      padding: 1px 6px;
-      border-radius: 999px;
-      background: var(--brand);
-      color: var(--brand-contrast);
-      font-weight: 600;
-    }
-    .tab-panel { display: none; }
-    .tab-panel[data-active="true"] { display: block; }
-
-    .panel-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 18px;
-    }
-    @media (min-width: 900px) {
-      .panel-grid { grid-template-columns: 0.95fr 1.25fr; }
-    }
-    .card {
-      padding: 20px 22px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--card);
-    }
-    .card h3 {
-      margin: 0 0 8px;
-      font-size: 16px;
-      font-weight: 650;
-    }
-    .card p {
-      margin: 0 0 12px;
-      font-size: 13.5px;
-      color: var(--muted-foreground);
-      line-height: 1.7;
-    }
-    .steps-list {
-      margin: 12px 0 18px;
-      padding: 0;
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .steps-list li {
-      display: flex;
-      gap: 10px;
-      font-size: 13.5px;
-      line-height: 1.6;
-    }
-    .step-num {
-      width: 22px;
-      height: 22px;
-      border-radius: 999px;
-      background: var(--brand-soft);
-      color: var(--brand);
-      border: 1px solid var(--brand-border);
-      font-size: 11.5px;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    .tip-box {
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--brand-border);
-      background: var(--brand-soft);
-      font-size: 12.5px;
-      line-height: 1.65;
-      color: var(--foreground);
-      margin-top: 12px;
-    }
-
-    /* Code Block */
-    .code-card {
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--code-bg);
-      overflow: hidden;
-      margin-bottom: 14px;
-    }
-    .code-card:last-child { margin-bottom: 0; }
-    .code-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 9px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
+    .kv-note {
       font-size: 12px;
-      font-weight: 600;
-      color: var(--muted-foreground);
+      color: var(--muted);
     }
+
+    /* Inline Key & Host Strip */
+    .var-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .key-box {
+      flex: 1 1 280px;
+      display: flex;
+      align-items: center;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      padding: 0 4px 0 11px;
+    }
+    .key-box:focus-within { border-color: var(--brand); background: var(--bg); }
+    .key-box input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+    }
+    .key-box input::placeholder {
+      font-family: var(--font-sans);
+      color: var(--muted);
+    }
+    .host-select {
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      outline: 0;
+    }
+    .host-select:focus { border-color: var(--brand); }
+
+    /* Copy Button */
     .copy-btn {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      height: 26px;
+      justify-content: center;
+      height: 28px;
       padding: 0 10px;
       border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--foreground);
-      font-size: 11.5px;
-      font-weight: 500;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-    }
-    .copy-btn:hover { border-color: var(--brand); color: var(--brand); }
-    .copy-btn[data-copied="true"] {
-      background: var(--brand);
-      border-color: var(--brand);
-      color: var(--brand-contrast);
-    }
-    .code-card pre {
-      margin: 0;
-      padding: 14px;
-      overflow-x: auto;
-      font-size: 12.5px;
-      line-height: 1.65;
-      color: var(--foreground);
-      tab-size: 2;
-    }
-
-    /* Quick Parameter Table */
-    .param-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      margin: 8px 0 14px;
-    }
-    .param-table th, .param-table td {
-      text-align: left;
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .param-table th {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--muted);
       font-size: 12px;
-      color: var(--muted-foreground);
-      font-weight: 600;
-      width: 34%;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: color 0.12s ease, border-color 0.12s ease;
     }
-    .param-table td code {
-      font-size: 12.5px;
-      background: var(--muted);
-      padding: 2px 6px;
-      border-radius: 5px;
-    }
+    .copy-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+    .copy-btn[data-copied="true"] { color: var(--brand); border-color: var(--brand); }
 
-    /* Model Quick List */
-    .models-strip {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 10px;
-      margin-top: 12px;
-    }
-    .model-chip {
+    /* Underline Tabs */
+    .tabs {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      font-size: 12.5px;
+      gap: 20px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+      scrollbar-width: none;
     }
-    .model-chip strong { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; }
-    .model-chip span { color: var(--muted-foreground); font-size: 11.5px; display: block; margin-top: 2px; }
-
-    /* Support Strip */
-    .support-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      margin-top: 8px;
-    }
-    @media (min-width: 768px) {
-      .support-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    .support-card {
-      padding: 18px 20px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .support-card h3 { margin: 0; font-size: 15px; font-weight: 650; }
-    .support-card p { margin: 6px 0 0; font-size: 13px; color: var(--muted-foreground); }
-    .support-card a { font-size: 13px; font-weight: 600; color: var(--brand); }
-    .support-card a:hover { text-decoration: underline; }
-
-    /* Official Enterprise Compliance Footer (Shared with home.html) */
-    .site-footer {
-      margin-top: 40px;
-      border-top: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .footer-inner {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 44px 20px 32px;
-    }
-    .compliance-strip {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      padding-bottom: 32px;
-      margin-bottom: 32px;
-      border-bottom: 1px solid var(--border);
-    }
-    @media (min-width: 640px) { .compliance-strip { grid-template-columns: repeat(2, 1fr); } }
-    @media (min-width: 1024px) { .compliance-strip { grid-template-columns: repeat(4, 1fr); } }
-    .compliance-item {
-      padding: 16px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--card);
-    }
-    .compliance-title {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 13px;
-      font-weight: 650;
-      color: var(--foreground);
-      margin: 0 0 6px;
-    }
-    .compliance-title svg { color: var(--brand); flex-shrink: 0; }
-    .compliance-desc {
-      margin: 0;
-      font-size: 12.2px;
-      line-height: 1.65;
-      color: var(--muted-foreground);
-    }
-    .compliance-desc a {
-      color: var(--foreground);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-    .compliance-desc a:hover { color: var(--brand); }
-
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 32px;
-    }
-    @media (min-width: 900px) {
-      .footer-grid { grid-template-columns: 1.35fr repeat(4, 1fr); }
-    }
-    .footer-cols {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
-    }
-    @media (min-width: 640px) { .footer-cols { grid-template-columns: repeat(4, 1fr); } }
-    @media (min-width: 900px) { .footer-cols { display: contents; } }
-    .footer-col h4 {
-      margin: 0 0 14px;
-      font-size: 12.5px;
-      font-weight: 650;
-      color: var(--foreground);
-    }
-    .footer-col ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .footer-col a {
-      font-size: 13px;
-      color: var(--muted-foreground);
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      position: relative;
+      padding: 10px 2px 11px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13.5px;
+      font-weight: 500;
+      white-space: nowrap;
       transition: color 0.15s ease;
     }
-    .footer-col a:hover { color: var(--foreground); }
-    .footer-brand-desc {
-      margin: 14px 0 16px;
-      max-width: 280px;
-      font-size: 13px;
-      line-height: 1.75;
-      color: var(--muted-foreground);
-    }
-    .feishu-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 7px 13px;
-      border-radius: 8px;
-      border: 1px solid var(--brand-border);
-      background: var(--brand-soft);
-      color: var(--brand);
-      font-size: 12.5px;
+    .tab-btn:hover { color: var(--ink); }
+    .tab-btn[aria-selected="true"] {
+      color: var(--ink);
       font-weight: 600;
-      transition: opacity 0.15s ease;
     }
-    .feishu-pill:hover { opacity: 0.88; }
+    .tab-btn[aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: var(--brand);
+    }
 
-    .footer-bottom {
-      margin-top: 32px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border);
+    .panel {
+      display: none;
+      padding-top: 22px;
+    }
+    .panel[data-active="true"] { display: block; }
+
+    .panel-lead {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      font-size: 12px;
-      color: var(--muted-foreground);
+      margin-bottom: 16px;
     }
-    .footer-bottom-links {
+    .panel-lead p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13.5px;
+      max-width: 64ch;
+    }
+    .panel-lead p code {
+      font-size: 12.5px;
+      color: var(--ink);
+    }
+    .inline-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--brand);
+      white-space: nowrap;
+    }
+    .inline-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .lead-links {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: 14px;
     }
-    .footer-bottom a:hover { color: var(--foreground); }
+
+    /* Code Block with optional sub-tabs */
+    .code-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .code-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
+    }
+    .code-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .subtabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .subtab-btn {
+      height: 26px;
+      padding: 0 10px;
+      border-radius: 5px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .subtab-btn:hover { color: var(--ink); }
+    .subtab-btn[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .code-wrap pre {
+      display: none;
+      margin: 0;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--ink);
+    }
+    .code-wrap pre[data-active="true"] { display: block; }
+
+    /* Model Chips (click to copy) */
+    .model-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .model-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 11px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      transition: border-color 0.12s ease;
+    }
+    .model-btn:hover { border-color: var(--brand); }
+    .model-btn span {
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    /* Compact Compliance Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .footer-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 14px;
+    }
+    .footer-row a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+    .footer-row strong { color: var(--ink); font-weight: 500; }
 
     /* Toast */
     .toast {
       position: fixed;
       bottom: 24px;
       left: 50%;
-      transform: translateX(-50%) translateY(16px);
-      padding: 9px 16px;
-      border-radius: 9px;
-      background: var(--foreground);
-      color: var(--background);
-      font-size: 13px;
+      transform: translateX(-50%) translateY(10px);
+      padding: 7px 14px;
+      border-radius: 7px;
+      background: var(--ink);
+      color: var(--bg);
+      font-size: 12.5px;
       font-weight: 500;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition: opacity 0.15s ease, transform 0.15s ease;
       z-index: 100;
-      box-shadow: var(--shadow-md);
     }
     .toast[data-show="true"] {
       opacity: 1;
@@ -893,280 +538,112 @@
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="announce-bar">
-      <a href="https://ai.bozzii.com/client-config" target="_top">
-        <span class="announce-dot" aria-hidden="true"></span>
-        <span data-i18n-en="Logged in? Open Client Hub to generate one-time setup links for WorkBuddy, DeepSeek Harness, Claude Code & Codex">已登录用户可直达客户端中心，免填明文密钥一键生成 WorkBuddy / DSH / Claude Code / Codex 配置</span>
-        <span class="announce-cta" data-i18n-en="Open Client Hub →">前往客户端中心 →</span>
-      </a>
-    </div>
-    <nav class="nav-inner" aria-label="主导航">
-      <a class="brand-link" href="https://ai.bozzii.com/" target="_top">
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="https://ai.bozzii.com/" target="_top">
         <img alt="Bozzii AI" src="https://picgocloud.com/m/8a04a208-adab-4904-92b3-bfbf8cd7e710.png" />
         <span>Bozzii AI</span>
       </a>
-      <div class="nav-links">
-        <a class="nav-link active" href="https://ai.bozzii.com/brand/connect.html" target="_top" data-i18n-en="Quick Connect">一键接入</a>
-        <a class="nav-link" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="XSEEK Agent">XSEEK 智能体</a>
-        <a class="nav-link" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Client Hub">客户端中心</a>
-        <a class="nav-link" href="https://ai.bozzii.com/pricing" target="_top" data-i18n-en="Models & Pricing">模型广场</a>
-        <a class="nav-link" href="https://ai.bozzii.com/dashboard" target="_top" data-i18n-en="Console">控制台</a>
-        <a class="nav-link" href="https://doc.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Docs">接入文档</a>
-        <a class="nav-link" href="https://status.bozzii.com/" target="_blank" rel="noopener noreferrer">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span data-i18n-en="Status">服务状态</span>
-        </a>
-        <a class="nav-link" href="#compliance-footer" data-i18n-en="Compliance">合规与开票</a>
-      </div>
-      <div class="nav-actions">
+      <nav class="nav" aria-label="主导航">
+        <a class="active" href="https://ai.bozzii.com/brand/connect.html" target="_top" data-i18n-en="Quickstart">快速接入</a>
+        <a href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="XSEEK Agent">XSEEK 智能体</a>
+        <a href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Client Hub">客户端中心</a>
+        <a href="https://ai.bozzii.com/pricing" target="_top" data-i18n-en="Pricing">模型定价</a>
+        <a href="https://doc.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Docs">文档</a>
+        <a href="https://status.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Status">状态</a>
+      </nav>
+      <div class="header-actions">
         <button type="button" class="icon-btn" id="btn-lang" aria-label="切换语言">简</button>
         <button type="button" class="icon-btn" id="btn-theme" aria-label="切换主题">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         </button>
-        <a class="btn-nav-ghost" href="https://ai.bozzii.com/login" target="_top" data-i18n-en="Sign In">登录</a>
-        <a class="btn-nav-primary" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Client Hub">客户端中心</a>
+        <a class="btn-sm" href="https://ai.bozzii.com/dashboard" target="_top" data-i18n-en="Console">控制台</a>
       </div>
-    </nav>
+    </div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="container">
-        <div class="hero-eyebrow">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span data-i18n-en="Bozzii AI · Quick Connect Hub">Bozzii AI · 一键接入中心</span>
+    <div class="wrap">
+      <section class="page-head">
+        <div>
+          <h1 data-i18n-en="Quickstart">快速接入</h1>
+          <p data-i18n-en="Unified OpenAI, Anthropic & Gemini endpoints. Use Client Hub for automatic setup or copy a snippet below.">
+            兼容 OpenAI、Anthropic 与 Gemini 协议；推荐使用客户端中心自动配置，或直接复制下方代码。
+          </p>
         </div>
-        <div class="hero-grid">
-          <div>
-            <h1>
-              <span data-i18n-en="One API Key.">一把密钥，</span>
-              <span data-i18n-en="Connect Every AI Client in 60 Seconds.">一分钟接入主流 AI 客户端。</span>
-            </h1>
-            <p class="hero-desc" data-i18n-en="Standardized OpenAI, Anthropic & Gemini endpoints with native prompt caching pass-through. Use the logged-in Client Hub for zero-key-leak one-time setup links, or copy ready-to-run configs below.">
-              全面兼容 OpenAI、Anthropic 与 Gemini 原生协议，透传 Prompt 缓存与流式输出。推荐使用控制台「客户端中心」自动生成一次性配置，或直接在下方一键复制标准配置与环境变量。
-            </p>
-            <div class="hero-actions">
-              <a class="btn-primary" href="https://ai.bozzii.com/client-config" target="_top">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
-                <span data-i18n-en="Open Client Hub (Auto Setup)">打开控制台客户端中心（一键配置）</span>
-              </a>
-              <a class="btn-secondary" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="XSEEK Agent · Book Demo">XSEEK 办公智能体 · 预约演示</a>
-              <a class="btn-secondary" href="https://ai.bozzii.com/token" target="_top" data-i18n-en="Manage API Keys">创建 / 管理 API 密钥</a>
-              <a class="btn-secondary" href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer" data-i18n-en="Feishu Tech Support">飞书直连协助接入</a>
-            </div>
-          </div>
-
-          <aside class="hub-callout" aria-label="客户端中心直通">
-            <div class="hub-callout-tag">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
-              <span data-i18n-en="RECOMMENDED · ZERO KEY LEAK">推荐方式 · 密钥不出本地</span>
-            </div>
-            <h2 data-i18n-en="Bozzii Client Hub (/client-config)">铂子客户端中心（自动配置引擎）</h2>
-            <p data-i18n-en="Pick an existing token or create one in console. Generates a one-time setup prompt, terminal installer, or CC Switch deep link — your raw API key never appears in chat prompts.">
-              登录后选择已有令牌即可一键生成一次性配置提示词、终端安装命令或 CC Switch 卡片，自动备份原文件并合并写入，明文密钥不暴露在对话记录中。
-            </p>
-            <div class="hub-pills">
-              <span class="hub-pill">WorkBuddy</span>
-              <span class="hub-pill">DeepSeek Harness</span>
-              <span class="hub-pill">Claude Code</span>
-              <span class="hub-pill">Codex</span>
-              <span class="hub-pill">CC Switch</span>
-            </div>
-            <a class="hub-callout-link" href="https://ai.bozzii.com/client-config" target="_top">
-              <span data-i18n-en="Go to /client-config now">立即跳转至客户端中心</span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </a>
-          </aside>
+        <div class="head-actions">
+          <a class="btn-primary" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Open Client Hub">客户端中心自动配置</a>
+          <a class="btn-outline" href="https://ai.bozzii.com/token" target="_top" data-i18n-en="API Keys">管理密钥</a>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section">
-      <div class="container">
-        <div class="section-header">
-          <div>
-            <h2 class="section-title" data-i18n-en="1. Standard Gateway Endpoints & Local Snippet Builder">1. 标准接入端点与本地配置生成器</h2>
-            <p class="section-sub" data-i18n-en="Optional: paste your API key locally to pre-fill all code snippets below. It stays strictly in browser memory and is never uploaded.">
-              可选：在下方填入你的 API 密钥即可实时填充本页全部命令与配置片段（仅在当前浏览器本地渲染，绝不上传或写入地址栏）。
-            </p>
-          </div>
-        </div>
-
-        <div class="config-bar">
-          <div>
-            <div class="field-label">
-              <label for="input-apikey" data-i18n-en="API Key (Local Preview Only)">API 密钥（仅本地预览替换）</label>
-              <span class="field-hint" data-i18n-en="Starts with sk- · Leave blank for placeholder">以 sk- 开头 · 留空则保持占位符</span>
-            </div>
-            <div class="input-row">
-              <input id="input-apikey" class="text-input" type="password" autocomplete="off" spellcheck="false" placeholder="sk-your-bozzii-api-key" />
-              <button type="button" class="copy-btn" id="btn-toggle-key" style="height:38px;padding:0 12px;" data-i18n-en="Show">显示</button>
-            </div>
-          </div>
-          <div>
-            <div class="field-label">
-              <label for="select-host" data-i18n-en="Gateway Host">网关接入域名</label>
-              <span class="field-hint" data-i18n-en="Both hosts route to the same cluster">双域名同源，推荐 api.bozzii.com</span>
-            </div>
-            <select id="select-host" class="select-input">
-              <option value="https://api.bozzii.com">https://api.bozzii.com（API 专用域名 · 推荐）</option>
-              <option value="https://ai.bozzii.com">https://ai.bozzii.com（控制台主域名）</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="endpoint-grid">
-          <div class="endpoint-card">
-            <div class="endpoint-head">
-              <span data-i18n-en="OpenAI Compatible">OpenAI 兼容端点</span>
-              <span class="endpoint-badge">Chat / Responses</span>
-            </div>
-            <div class="endpoint-box">
+      <section class="block" aria-label="接口地址">
+        <h2 class="block-label" data-i18n-en="Base URLs">接口地址</h2>
+        <div class="kv-list">
+          <div class="kv-row">
+            <div class="kv-key" data-i18n-en="OpenAI / Gemini">OpenAI / Gemini</div>
+            <div class="kv-val">
               <code data-tpl="{HOST}/v1">https://api.bozzii.com/v1</code>
-              <button type="button" class="copy-btn" data-copy-tpl="{HOST}/v1" data-i18n-en="Copy">复制</button>
             </div>
-            <p class="endpoint-note" data-i18n-en="Works with CodeBuddy, Cherry Studio, Cursor, Cline, Codex & OpenAI SDK.">适用于 CodeBuddy、Cherry Studio、Cursor、Codex 与 OpenAI SDK。</p>
+            <button type="button" class="copy-btn" data-copy-tpl="{HOST}/v1" data-i18n-en="Copy">复制</button>
           </div>
-
-          <div class="endpoint-card">
-            <div class="endpoint-head">
-              <span data-i18n-en="Anthropic Native">Anthropic 原生端点</span>
-              <span class="endpoint-badge">/v1/messages</span>
-            </div>
-            <div class="endpoint-box">
+          <div class="kv-row">
+            <div class="kv-key" data-i18n-en="Anthropic Native">Anthropic 原生</div>
+            <div class="kv-val">
               <code data-tpl="{HOST}">https://api.bozzii.com</code>
-              <button type="button" class="copy-btn" data-copy-tpl="{HOST}" data-i18n-en="Copy">复制</button>
+              <span class="kv-note" data-i18n-en="Do not append /v1">请勿追加 /v1</span>
             </div>
-            <p class="endpoint-note" data-i18n-en="For Claude Code & Anthropic SDK. Do NOT append /v1 to ANTHROPIC_BASE_URL.">适用于 Claude Code 与 Anthropic SDK，请勿在末尾追加 /v1。</p>
+            <button type="button" class="copy-btn" data-copy-tpl="{HOST}" data-i18n-en="Copy">复制</button>
           </div>
-
-          <div class="endpoint-card">
-            <div class="endpoint-head">
-              <span data-i18n-en="Connectivity Check">连通性与模型列表</span>
-              <span class="endpoint-badge">GET /v1/models</span>
-            </div>
-            <div class="endpoint-box">
+          <div class="kv-row">
+            <div class="kv-key" data-i18n-en="Model List">模型列表</div>
+            <div class="kv-val">
               <code data-tpl="{HOST}/v1/models">https://api.bozzii.com/v1/models</code>
-              <button type="button" class="copy-btn" data-copy-tpl="{HOST}/v1/models" data-i18n-en="Copy">复制</button>
             </div>
-            <p class="endpoint-note" data-i18n-en="Model IDs must exactly match the list returned by /v1/models.">请求使用的 model ID 需与 /v1/models 返回列表完全一致。</p>
+            <button type="button" class="copy-btn" data-copy-tpl="{HOST}/v1/models" data-i18n-en="Copy">复制</button>
           </div>
         </div>
 
-        <div class="section-header" id="clients">
-          <div>
-            <h2 class="section-title" data-i18n-en="2. Select Your Client">2. 选择你的客户端或开发工具</h2>
-            <p class="section-sub" data-i18n-en="Pick a tab below to launch Client Hub auto-configuration or copy the manual setup.">
-              点击下方页签，直达客户端中心一键配置，或复制经过线上实测的手动配置片段。
+        <div class="var-strip">
+          <div class="key-box">
+            <input id="input-apikey" type="password" autocomplete="off" spellcheck="false" placeholder="填入 sk- 密钥仅在本地替换下方示例（不上传）" aria-label="API 密钥本地预览" />
+            <button type="button" class="icon-btn" id="btn-toggle-key" data-i18n-en="Show">显示</button>
+          </div>
+          <select id="select-host" class="host-select" aria-label="接入域名">
+            <option value="https://api.bozzii.com">api.bozzii.com</option>
+            <option value="https://ai.bozzii.com">ai.bozzii.com</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="block" id="clients" aria-label="客户端配置">
+        <div class="tabs" role="tablist" aria-label="客户端类型">
+          <button type="button" class="tab-btn" role="tab" aria-selected="true" data-tab="workbuddy">WorkBuddy / DSH</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="claude">Claude Code</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="codex">Codex CLI</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="codebuddy">CodeBuddy</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="cherry">Cherry / Cursor</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="sdk" data-i18n-en="cURL & SDK">cURL / SDK</button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="xseek" data-i18n-en="XSEEK Agent">XSEEK 智能体</button>
+        </div>
+
+        <!-- WorkBuddy / DSH -->
+        <div class="panel" data-panel="workbuddy" data-active="true">
+          <div class="panel-lead">
+            <p data-i18n-en="Auto-generate a one-time setup prompt in Client Hub, or add models manually via models.json.">
+              支持在客户端中心一键生成配置（明文密钥不进对话），也可手动写入 <code>models.json</code>。
             </p>
+            <a class="inline-link" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Auto setup in Client Hub">前往客户端中心一键配置</a>
           </div>
-        </div>
-
-        <div class="tabs-bar" role="tablist" aria-label="客户端类型">
-          <button type="button" class="tab-btn" role="tab" aria-selected="true" data-tab="workbuddy">
-            <span>WorkBuddy / DSH</span>
-            <span class="tab-tag" data-i18n-en="1-Click">一键</span>
-          </button>
-          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="xseek">
-            <span data-i18n-en="XSEEK AI Agent">XSEEK 办公智能体</span>
-            <span class="tab-tag" data-i18n-en="Live">已上线</span>
-          </button>
-          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="codebuddy">
-            <span>CodeBuddy</span>
-          </button>
-          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="claude">
-            <span>Claude Code</span>
-            <span class="tab-tag" data-i18n-en="1-Click">一键</span>
-          </button>
-          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="codex">
-            <span>Codex CLI</span>
-            <span class="tab-tag" data-i18n-en="1-Click">一键</span>
-          </button>
-          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="cherry">
-            <span data-i18n-en="Cherry Studio / Cursor">Cherry Studio / Cursor</span>
-          </button>
-          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="sdk">
-            <span data-i18n-en="cURL & SDK">cURL 与 SDK</span>
-          </button>
-        </div>
-
-        <!-- Tab 0: XSEEK AI Agent -->
-        <div class="tab-panel" data-panel="xseek">
-          <div class="panel-grid">
-            <div class="card">
-              <h3 data-i18n-en="XSEEK Enterprise AI Agent (Now Live · Book a Demo)">XSEEK 星域求索办公智能体（已正式上线 · 预约演示）</h3>
-              <p data-i18n-en="XSEEK has graduated from private beta! Meet Xiaosuo and digital employees that read your docs, operate desktop apps/web portals, run scheduled tasks, and deliver ready-to-use work.">
-                自研办公智能体产品 <strong>XSEEK 星域求索（AI 同事「小索」与数字员工）</strong> 现已结束内测、正式上线！支持桌面操作、定时日报、企业知识库引用与多岗位协同，可直接前往产品官网查看体验、下载客户端或预约企业专属演示。
-              </p>
-              <ol class="steps-list">
-                <li><span class="step-num">1</span><span>前往官方产品站 <strong>https://xseekai.cn/index.html</strong> 浏览功能案例、下载客户端或提交<strong>预约演示</strong>。</span></li>
-                <li><span class="step-num">2</span><span>如需为团队自建或扩展模型算力，在 Bozzii AI 控制台签发 API 密钥并按右侧标准端点完成自定义模型对接。</span></li>
-                <li><span class="step-num">3</span><span>企业定制部署、行业诊断、培训及对公采购支持，可通过飞书直接联系铂子科技团队。</span></li>
-              </ol>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                <a class="btn-primary" style="height:38px;font-size:13.5px;padding:0 16px;" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="Visit XSEEK Official Site · Book Demo →">前往 XSEEK 官网体验 / 预约演示 →</a>
-                <a class="btn-secondary" style="height:38px;font-size:13.5px;padding:0 14px;" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Open Client Hub">进入控制台客户端中心</a>
-              </div>
-              <div class="tip-box">
-                <strong>说明：</strong>XSEEK 办公智能体与 Bozzii AI 统一大模型 API 网关底层互通；如果您需要直接上手现成的企业级办公智能体应用，推荐直接访问 XSEEK 官网体验与预约演示。
-              </div>
+          <div class="code-wrap">
+            <div class="code-bar">
+              <span class="code-title">models.json</span>
+              <button type="button" class="copy-btn" data-copy-panel data-i18n-en="Copy">复制</button>
             </div>
-
-            <div>
-              <div class="card">
-                <h3 data-i18n-en="Bozzii API Custom Gateway Parameters for XSEEK">XSEEK 自定义模型网关对接参数</h3>
-                <p>如需在企业私有环境或自定义模型配置中接入 Bozzii AI 算力网关，请按以下标准参数填写：</p>
-                <table class="param-table">
-                  <tr><th>产品官网与预约演示</th><td><a href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;">https://xseekai.cn/index.html</a></td></tr>
-                  <tr><th>协议类型</th><td><code>OpenAI 兼容 (Chat Completions)</code></td></tr>
-                  <tr><th>接口地址 (Base URL)</th><td><code data-tpl="{HOST}/v1">https://api.bozzii.com/v1</code></td></tr>
-                  <tr><th>API 密钥</th><td><code data-tpl="{KEY}">sk-your-bozzii-api-key</code></td></tr>
-                  <tr><th>主力推荐模型</th><td><code>claude-opus-5-5</code> · <code>claude-sonnet-5-5</code> · <code>gpt-6.1-sol</code> · <code>deepseek-v4-pro</code></td></tr>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 1: WorkBuddy / DeepSeek Harness -->
-        <div class="tab-panel" data-panel="workbuddy" data-active="true">
-          <div class="panel-grid">
-            <div class="card">
-              <h3 data-i18n-en="WorkBuddy & DeepSeek Harness (Recommended Auto Setup)">WorkBuddy / DeepSeek Harness（官方客户端中心一键接入）</h3>
-              <p data-i18n-en="Bozzii AI has native Client Hub integration for WorkBuddy and DeepSeek Harness (DSH). No hand-editing JSON or YAML files required.">
-                Bozzii AI 已在控制台深度集成 WorkBuddy 与 DeepSeek Harness 一键配置引擎，自动拉取最新模型列表并保留你原有的本地配置。
-              </p>
-              <ol class="steps-list">
-                <li><span class="step-num">1</span><span data-i18n-en="Open Client Hub (/client-config) and choose or create an API token.">点击下方按钮进入 <strong>客户端中心 (/client-config)</strong>，选择已有令牌或新建专用令牌。</span></li>
-                <li><span class="step-num">2</span><span data-i18n-en="Switch to the WorkBuddy or DeepSeek Harness tab and click 'Generate prompt' (or download config).">切换到 <strong>WorkBuddy</strong> 或 <strong>DeepSeek Harness</strong> 页签，点击「生成配置提示词」或「下载配置文件」。</span></li>
-                <li><span class="step-num">3</span><span data-i18n-en="Paste the one-time setup prompt into WorkBuddy — it fetches the config securely without exposing your key in chat.">将一次性配置提示词直接发给 WorkBuddy，客户端自动备份旧配置并完成写入，明文密钥不进入对话记录。</span></li>
-              </ol>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                <a class="btn-primary" style="height:38px;font-size:13.5px;padding:0 16px;" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Open WorkBuddy Auto Setup →">前往客户端中心一键生成 →</a>
-                <a class="btn-secondary" style="height:38px;font-size:13.5px;padding:0 14px;" href="https://ai.bozzii.com/token" target="_top" data-i18n-en="View Tokens">查看我的令牌</a>
-              </div>
-              <div class="tip-box" data-i18n-en="Pre-configured models include claude-opus-5-5, claude-sonnet-5-5, gpt-6.1-sol, gpt-6-astra, deepseek-v4-pro, glm-5.3, qwen3.8-max and grok-4.7.">
-                <strong>内置预置模型：</strong>客户端中心会自动下发当前线上主力模型（<code>claude-opus-5-5</code>、<code>claude-sonnet-5-5</code>、<code>gpt-6.1-sol</code>、<code>gpt-6-astra</code>、<code>deepseek-v4-pro</code>、<code>glm-5.3</code>、<code>qwen3.8-max</code>、<code>grok-4.7</code>）。
-              </div>
-            </div>
-
-            <div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>WorkBuddy · 手动添加自定义模型参考（models.json）</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-workbuddy-json" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-workbuddy-json" data-tpl='[
+            <pre data-active="true" data-tpl='[
   {
     "id": "claude-sonnet-5-5",
     "name": "Bozzii · Claude Sonnet 5.5",
-    "url": "{HOST}/v1/chat/completions",
-    "apiKey": "{KEY}"
-  },
-  {
-    "id": "claude-opus-5-5",
-    "name": "Bozzii · Claude Opus 5.5",
     "url": "{HOST}/v1/chat/completions",
     "apiKey": "{KEY}"
   },
@@ -1183,41 +660,92 @@
     "apiKey": "{KEY}"
   }
 ]'></pre>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- Tab 2: CodeBuddy -->
-        <div class="tab-panel" data-panel="codebuddy">
-          <div class="panel-grid">
-            <div class="card">
-              <h3 data-i18n-en="CodeBuddy IDE & CLI Setup">CodeBuddy（IDE / 插件 / CLI 接入）</h3>
-              <p data-i18n-en="CodeBuddy connects smoothly via Bozzii AI's OpenAI-compatible endpoint or Anthropic endpoint for Claude models.">
-                在腾讯 CodeBuddy（IDE / 插件 / CLI）中配置自定义模型供应商，直接使用 Bozzii AI 统一接口调用 Claude、GPT、DeepSeek 与 GLM 编码旗舰模型。
-              </p>
-              <table class="param-table">
-                <tr><th data-i18n-en="Provider Type">供应商协议</th><td><code>OpenAI Compatible</code>（自定义 OpenAI 兼容）</td></tr>
-                <tr><th data-i18n-en="Base URL">接口地址 (Base URL)</th><td><code data-tpl="{HOST}/v1">https://api.bozzii.com/v1</code></td></tr>
-                <tr><th data-i18n-en="API Key">API 密钥</th><td><code data-tpl="{KEY}">sk-your-bozzii-api-key</code></td></tr>
-                <tr><th data-i18n-en="Recommended Models">推荐编码模型 ID</th><td><code>claude-sonnet-5-5</code> · <code>claude-opus-5-5</code> · <code>gpt-6.1-sol</code> · <code>deepseek-v4-pro</code></td></tr>
-              </table>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;">
-                <a class="btn-primary" style="height:38px;font-size:13.5px;padding:0 16px;" href="https://ai.bozzii.com/token" target="_top" data-i18n-en="Create CodeBuddy Key">创建 CodeBuddy 专用密钥</a>
-                <a class="btn-secondary" style="height:38px;font-size:13.5px;padding:0 14px;" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Open Client Hub">跳转客户端中心</a>
-              </div>
-              <div class="tip-box">
-                <strong>提示：</strong>如 CodeBuddy 要求填写完整对话路径，请填 <code data-tpl="{HOST}/v1/chat/completions">https://api.bozzii.com/v1/chat/completions</code>；若同时使用 Claude 系列模型，建议把 <code>temperature</code> 与 <code>top_p</code> 保持默认或留空。
-              </div>
+        <!-- Claude Code -->
+        <div class="panel" data-panel="claude">
+          <div class="panel-lead">
+            <p data-i18n-en="Native /v1/messages & Prompt Caching. Keep ANTHROPIC_BASE_URL without /v1 and remove conflicting ANTHROPIC_API_KEY.">
+              原生透传 <code>/v1/messages</code> 与 Prompt 缓存。手动配置时 <code>ANTHROPIC_BASE_URL</code> 勿加 <code>/v1</code>，并清除旧的 <code>ANTHROPIC_API_KEY</code>。
+            </p>
+            <div class="lead-links">
+              <a class="inline-link" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Client Hub (CC Switch)">客户端中心一键导入</a>
+              <a class="inline-link" href="https://doc.bozzii.com/guides/claude-code/" target="_blank" rel="noopener noreferrer" data-i18n-en="Full Guide">详细文档</a>
             </div>
+          </div>
+          <div class="code-wrap" data-codegroup>
+            <div class="code-bar">
+              <div class="subtabs" role="tablist">
+                <button type="button" class="subtab-btn" role="tab" aria-selected="true" data-sub="claude-json">~/.claude/settings.json</button>
+                <button type="button" class="subtab-btn" role="tab" aria-selected="false" data-sub="claude-sh">macOS / Linux</button>
+                <button type="button" class="subtab-btn" role="tab" aria-selected="false" data-sub="claude-ps">PowerShell</button>
+              </div>
+              <button type="button" class="copy-btn" data-copy-panel data-i18n-en="Copy">复制</button>
+            </div>
+            <pre data-subpanel="claude-json" data-active="true" data-tpl='{
+  "env": {
+    "ANTHROPIC_BASE_URL": "{HOST}",
+    "ANTHROPIC_AUTH_TOKEN": "{KEY}",
+    "ANTHROPIC_MODEL": "claude-sonnet-5-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-5-5"
+  }
+}'></pre>
+            <pre data-subpanel="claude-sh" data-tpl='export ANTHROPIC_BASE_URL="{HOST}"
+export ANTHROPIC_AUTH_TOKEN="{KEY}"
+export ANTHROPIC_MODEL="claude-sonnet-5-5"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="claude-opus-5-5"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="claude-sonnet-5-5"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="claude-haiku-5-5"'></pre>
+            <pre data-subpanel="claude-ps" data-tpl='$env:ANTHROPIC_BASE_URL="{HOST}"
+$env:ANTHROPIC_AUTH_TOKEN="{KEY}"
+$env:ANTHROPIC_MODEL="claude-sonnet-5-5"'></pre>
+          </div>
+        </div>
 
-            <div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>CodeBuddy 自定义模型配置（OpenAI 兼容 JSON）</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-codebuddy-json" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-codebuddy-json" data-tpl='{
+        <!-- Codex CLI -->
+        <div class="panel" data-panel="codex">
+          <div class="panel-lead">
+            <p data-i18n-en="Native /v1/responses support. Merge the snippet below into ~/.codex/config.toml or use Client Hub.">
+              原生支持 Responses API，将以下片段合并至 <code>~/.codex/config.toml</code>，或在客户端中心一键导入。
+            </p>
+            <a class="inline-link" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Auto setup in Client Hub">前往客户端中心一键配置</a>
+          </div>
+          <div class="code-wrap">
+            <div class="code-bar">
+              <span class="code-title">~/.codex/config.toml</span>
+              <button type="button" class="copy-btn" data-copy-panel data-i18n-en="Copy">复制</button>
+            </div>
+            <pre data-active="true" data-tpl='model_provider = "bozzii"
+model = "gpt-6.1-sol"
+
+[model_providers.bozzii]
+name = "Bozzii AI"
+base_url = "{HOST}/v1"
+wire_api = "responses"
+experimental_bearer_token = "{KEY}"'></pre>
+          </div>
+        </div>
+
+        <!-- CodeBuddy -->
+        <div class="panel" data-panel="codebuddy">
+          <div class="panel-lead">
+            <p data-i18n-en="Add a custom OpenAI-compatible provider in CodeBuddy IDE or CLI. Leave temperature / top_p unset for Claude models.">
+              在 CodeBuddy 添加自定义 OpenAI 兼容供应商即可；调用 Claude 模型时请将 <code>temperature</code> 与 <code>top_p</code> 保持默认。
+            </p>
+            <a class="inline-link" href="https://ai.bozzii.com/token" target="_top" data-i18n-en="Create API Key">创建专用密钥</a>
+          </div>
+          <div class="code-wrap" data-codegroup>
+            <div class="code-bar">
+              <div class="subtabs" role="tablist">
+                <button type="button" class="subtab-btn" role="tab" aria-selected="true" data-sub="cb-json">JSON 配置</button>
+                <button type="button" class="subtab-btn" role="tab" aria-selected="false" data-sub="cb-env">CLI 环境变量</button>
+              </div>
+              <button type="button" class="copy-btn" data-copy-panel data-i18n-en="Copy">复制</button>
+            </div>
+            <pre data-subpanel="cb-json" data-active="true" data-tpl='{
   "provider": "openai-compatible",
   "name": "Bozzii AI",
   "baseUrl": "{HOST}/v1",
@@ -1230,208 +758,99 @@
     "glm-5.3"
   ]
 }'></pre>
-              </div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>CodeBuddy CLI · 环境变量方式（macOS / Linux）</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-codebuddy-env" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-codebuddy-env" data-tpl='export OPENAI_BASE_URL="{HOST}/v1"
+            <pre data-subpanel="cb-env" data-tpl='export OPENAI_BASE_URL="{HOST}/v1"
 export OPENAI_API_KEY="{KEY}"'></pre>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- Tab 3: Claude Code -->
-        <div class="tab-panel" data-panel="claude">
-          <div class="panel-grid">
-            <div class="card">
-              <h3 data-i18n-en="Claude Code (Native Anthropic + Prompt Caching)">Claude Code（原生 Anthropic 协议 + 真缓存透传）</h3>
-              <p data-i18n-en="Full support for /v1/messages, adaptive thinking, and Anthropic Prompt Caching. Use Client Hub for CC Switch import or one-command terminal setup.">
-                完整透传 Anthropic 原生 <code>/v1/messages</code> 协议与 Prompt Caching。推荐在控制台「客户端中心」使用 <strong>CC Switch 一键导入</strong> 或 <strong>终端自动配置脚本</strong>，自动备份并安全合并 <code>~/.claude/settings.json</code>。
-              </p>
-              <ol class="steps-list">
-                <li><span class="step-num">1</span><span>优先推荐进入 <strong>客户端中心 (/client-config)</strong> → <strong>Claude Code</strong> 页签，支持 CC Switch 卡片导入与自动合并脚本。</span></li>
-                <li><span class="step-num">2</span><span>若需手动配置，直接复制右侧环境变量或 <code>~/.claude/settings.json</code> 写入本机。</span></li>
-                <li><span class="step-num">3</span><span>启动 <code>claude</code> 后输入 <code>/status</code> 即可核对当前接入域名与默认模型。</span></li>
-              </ol>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                <a class="btn-primary" style="height:38px;font-size:13.5px;padding:0 16px;" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Open Claude Code Auto Setup →">客户端中心一键配置（含 CC Switch）→</a>
-                <a class="btn-secondary" style="height:38px;font-size:13.5px;padding:0 14px;" href="https://doc.bozzii.com/guides/claude-code/" target="_blank" rel="noopener noreferrer" data-i18n-en="Detailed Guide">完整 Claude Code 文档</a>
-              </div>
-              <div class="tip-box">
-                <strong>避坑要点：</strong><code>ANTHROPIC_BASE_URL</code> 请填 <code data-tpl="{HOST}">https://api.bozzii.com</code>，<strong>不要加 <code>/v1</code></strong>；使用 <code>ANTHROPIC_AUTH_TOKEN</code> 时请移除旧的冲突 <code>ANTHROPIC_API_KEY</code>。
-              </div>
+        <!-- Cherry Studio / Cursor -->
+        <div class="panel" data-panel="cherry">
+          <div class="panel-lead">
+            <p data-i18n-en="Works with Cherry Studio, Cursor, Cline, and Open WebUI. Leave Claude temperature/top_p blank and keep Responses API off for chat clients.">
+              通用 OpenAI 兼容客户端仅需填写地址与密钥；调用 Claude 模型请将 <code>temperature / top_p</code> 留空。
+            </p>
+            <a class="inline-link" href="https://ai.bozzii.com/pricing" target="_top" data-i18n-en="All Models">查看全部模型</a>
+          </div>
+          <div class="kv-list">
+            <div class="kv-row">
+              <div class="kv-key" data-i18n-en="Provider">供应商协议</div>
+              <div class="kv-val"><code>OpenAI Compatible</code></div>
+              <span></span>
             </div>
-
-            <div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>macOS / Linux · Shell 环境变量</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-claude-sh" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-claude-sh" data-tpl='export ANTHROPIC_BASE_URL="{HOST}"
-export ANTHROPIC_AUTH_TOKEN="{KEY}"
-export ANTHROPIC_MODEL="claude-sonnet-5-5"
-export ANTHROPIC_DEFAULT_OPUS_MODEL="claude-opus-5-5"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="claude-sonnet-5-5"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="claude-haiku-5-5"'></pre>
-              </div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>Windows PowerShell · 环境变量</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-claude-ps" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-claude-ps" data-tpl='$env:ANTHROPIC_BASE_URL="{HOST}"
-$env:ANTHROPIC_AUTH_TOKEN="{KEY}"
-$env:ANTHROPIC_MODEL="claude-sonnet-5-5"'></pre>
-              </div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>~/.claude/settings.json（推荐持久化配置）</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-claude-json" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-claude-json" data-tpl='{
-  "env": {
-    "ANTHROPIC_BASE_URL": "{HOST}",
-    "ANTHROPIC_AUTH_TOKEN": "{KEY}",
-    "ANTHROPIC_MODEL": "claude-sonnet-5-5",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-5-5"
-  }
-}'></pre>
-              </div>
+            <div class="kv-row">
+              <div class="kv-key">Base URL</div>
+              <div class="kv-val"><code data-tpl="{HOST}/v1">https://api.bozzii.com/v1</code></div>
+              <button type="button" class="copy-btn" data-copy-tpl="{HOST}/v1" data-i18n-en="Copy">复制</button>
             </div>
+            <div class="kv-row">
+              <div class="kv-key">API Key</div>
+              <div class="kv-val"><code data-tpl="{KEY}">sk-your-bozzii-api-key</code></div>
+              <button type="button" class="copy-btn" data-copy-tpl="{KEY}" data-i18n-en="Copy">复制</button>
+            </div>
+          </div>
+          <div class="model-list" aria-label="常用模型 ID，点击复制">
+            <button type="button" class="model-btn" data-copy-raw="claude-opus-5-5">claude-opus-5-5 <span>旗舰</span></button>
+            <button type="button" class="model-btn" data-copy-raw="claude-sonnet-5-5">claude-sonnet-5-5 <span>主力</span></button>
+            <button type="button" class="model-btn" data-copy-raw="gpt-6.1-sol">gpt-6.1-sol <span>编码</span></button>
+            <button type="button" class="model-btn" data-copy-raw="gpt-6-astra">gpt-6-astra <span>推理</span></button>
+            <button type="button" class="model-btn" data-copy-raw="deepseek-v4-pro">deepseek-v4-pro <span>国产</span></button>
+            <button type="button" class="model-btn" data-copy-raw="glm-5.3">glm-5.3 <span>Agent</span></button>
+            <button type="button" class="model-btn" data-copy-raw="qwen3.8-max">qwen3.8-max <span>中文</span></button>
+            <button type="button" class="model-btn" data-copy-raw="grok-4.7">grok-4.7 <span>问答</span></button>
           </div>
         </div>
 
-        <!-- Tab 4: Codex CLI -->
-        <div class="tab-panel" data-panel="codex">
-          <div class="panel-grid">
-            <div class="card">
-              <h3 data-i18n-en="OpenAI Codex CLI (Responses API)">Codex CLI（原生 Responses API 接入）</h3>
-              <p data-i18n-en="Supports Codex CLI with wire_api='responses' and CC Switch import directly from Client Hub.">
-                原生支持 OpenAI <code>/v1/responses</code> 协议与推理档位调节，可直接通过控制台「客户端中心」一键生成 CC Switch 导入或合并 <code>~/.codex/config.toml</code>。
-              </p>
-              <ol class="steps-list">
-                <li><span class="step-num">1</span><span>进入 <strong>客户端中心 (/client-config)</strong> → <strong>Codex</strong> 页签，可直接导出 CC Switch 或自动合并配置。</span></li>
-                <li><span class="step-num">2</span><span>手动配置时，将右侧片段合并到 <code>~/.codex/config.toml</code>，避免覆盖你原有的其他 Provider。</span></li>
-                <li><span class="step-num">3</span><span>运行 <code>codex</code> 验证模型响应。推荐主力模型：<code>gpt-6.1-sol</code>、<code>gpt-6-astra</code>。</span></li>
-              </ol>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                <a class="btn-primary" style="height:38px;font-size:13.5px;padding:0 16px;" href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Open Codex Auto Setup →">前往客户端中心一键配置 →</a>
-              </div>
-            </div>
-
-            <div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>~/.codex/config.toml</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-codex-toml" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-codex-toml" data-tpl='model_provider = "bozzii"
-model = "gpt-6.1-sol"
-
-[model_providers.bozzii]
-name = "Bozzii AI"
-base_url = "{HOST}/v1"
-wire_api = "responses"
-experimental_bearer_token = "{KEY}"'></pre>
-              </div>
-            </div>
+        <!-- cURL / SDK -->
+        <div class="panel" data-panel="sdk">
+          <div class="panel-lead">
+            <p data-i18n-en="Drop-in replacement for official OpenAI and Anthropic SDKs with native streaming and prompt caching.">
+              零改动替换官方 SDK 的 <code>base_url</code> 即可调用，原生透传流式输出与 Prompt 缓存。
+            </p>
+            <a class="inline-link" href="https://doc.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="API Reference">接口文档</a>
           </div>
-        </div>
-
-        <!-- Tab 5: Cherry Studio / Cursor / Cline -->
-        <div class="tab-panel" data-panel="cherry">
-          <div class="panel-grid">
-            <div class="card">
-              <h3 data-i18n-en="Cherry Studio · Cursor · Cline · Open WebUI">Cherry Studio / Cursor / Cline 等通用客户端</h3>
-              <p data-i18n-en="Any client that supports custom OpenAI-compatible providers connects with just 3 fields.">
-                所有支持自定义 OpenAI 兼容供应商的桌面端、IDE 插件与 Web 客户端，仅需填写以下三项即可直接拉取模型列表使用：
-              </p>
-              <table class="param-table">
-                <tr><th>供应商类型</th><td><code>OpenAI 兼容 / Custom OpenAI</code></td></tr>
-                <tr><th>API 地址 (Base URL)</th><td><code data-tpl="{HOST}/v1">https://api.bozzii.com/v1</code></td></tr>
-                <tr><th>API 密钥 (API Key)</th><td><code data-tpl="{KEY}">sk-your-bozzii-api-key</code></td></tr>
-                <tr><th>Responses API 开关</th><td>通用聊天客户端建议保持<strong>关闭</strong>（走 Chat Completions 兼容性最好）</td></tr>
-              </table>
-              <div class="tip-box">
-                <strong>Cherry Studio 实测要点：</strong>
-                ① 添加供应商后点击「管理」即可自动拉取 <code>/v1/models</code> 列表；
-                ② 调用 <code>claude-sonnet-5-5</code> / <code>claude-opus-5-5</code> 时，请保持 <code>temperature</code> 与 <code>top_p</code> 留空或设为 1，避免触发上游参数校验报错。
+          <div class="code-wrap" data-codegroup>
+            <div class="code-bar">
+              <div class="subtabs" role="tablist">
+                <button type="button" class="subtab-btn" role="tab" aria-selected="true" data-sub="sdk-curl">cURL</button>
+                <button type="button" class="subtab-btn" role="tab" aria-selected="false" data-sub="sdk-py-oai">Python (OpenAI)</button>
+                <button type="button" class="subtab-btn" role="tab" aria-selected="false" data-sub="sdk-ts-oai">TypeScript</button>
+                <button type="button" class="subtab-btn" role="tab" aria-selected="false" data-sub="sdk-py-ant">Python (Anthropic)</button>
               </div>
+              <button type="button" class="copy-btn" data-copy-panel data-i18n-en="Copy">复制</button>
             </div>
-
-            <div class="card">
-              <h3 data-i18n-en="Recommended Model IDs (Click to Copy)">常用模型 ID 速查（点击一键复制）</h3>
-              <p data-i18n-en="Model names are case-sensitive and match /v1/models exactly.">
-                模型名称严格区分大小写，以下为高频主力型号；完整目录与阶梯单价请见 <a href="https://ai.bozzii.com/pricing" target="_top" style="color:var(--brand);font-weight:600;">模型广场</a>。
-              </p>
-              <div class="models-strip">
-                <div class="model-chip">
-                  <div><strong>claude-opus-5-5</strong><span>旗舰编码与复杂 Agent</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="claude-opus-5-5">复制</button>
-                </div>
-                <div class="model-chip">
-                  <div><strong>claude-sonnet-5-5</strong><span>主力编程与日常 Agent</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="claude-sonnet-5-5">复制</button>
-                </div>
-                <div class="model-chip">
-                  <div><strong>gpt-6.1-sol</strong><span>高性价比全能编码</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="gpt-6.1-sol">复制</button>
-                </div>
-                <div class="model-chip">
-                  <div><strong>gpt-6-astra</strong><span>复杂推理与深度研究</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="gpt-6-astra">复制</button>
-                </div>
-                <div class="model-chip">
-                  <div><strong>deepseek-v4-pro</strong><span>国产旗舰推理 · 自部署</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="deepseek-v4-pro">复制</button>
-                </div>
-                <div class="model-chip">
-                  <div><strong>glm-5.3</strong><span>长程代码智能体 · 自部署</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="glm-5.3">复制</button>
-                </div>
-                <div class="model-chip">
-                  <div><strong>qwen3.8-max</strong><span>中文理解与写作 · 自部署</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="qwen3.8-max">复制</button>
-                </div>
-                <div class="model-chip">
-                  <div><strong>grok-4.7</strong><span>实时逻辑分析与问答</span></div>
-                  <button type="button" class="copy-btn" data-copy-raw="grok-4.7">复制</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 6: cURL & SDK -->
-        <div class="tab-panel" data-panel="sdk">
-          <div class="panel-grid">
-            <div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>cURL · 3 秒连通性核验</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-curl" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-curl" data-tpl='curl -sS {HOST}/v1/chat/completions \
+            <pre data-subpanel="sdk-curl" data-active="true" data-tpl='curl -sS {HOST}/v1/chat/completions \
   -H "Authorization: Bearer {KEY}" \
   -H "Content-Type: application/json" \
   -d '\''{
-    "model": "deepseek-v4-pro",
-    "messages": [{"role": "user", "content": "你好，请用一句话介绍自己"}],
+    "model": "gpt-6.1-sol",
+    "messages": [{"role": "user", "content": "Hello"}],
     "max_tokens": 64
   }'\'''></pre>
-              </div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>Anthropic Python SDK（原生缓存与思考透传）</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-anthropic-py" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-anthropic-py" data-tpl='from anthropic import Anthropic
+            <pre data-subpanel="sdk-py-oai" data-tpl='from openai import OpenAI
+
+client = OpenAI(
+    base_url="{HOST}/v1",
+    api_key="{KEY}",
+)
+
+resp = client.chat.completions.create(
+    model="gpt-6.1-sol",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(resp.choices[0].message.content)'></pre>
+            <pre data-subpanel="sdk-ts-oai" data-tpl='import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "{HOST}/v1",
+  apiKey: "{KEY}",
+});
+
+const resp = await client.chat.completions.create({
+  model: "gpt-6.1-sol",
+  messages: [{ role: "user", content: "Hello" }],
+});
+console.log(resp.choices[0].message.content);'></pre>
+            <pre data-subpanel="sdk-py-ant" data-tpl='from anthropic import Anthropic
 
 client = Anthropic(
     base_url="{HOST}",
@@ -1441,204 +860,57 @@ client = Anthropic(
 msg = client.messages.create(
     model="claude-sonnet-5-5",
     max_tokens=512,
-    messages=[{"role": "user", "content": "Hello Bozzii AI"}],
+    messages=[{"role": "user", "content": "Hello"}],
 )
 print(msg.content[0].text)'></pre>
-              </div>
+          </div>
+        </div>
+
+        <!-- XSEEK AI Agent -->
+        <div class="panel" data-panel="xseek">
+          <div class="panel-lead">
+            <p data-i18n-en="XSEEK Enterprise AI Agent is now live. Visit the official site to download or book a demo, or connect Bozzii API below.">
+              自研办公智能体 XSEEK 星域求索已正式上线，可直接前往官网体验、下载或预约演示；下方为自定义算力网关对接参数。
+            </p>
+            <a class="btn-primary" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="Visit XSEEK · Book Demo">前往 XSEEK 官网 · 预约演示</a>
+          </div>
+          <div class="kv-list">
+            <div class="kv-row">
+              <div class="kv-key" data-i18n-en="Official Site">产品官网</div>
+              <div class="kv-val"><a class="inline-link" href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer">https://xseekai.cn/index.html</a></div>
+              <span></span>
             </div>
-
-            <div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>OpenAI Python SDK</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-openai-py" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-openai-py" data-tpl='from openai import OpenAI
-
-client = OpenAI(
-    base_url="{HOST}/v1",
-    api_key="{KEY}",
-)
-
-resp = client.chat.completions.create(
-    model="gpt-6.1-sol",
-    messages=[{"role": "user", "content": "Hello Bozzii AI"}],
-)
-print(resp.choices[0].message.content)'></pre>
-              </div>
-              <div class="code-card">
-                <div class="code-head">
-                  <span>OpenAI TypeScript / Node.js SDK</span>
-                  <button type="button" class="copy-btn" data-copy-target="code-openai-ts" data-i18n-en="Copy">复制</button>
-                </div>
-                <pre id="code-openai-ts" data-tpl='import OpenAI from "openai";
-
-const client = new OpenAI({
-  baseURL: "{HOST}/v1",
-  apiKey: "{KEY}",
-});
-
-const resp = await client.chat.completions.create({
-  model: "gpt-6.1-sol",
-  messages: [{ role: "user", content: "Hello Bozzii AI" }],
-});
-console.log(resp.choices[0].message.content);'></pre>
-              </div>
+            <div class="kv-row">
+              <div class="kv-key">Base URL</div>
+              <div class="kv-val"><code data-tpl="{HOST}/v1">https://api.bozzii.com/v1</code></div>
+              <button type="button" class="copy-btn" data-copy-tpl="{HOST}/v1" data-i18n-en="Copy">复制</button>
+            </div>
+            <div class="kv-row">
+              <div class="kv-key">API Key</div>
+              <div class="kv-val"><code data-tpl="{KEY}">sk-your-bozzii-api-key</code></div>
+              <button type="button" class="copy-btn" data-copy-tpl="{KEY}" data-i18n-en="Copy">复制</button>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="section" style="padding-top: 8px;">
-      <div class="container">
-        <div class="support-grid">
-          <div class="support-card">
-            <div>
-              <h3 data-i18n-en="Full API Documentation">完整接入文档与排错指南</h3>
-              <p data-i18n-en="Covers streaming, vision, image/video generation, retry semantics and error codes.">涵盖流式输出、视觉多模态、生图/视频接口、重试策略与常见错误码速查。</p>
-            </div>
-            <a href="https://doc.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Read doc.bozzii.com →">前往 doc.bozzii.com 查阅 →</a>
-          </div>
-          <div class="support-card">
-            <div>
-              <h3 data-i18n-en="Live Service Status">公开服务状态监控</h3>
-              <p data-i18n-en="Real-time availability monitoring, maintenance notices and historical uptime.">实时查看网关在线状态、维护公告与历史可用性记录。</p>
-            </div>
-            <a href="https://status.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Open status.bozzii.com →">前往 status.bozzii.com 查看 →</a>
-          </div>
-          <div class="support-card">
-            <div>
-              <h3 data-i18n-en="Feishu Direct Support & Enterprise Onboarding">飞书直连协助与企业对接</h3>
-              <p data-i18n-en="Need help configuring your team's clients, corporate invoicing, or volume pricing? Message us directly on Feishu.">团队批量接入、对公转账、增值税开票或专属算力配置，欢迎直接通过飞书联系我们。</p>
-            </div>
-            <a href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer" data-i18n-en="Contact via Feishu →">立即打开飞书直连客服 →</a>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
-  <footer id="compliance-footer" class="site-footer">
+  <footer id="compliance-footer">
     <div class="footer-inner">
-      <!-- Enterprise Trust & Compliance Bar -->
-      <div class="compliance-strip" aria-label="企业主体、开票与隐私承诺">
-        <div class="compliance-item">
-          <h3 class="compliance-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
-            <span data-i18n-en="Registered Chinese Entity & ICP">境内备案主体</span>
-          </h3>
-          <p class="compliance-desc">
-            运营主体：<strong>深圳市铂子科技有限责任公司</strong>（中国深圳）。工信部备案号：
-            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026040043号-1</a>。
-          </p>
-        </div>
-
-        <div class="compliance-item">
-          <h3 class="compliance-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
-            <span data-i18n-en="Corporate Payment & VAT Invoicing">对公结算与开票说明</span>
-          </h3>
-          <p class="compliance-desc">
-            支持企业对公银行转账、正式合同签署与增值税发票开具；具体税率与票种联系商务确认，详见
-            <a href="https://ai.bozzii.com/user-agreement" target="_top">服务条款</a>。
-          </p>
-        </div>
-
-        <div class="compliance-item">
-          <h3 class="compliance-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
-            <span data-i18n-en="Data Privacy & Zero-Training">数据隐私承诺</span>
-          </h3>
-          <p class="compliance-desc">
-            全链路 TLS 加密，透传官方接口，不用于模型训练、无广告追踪；审计日志默认保留 90 天，遵循跨境合规披露，详见
-            <a href="https://ai.bozzii.com/privacy-policy" target="_top">隐私政策</a>。
-          </p>
-        </div>
-
-        <div class="compliance-item">
-          <h3 class="compliance-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
-            <span data-i18n-en="Direct Feishu Channel">飞书专属对接渠道</span>
-          </h3>
-          <p class="compliance-desc">
-            开户审核、对公开票、接入排错请直连
-            <a href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer">飞书在线客服</a>
-            或致信 <a href="mailto:support@bozzii.com">support@bozzii.com</a>（2 个工作日内回复）。
-          </p>
-        </div>
+      <div class="footer-row">
+        <strong>深圳市铂子科技有限责任公司</strong>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026040043号-1</a>
+        <span data-i18n-en="Corporate transfer & VAT invoicing">支持对公结算与增值税开票</span>
+        <span data-i18n-en="Official pass-through, zero model training">透传官方接口，不用于模型训练</span>
       </div>
-
-      <div class="footer-grid">
-        <div>
-          <a class="brand-link" href="https://ai.bozzii.com/" target="_top">
-            <img alt="Bozzii AI" src="https://picgocloud.com/m/8a04a208-adab-4904-92b3-bfbf8cd7e710.png" />
-            <span>Bozzii AI</span>
-          </a>
-          <p class="footer-brand-desc" data-i18n-en="Enterprise unified LLM API gateway operated by Shenzhen Bozzii Technology Co., Ltd. Transparent billing, native prompt caching, and compliant corporate onboarding.">
-            深圳市铂子科技有限责任公司旗下企业级大模型统一 API 网关。提供标准化接入、透明计量与规范对公服务。
-          </p>
-          <a class="feishu-pill" href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg>
-            <span data-i18n-en="Connect on Feishu">飞书直连商务与技术支持</span>
-          </a>
-        </div>
-
-        <div class="footer-cols">
-          <div class="footer-col">
-            <h4 data-i18n-en="Console & Platform">平台与控制台</h4>
-            <ul>
-              <li><a href="https://ai.bozzii.com/pricing" target="_top" data-i18n-en="Models & Pricing">模型广场与报价</a></li>
-              <li><a href="https://ai.bozzii.com/dashboard" target="_top" data-i18n-en="Dashboard">控制台概览</a></li>
-              <li><a href="https://ai.bozzii.com/token" target="_top" data-i18n-en="API Keys">API 密钥管理</a></li>
-              <li><a href="https://ai.bozzii.com/log" target="_top" data-i18n-en="Usage Logs">调用审计日志</a></li>
-              <li><a href="https://ai.bozzii.com/topup" target="_top" data-i18n-en="Billing & Top-up">账户充值与结算</a></li>
-            </ul>
-          </div>
-
-          <div class="footer-col">
-            <h4 data-i18n-en="Connect & Ecosystem">一键接入与生态</h4>
-            <ul>
-              <li><a href="https://ai.bozzii.com/brand/connect.html" target="_top" data-i18n-en="Quick Connect Hub">一键接入配置页</a></li>
-              <li><a href="https://ai.bozzii.com/client-config" target="_top" data-i18n-en="Client Hub">客户端中心（自动配置）</a></li>
-              <li><a href="https://xseekai.cn/index.html" target="_blank" rel="noopener noreferrer" data-i18n-en="XSEEK Agent · Book Demo">XSEEK 办公智能体（预约演示）</a></li>
-              <li><a href="https://doc.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="API Documentation">API 接入文档</a></li>
-              <li><a href="https://status.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Service Status">服务实时状态页</a></li>
-            </ul>
-          </div>
-
-          <div class="footer-col">
-            <h4 data-i18n-en="Enterprise & Support">企业服务与支持</h4>
-            <ul>
-              <li><a href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer" data-i18n-en="Feishu Support">飞书在线客服</a></li>
-              <li><a href="https://ai.bozzii.com/about" target="_top" data-i18n-en="About Bozzii">关于铂子科技</a></li>
-              <li><a href="mailto:support@bozzii.com" data-i18n-en="Invoicing & Business">对公付款与开票咨询</a></li>
-              <li><a href="https://wj.qq.com/s2/28212379/9gpn/" target="_blank" rel="noopener noreferrer" data-i18n-en="Abuse & Compliance Report">合规与安全反馈</a></li>
-            </ul>
-          </div>
-
-          <div class="footer-col">
-            <h4 data-i18n-en="Legal & Compliance">法律与合规</h4>
-            <ul>
-              <li><a href="https://ai.bozzii.com/user-agreement" target="_top" data-i18n-en="Terms of Service">用户服务协议</a></li>
-              <li><a href="https://ai.bozzii.com/privacy-policy" target="_top" data-i18n-en="Privacy Policy">隐私保护政策</a></li>
-              <li><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026040043号-1</a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <div>
-          © 2026 Bozzii AI · 深圳市铂子科技有限责任公司 · 中国深圳 ·
-          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026040043号-1</a>
-        </div>
-        <div class="footer-bottom-links">
-          <a href="https://ai.bozzii.com/user-agreement" target="_top" data-i18n-en="Invoicing & Terms">对公与开票说明</a>
-          <a href="https://ai.bozzii.com/privacy-policy" target="_top" data-i18n-en="Privacy Commitment">数据隐私承诺</a>
-          <a href="https://status.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="System Status">服务状态</a>
-          <a href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer" data-i18n-en="Feishu">飞书直连</a>
-        </div>
+      <div class="footer-row">
+        <a href="https://doc.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Docs">接入文档</a>
+        <a href="https://status.bozzii.com/" target="_blank" rel="noopener noreferrer" data-i18n-en="Status">服务状态</a>
+        <a href="https://ai.bozzii.com/user-agreement" target="_top" data-i18n-en="Terms">服务条款</a>
+        <a href="https://ai.bozzii.com/privacy-policy" target="_top" data-i18n-en="Privacy">隐私政策</a>
+        <a href="https://www.feishu.cn/invitation/page/add_contact/?token=53cgddeb-cca0-44ce-bf47-01b22d096bd1&amp;unique_id=zjiyrPYNA0hoEh1gNlp4Lg==" target="_blank" rel="noopener noreferrer" data-i18n-en="Feishu Support">飞书客服</a>
+        <a href="mailto:support@bozzii.com">support@bozzii.com</a>
       </div>
     </div>
   </footer>
@@ -1655,6 +927,10 @@ console.log(resp.choices[0].message.content);'></pre>
       var toastEl = document.getElementById("toast");
       var toastTimer = null;
 
+      function isEn() {
+        return document.documentElement.getAttribute("data-lang") === "en";
+      }
+
       function showToast(msg) {
         if (!toastEl) return;
         toastEl.textContent = msg;
@@ -1662,146 +938,166 @@ console.log(resp.choices[0].message.content);'></pre>
         clearTimeout(toastTimer);
         toastTimer = setTimeout(function () {
           toastEl.setAttribute("data-show", "false");
-        }, 2000);
+        }, 1800);
       }
 
-      function currentVars() {
-        var rawKey = keyInput ? keyInput.value.trim() : "";
-        return {
-          HOST: hostSelect ? hostSelect.value : "https://api.bozzii.com",
-          KEY: rawKey || "sk-your-bozzii-api-key"
-        };
+      function renderTpl(tpl) {
+        var host = hostSelect ? hostSelect.value : "https://api.bozzii.com";
+        var key = (keyInput && keyInput.value.trim()) || "sk-your-bozzii-api-key";
+        return tpl.replace(/\{HOST\}/g, host).replace(/\{KEY\}/g, key);
       }
 
-      function renderTemplate(tpl) {
-        var v = currentVars();
-        return tpl.replace(/\{HOST\}/g, v.HOST).replace(/\{KEY\}/g, v.KEY);
-      }
-
-      function renderAllSnippets() {
+      function renderAll() {
         document.querySelectorAll("[data-tpl]").forEach(function (el) {
-          el.textContent = renderTemplate(el.getAttribute("data-tpl") || "");
+          el.textContent = renderTpl(el.getAttribute("data-tpl") || "");
         });
       }
 
       function copyText(text, btn) {
-        var done = function () {
-          if (btn) {
-            var oldText = btn.textContent;
+        function done() {
+          if (btn && btn.classList.contains("copy-btn")) {
+            var old = btn.textContent;
             btn.setAttribute("data-copied", "true");
-            btn.textContent = document.documentElement.getAttribute("data-lang") === "en" ? "Copied" : "已复制";
+            btn.textContent = isEn() ? "Copied" : "已复制";
             setTimeout(function () {
               btn.removeAttribute("data-copied");
-              btn.textContent = oldText;
-            }, 1500);
+              btn.textContent = old;
+            }, 1400);
           }
-          showToast(document.documentElement.getAttribute("data-lang") === "en" ? "Copied to clipboard" : "已复制到剪贴板");
-        };
+          showToast(isEn() ? "Copied" : "已复制");
+        }
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done).catch(function () {
-            fallbackCopy(text, done);
-          });
+          navigator.clipboard.writeText(text).then(done, fallback);
         } else {
-          fallbackCopy(text, done);
+          fallback();
+        }
+        function fallback() {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand("copy"); done(); } catch (e) {}
+          document.body.removeChild(ta);
         }
       }
 
-      function fallbackCopy(text, cb) {
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand("copy"); } catch (e) {}
-        document.body.removeChild(ta);
-        cb();
-      }
-
-      // Bind inputs
-      if (keyInput) keyInput.addEventListener("input", renderAllSnippets);
-      if (hostSelect) hostSelect.addEventListener("change", renderAllSnippets);
+      if (keyInput) keyInput.addEventListener("input", renderAll);
+      if (hostSelect) hostSelect.addEventListener("change", renderAll);
       if (toggleKeyBtn && keyInput) {
         toggleKeyBtn.addEventListener("click", function () {
           var hidden = keyInput.type === "password";
           keyInput.type = hidden ? "text" : "password";
-          toggleKeyBtn.textContent = hidden
-            ? (document.documentElement.getAttribute("data-lang") === "en" ? "Hide" : "隐藏")
-            : (document.documentElement.getAttribute("data-lang") === "en" ? "Show" : "显示");
+          toggleKeyBtn.textContent = hidden ? (isEn() ? "Hide" : "隐藏") : (isEn() ? "Show" : "显示");
         });
       }
 
-      // Bind copy buttons
+      // Main client tabs + URL hash sync
+      var tabBtns = Array.prototype.slice.call(document.querySelectorAll(".tab-btn"));
+      var panels = Array.prototype.slice.call(document.querySelectorAll(".panel"));
+
+      function activateTab(name, pushHash) {
+        if (!panels.some(function (p) { return p.getAttribute("data-panel") === name; })) {
+          name = "workbuddy";
+        }
+        tabBtns.forEach(function (b) {
+          b.setAttribute("aria-selected", b.getAttribute("data-tab") === name ? "true" : "false");
+        });
+        panels.forEach(function (p) {
+          p.setAttribute("data-active", p.getAttribute("data-panel") === name ? "true" : "false");
+        });
+        if (pushHash && history.replaceState) {
+          history.replaceState(null, "", "#" + name);
+        }
+      }
+
+      tabBtns.forEach(function (b) {
+        b.addEventListener("click", function () {
+          activateTab(b.getAttribute("data-tab"), true);
+        });
+      });
+
+      function syncHash() {
+        var h = (location.hash || "").replace(/^#/, "").toLowerCase();
+        if (h && panels.some(function (p) { return p.getAttribute("data-panel") === h; })) {
+          activateTab(h, false);
+        }
+      }
+      window.addEventListener("hashchange", syncHash);
+
+      // Sub-tabs inside code blocks
+      document.querySelectorAll("[data-codegroup]").forEach(function (group) {
+        var btns = Array.prototype.slice.call(group.querySelectorAll(".subtab-btn"));
+        var pres = Array.prototype.slice.call(group.querySelectorAll("pre[data-subpanel]"));
+        btns.forEach(function (b) {
+          b.addEventListener("click", function () {
+            var target = b.getAttribute("data-sub");
+            btns.forEach(function (x) {
+              x.setAttribute("aria-selected", x.getAttribute("data-sub") === target ? "true" : "false");
+            });
+            pres.forEach(function (p) {
+              p.setAttribute("data-active", p.getAttribute("data-subpanel") === target ? "true" : "false");
+            });
+          });
+        });
+      });
+
+      // Copy handlers
       document.addEventListener("click", function (e) {
-        var btn = e.target.closest(".copy-btn");
+        var btn = e.target.closest("[data-copy-panel],[data-copy-tpl],[data-copy-raw]");
         if (!btn) return;
-        if (btn.hasAttribute("data-copy-tpl")) {
-          copyText(renderTemplate(btn.getAttribute("data-copy-tpl") || ""), btn);
-        } else if (btn.hasAttribute("data-copy-target")) {
-          var target = document.getElementById(btn.getAttribute("data-copy-target"));
-          if (target) copyText(target.textContent || "", btn);
+        if (btn.hasAttribute("data-copy-panel")) {
+          var wrap = btn.closest(".code-wrap");
+          var pre = wrap && wrap.querySelector('pre[data-active="true"]');
+          if (pre) copyText(pre.textContent || "", btn);
+        } else if (btn.hasAttribute("data-copy-tpl")) {
+          copyText(renderTpl(btn.getAttribute("data-copy-tpl") || ""), btn);
         } else if (btn.hasAttribute("data-copy-raw")) {
           copyText(btn.getAttribute("data-copy-raw") || "", btn);
         }
       });
 
-      // Tabs (+ URL hash sync e.g. #claude, #codebuddy, #workbuddy, #codex, #cherry, #sdk)
-      var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab-btn[data-tab]"));
-      var panels = Array.prototype.slice.call(document.querySelectorAll(".tab-panel[data-panel]"));
-
-      function activateTab(id) {
-        var valid = tabs.some(function (t) { return t.getAttribute("data-tab") === id; });
-        if (!valid) return;
-        tabs.forEach(function (t) {
-          t.setAttribute("aria-selected", t.getAttribute("data-tab") === id ? "true" : "false");
-        });
-        panels.forEach(function (p) {
-          p.setAttribute("data-active", p.getAttribute("data-panel") === id ? "true" : "false");
-        });
-      }
-
-      tabs.forEach(function (t) {
-        t.addEventListener("click", function () {
-          var id = t.getAttribute("data-tab");
-          activateTab(id);
-          if (history.replaceState) {
-            history.replaceState(null, "", "#" + id);
-          }
-        });
-      });
-
-      var initHash = (location.hash || "").replace(/^#/, "");
-      if (initHash) activateTab(initHash);
-
-      // Theme toggle (synced with home.html via bozzii-theme)
+      // Theme toggle
       var themeBtn = document.getElementById("btn-theme");
       if (themeBtn) {
         themeBtn.addEventListener("click", function () {
-          var isDark = document.documentElement.classList.toggle("dark");
-          try { localStorage.setItem("bozzii-theme", isDark ? "dark" : "light"); } catch (e) {}
+          var dark = document.documentElement.classList.toggle("dark");
+          try { localStorage.setItem("bozzii-theme", dark ? "dark" : "light"); } catch (e) {}
         });
       }
 
-      // Bilingual toggle (简 / EN)
+      // ZH / EN toggle
       var langBtn = document.getElementById("btn-lang");
+      var i18nNodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n-en]")).map(function (el) {
+        return { el: el, zh: el.textContent, en: el.getAttribute("data-i18n-en") };
+      });
+      function applyLang(lang) {
+        document.documentElement.setAttribute("data-lang", lang);
+        document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
+        i18nNodes.forEach(function (item) {
+          item.el.textContent = lang === "en" ? item.en : item.zh;
+        });
+        if (langBtn) langBtn.textContent = lang === "en" ? "EN" : "简";
+        if (keyInput) {
+          keyInput.placeholder = lang === "en"
+            ? "Optional sk- key (local preview only, never uploaded)"
+            : "填入 sk- 密钥仅在本地替换下方示例（不上传）";
+        }
+        try { localStorage.setItem("bozzii-lang", lang); } catch (e) {}
+      }
       if (langBtn) {
         langBtn.addEventListener("click", function () {
-          var next = document.documentElement.getAttribute("data-lang") === "en" ? "zh" : "en";
-          document.documentElement.setAttribute("data-lang", next);
-          document.documentElement.lang = next === "en" ? "en" : "zh-CN";
-          langBtn.textContent = next === "en" ? "EN" : "简";
-          document.querySelectorAll("[data-i18n-en]").forEach(function (el) {
-            if (!el.hasAttribute("data-i18n-zh")) {
-              el.setAttribute("data-i18n-zh", el.textContent);
-            }
-            el.textContent = next === "en"
-              ? el.getAttribute("data-i18n-en")
-              : el.getAttribute("data-i18n-zh");
-          });
+          applyLang(isEn() ? "zh" : "en");
         });
       }
+      try {
+        var savedLang = localStorage.getItem("bozzii-lang");
+        if (savedLang === "en") applyLang("en");
+      } catch (e) {}
 
-      renderAllSnippets();
+      renderAll();
+      syncHash();
     })();
   </script>
 </body>
