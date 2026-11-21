@@ -20,6 +20,7 @@ import { Link2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { UnifiedAccountSecurityNotice } from '@/branding/unified-auth'
 import { SectionPageLayout } from '@/components/layout/components/section-page-layout'
 import { Button } from '@/components/ui/button'
 import {
@@ -82,6 +83,8 @@ export function Security() {
             <h3 id='security-authentication' className='text-sm font-semibold'>
               {t('Login & Authentication')}
             </h3>
+            {/* CUSTOM(brand): clarify Unified Auth Center vs local legacy credentials */}
+            <UnifiedAccountSecurityNotice variant='security' />
             <AccountActionCard
               action='password'
               username={profile.username}

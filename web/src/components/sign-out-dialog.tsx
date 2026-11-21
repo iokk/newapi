@@ -22,8 +22,12 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { buildUnifiedLogoutUrl } from '@/branding/unified-auth-helpers'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { logout } from '@/features/auth/api'
+import { useStatus } from '@/hooks/use-status'
 import { clearAuthenticatedClientState } from '@/lib/auth-session'
 import { handleServerError } from '@/lib/handle-server-error'
 
@@ -36,7 +40,19 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { status } = useStatus()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  // CUSTOM(brand): default to RP-Initiated Single Logout so users can cleanly switch unified accounts
+  const [alsoSignOutSso, setAlsoSignOutSso] = useState(true)
+  const oidcEnabled = Boolean(status?.oidc_enabled)
+  const oidcDisplayName = status?.oidc_display_name?.trim() || 'OIDC'
+  const unifiedLogoutUrl =
+    oidcEnabled && typeof window !== 'undefined'
+      ? buildUnifiedLogoutUrl(
+          status?.oidc_authorization_endpoint,
+          `${window.location.origin}/sign-in`
+        )
+      : null
 
   const handleSignOut = async () => {
     setIsSigningOut(true)
@@ -49,6 +65,10 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
 
       clearAuthenticatedClientState(queryClient)
       toast.success(t('Signed out'))
+      if (alsoSignOutSso && unifiedLogoutUrl) {
+        window.location.assign(unifiedLogoutUrl)
+        return
+      }
       void navigate({ to: '/sign-in', replace: true })
     } catch (error: unknown) {
       handleServerError(error, t('Failed to sign out session'))
@@ -69,6 +89,24 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
       handleConfirm={handleSignOut}
       isLoading={isSigningOut}
       className='sm:max-w-sm'
-    />
+    >
+      {unifiedLogoutUrl && (
+        <div className='flex items-center gap-2 pt-2'>
+          <Checkbox
+            id='bozzii-slo-checkbox'
+            checked={alsoSignOutSso}
+            onCheckedChange={(checked) => setAlsoSignOutSso(checked === true)}
+          />
+          <Label
+            htmlFor='bozzii-slo-checkbox'
+            className='text-muted-foreground cursor-pointer text-xs font-normal'
+          >
+            {t('Also sign out of {{name}} (Unified Auth Center)', {
+              name: oidcDisplayName,
+            })}
+          </Label>
+        </div>
+      )}
+    </ConfirmDialog>
   )
 }

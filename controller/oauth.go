@@ -314,18 +314,29 @@ func handleOAuthLogin(c *gin.Context, provider oauth.Provider, oauthUser *oauth.
 	}
 	user, migration, err := findOrCreateOAuthUser(c, provider, oauthUser, token, payload.AffiliateCode)
 	if err != nil {
+		method := loginMethodFromContext(c)
 		if errors.Is(err, model.ErrEmailAlreadyTaken) {
+			// CUSTOM(brand): audit OAuth email collision failure
+			recordLoginFailureAudit(c, nil, oauthUser.Username, method, "email_already_taken")
 			common.ApiErrorT(c, "Email address is already in use")
 			return
 		}
 		switch err.(type) {
 		case *OAuthUserDeletedError:
+			// CUSTOM(brand)
+			recordLoginFailureAudit(c, nil, oauthUser.Username, method, "user_deleted")
 			common.ApiErrorT(c, "User has been deleted")
 		case *OAuthRegistrationDisabledError:
+			// CUSTOM(brand)
+			recordLoginFailureAudit(c, nil, oauthUser.Username, method, "registration_disabled")
 			common.ApiErrorT(c, "New user registration has been disabled by administrator")
 		case *OAuthEmailAlreadyTakenError:
+			// CUSTOM(brand)
+			recordLoginFailureAudit(c, nil, oauthUser.Username, method, "email_already_taken")
 			common.ApiErrorT(c, "Email address is already in use")
 		case *OAuthLegacyBindingNotConfirmedError:
+			// CUSTOM(brand)
+			recordLoginFailureAudit(c, nil, oauthUser.Username, method, "legacy_binding_unconfirmed")
 			common.ApiErrorT(c, "This {{provider}} account cannot be linked to an existing account automatically, please sign in or register another way and then link {{provider}} in account settings", providerParams(provider.GetName()))
 		default:
 			writeSecurityOperationError(c, err)
@@ -335,6 +346,8 @@ func handleOAuthLogin(c *gin.Context, provider oauth.Provider, oauthUser *oauth.
 
 	// 8. Check user status
 	if user.Status != common.UserStatusEnabled {
+		// CUSTOM(brand)
+		recordLoginFailureAudit(c, user, user.Username, loginMethodFromContext(c), "user_banned")
 		common.ApiErrorT(c, "User has been banned")
 		return
 	}
@@ -575,6 +588,9 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 		// Perform post-transaction tasks
 		user.FinalizeOAuthUserCreation(inviterId)
 	}
+
+	// CUSTOM(brand): audit first-time OAuth/OIDC registration
+	recordRegisterAudit(c, user, loginMethodFromContext(c), inviterId)
 
 	return user, nil, nil
 }

@@ -160,6 +160,9 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.GET("/:id/oauth/bindings", controller.GetUserOAuthBindingsByAdmin)
 				adminRoute.DELETE("/:id/oauth/bindings/:provider_id", controller.UnbindCustomOAuthByAdmin)
 				adminRoute.DELETE("/:id/bindings/:binding_type", controller.AdminClearUserBinding)
+				// CUSTOM(brand): admin login session inspection and revocation
+				adminRoute.GET("/:id/sessions", controller.AdminGetUserSessions)
+				adminRoute.DELETE("/:id/sessions", controller.AdminRevokeUserSessions)
 				adminRoute.GET("/:id", controller.GetUser)
 				adminRoute.POST("/", controller.CreateUser)
 				adminRoute.POST("/manage", controller.ManageUser)

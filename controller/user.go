@@ -70,6 +70,8 @@ func Login(c *gin.Context) {
 		}
 		password, err = common.DecryptPassword(loginRequest.PasswordEncrypted, loginRequest.EncryptionKeyID)
 		if err != nil {
+			// CUSTOM(brand): audit failed password decryption attempt
+			recordLoginFailureAudit(c, nil, username, "password", "invalid_credentials")
 			common.ApiErrorT(c, "Username or password is incorrect, or user has been banned")
 			return
 		}
@@ -91,6 +93,8 @@ func Login(c *gin.Context) {
 		case errors.Is(err, model.ErrUserEmptyCredentials):
 			common.ApiErrorT(c, "Invalid parameters")
 		default:
+			// CUSTOM(brand): audit failed password login attempt
+			recordLoginFailureAudit(c, nil, username, "password", "invalid_credentials")
 			common.ApiErrorT(c, "Username or password is incorrect, or user has been banned")
 		}
 		return
@@ -141,6 +145,62 @@ func recordLoginAudit(user *model.User, c *gin.Context) {
 		params["verification_method"] = verifiedMethod
 	}
 	model.RecordLoginLog(user.Id, user.Role, user.Username, content, ip, "login", params, extra, c)
+}
+
+// CUSTOM(brand): audit failed login attempts (password and OAuth) without storing credentials.
+func recordLoginFailureAudit(c *gin.Context, user *model.User, attemptedUsername, method, reason string) {
+	userId := 0
+	actorRole := 0
+	username := strings.TrimSpace(attemptedUsername)
+	if user != nil {
+		userId = user.Id
+		actorRole = user.Role
+		if user.Username != "" {
+			username = user.Username
+		}
+	}
+	if len([]rune(username)) > 64 {
+		username = string([]rune(username)[:64])
+	}
+	ip, ua := "", ""
+	if c != nil && c.Request != nil {
+		ip = c.ClientIP()
+		ua = c.Request.UserAgent()
+	}
+	extra := model.AuditOther{
+		LoginMethod: method,
+		UserAgent:   ua,
+	}
+	params := map[string]any{
+		"method": method,
+		"reason": reason,
+	}
+	content := fmt.Sprintf("Login failed via %s (%s)", method, reason)
+	model.RecordLoginEvent(userId, actorRole, username, content, ip, "login_failed", false, http.StatusUnauthorized, params, extra, c)
+}
+
+// CUSTOM(brand): audit new user registration events (local password or OAuth/OIDC).
+func recordRegisterAudit(c *gin.Context, user *model.User, method string, inviterId int) {
+	if user == nil || user.Id <= 0 {
+		return
+	}
+	ip, ua := "", ""
+	if c != nil && c.Request != nil {
+		ip = c.ClientIP()
+		ua = c.Request.UserAgent()
+	}
+	extra := model.AuditOther{
+		LoginMethod: method,
+		UserAgent:   ua,
+	}
+	params := map[string]any{
+		"method": method,
+	}
+	if inviterId > 0 {
+		params["inviter_id"] = inviterId
+	}
+	content := fmt.Sprintf("Registered via %s", method)
+	model.RecordLoginEvent(user.Id, user.Role, user.Username, content, ip, "user.register", true, http.StatusOK, params, extra, c)
 }
 
 // setupLogin evaluates the shared login policy after primary authentication.
@@ -327,6 +387,9 @@ func Register(c *gin.Context) {
 			return
 		}
 	}
+
+	// CUSTOM(brand): audit local password registration
+	recordRegisterAudit(c, &insertedUser, "password", inviterId)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

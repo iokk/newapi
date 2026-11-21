@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -39,6 +40,9 @@ type OAuthProvidersProps = {
   onWeChatLogin?: () => void
   isWeChatLoading?: boolean
   redirectTo?: string
+  // CUSTOM(brand): avoid duplicate OIDC button and top divider when UnifiedAuthPrimaryCard is rendered
+  hideDivider?: boolean
+  excludeOidc?: boolean
 }
 
 type ProviderButton = {
@@ -56,6 +60,8 @@ export function OAuthProviders({
   onWeChatLogin,
   isWeChatLoading = false,
   redirectTo,
+  hideDivider = false,
+  excludeOidc = false,
 }: OAuthProvidersProps) {
   const { t } = useTranslation()
   const {
@@ -101,14 +107,16 @@ export function OAuthProviders({
     })
   }
 
-  if (status?.oidc_enabled) {
+  // CUSTOM(brand): allow UnifiedAuthPrimaryCard to own the primary OIDC button without duplicating it
+  if (status?.oidc_enabled && !excludeOidc) {
     const oidcDisplayName = status.oidc_display_name?.trim() || 'OIDC'
     providerButtons.push({
       key: 'oidc',
       label: t('Continue with {{name}}', {
         name: oidcDisplayName,
       }),
-      onClick: handleOIDCLogin,
+      onClick: () => void handleOIDCLogin(),
+      icon: <ShieldCheck className='h-4 w-4' />,
     })
   }
 
@@ -146,16 +154,18 @@ export function OAuthProviders({
 
   return (
     <div className={cn('space-y-3', className)}>
-      <div className='relative'>
-        <div className='absolute inset-0 flex items-center'>
-          <span className='w-full border-t' />
+      {!hideDivider && (
+        <div className='relative'>
+          <div className='absolute inset-0 flex items-center'>
+            <span className='w-full border-t' />
+          </div>
+          <div className='relative flex justify-center text-xs uppercase'>
+            <span className='bg-background text-muted-foreground px-2'>
+              {t('Or continue with')}
+            </span>
+          </div>
         </div>
-        <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background text-muted-foreground px-2'>
-            {t('Or continue with')}
-          </span>
-        </div>
-      </div>
+      )}
 
       <div className='flex flex-col gap-2'>
         {providerButtons.map(

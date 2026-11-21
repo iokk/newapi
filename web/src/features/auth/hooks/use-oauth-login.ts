@@ -126,7 +126,11 @@ export function useOAuthLogin(
     }
   }
 
-  const handleOIDCLogin = async () => {
+  // CUSTOM(brand): accept optional signup/prompt options for Unified Auth Center
+  const handleOIDCLogin = async (options?: {
+    mode?: 'login' | 'signup'
+    prompt?: string
+  }) => {
     if (!status?.oidc_authorization_endpoint || !status?.oidc_client_id) return
 
     setIsLoading(true)
@@ -138,7 +142,8 @@ export function useOAuthLogin(
       const url = buildOIDCOAuthUrl(
         status.oidc_authorization_endpoint,
         status.oidc_client_id,
-        state
+        state,
+        options
       )
       window.open(url, '_self')
     } catch (error) {

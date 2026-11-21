@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { deriveCasdoorSignupEndpoint } from '@/branding/unified-auth-helpers'
 import type { SystemStatus } from '@/features/auth/types'
 
 // ============================================================================
@@ -65,14 +66,21 @@ export function buildDiscordOAuthUrl(clientId: string, state: string): string {
 export function buildOIDCOAuthUrl(
   authUrl: string,
   clientId: string,
-  state: string
+  state: string,
+  // CUSTOM(brand): support Casdoor signup endpoint and prompt=login account switch
+  options?: { mode?: 'login' | 'signup'; prompt?: string }
 ): string {
-  const url = new URL(authUrl)
+  const targetEndpoint =
+    options?.mode === 'signup' ? deriveCasdoorSignupEndpoint(authUrl) : authUrl
+  const url = new URL(targetEndpoint)
   url.searchParams.set('client_id', clientId)
   url.searchParams.set('redirect_uri', `${window.location.origin}/oauth/oidc`)
   url.searchParams.set('response_type', 'code')
   url.searchParams.set('scope', 'openid profile email')
   url.searchParams.set('state', state)
+  if (options?.prompt) {
+    url.searchParams.set('prompt', options.prompt)
+  }
   return url.toString()
 }
 

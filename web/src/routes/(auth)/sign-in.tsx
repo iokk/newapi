@@ -26,6 +26,8 @@ import { useAuthStore } from '@/stores/auth-store'
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
+  // CUSTOM(brand): expand legacy password login section when redirected from email-conflict guidance
+  legacy: z.string().optional(),
 })
 
 export const Route = createFileRoute('/(auth)/sign-in')({

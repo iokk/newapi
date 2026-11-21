@@ -24,9 +24,15 @@ import {
 } from '@tanstack/react-router'
 import type { AxiosRequestConfig } from 'axios'
 import i18next from 'i18next'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { OAuthEmailConflictCard } from '@/branding/unified-auth'
+import {
+  isOAuthEmailConflictError,
+  OIDC_AUTO_RETRY_KEY,
+} from '@/branding/unified-auth-helpers'
+import { createOAuthFlow } from '@/features/auth/api'
 import { OAuthCallbackScreen } from '@/features/auth/components/oauth-callback-screen'
 import {
   OAUTH_POPUP_CALLBACK_MESSAGE,
@@ -45,8 +51,10 @@ import {
   resolveOAuthCallbackMode,
 } from '@/features/auth/lib/oauth-callback-mode'
 import type { LoginResponse } from '@/features/auth/types'
+import { useStatus } from '@/hooks/use-status'
 import { api } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
+import { buildOIDCOAuthUrl } from '@/lib/oauth'
 import { AuthOperationError } from '@/lib/secure-verification'
 import { getServerErrorMessageKey } from '@/lib/server-error-message'
 
@@ -67,6 +75,9 @@ interface OAuthPopupResult {
 function OAuthCallback() {
   const navigate = useNavigate()
   const { handleLoginResult } = useAuthRedirect()
+  const { status } = useStatus()
+  // CUSTOM(brand): show structured guidance card on OIDC email collision instead of bare toast
+  const [emailConflict, setEmailConflict] = useState(false)
   const loginExchange = useRef<{
     key: string
     request: Promise<{ data: LoginResponse }>
@@ -197,6 +208,39 @@ function OAuthCallback() {
       void navigate({ href, replace: true })
     }
 
+    // CUSTOM(brand): Casdoor post-signup return occasionally omits code/state; auto-reauthorize once seamlessly
+    const oidcAuthEndpoint = status?.oidc_authorization_endpoint
+    const oidcClientId = status?.oidc_client_id
+    if (
+      provider === 'oidc' &&
+      !search.error &&
+      (!code || !state) &&
+      oidcAuthEndpoint &&
+      oidcClientId
+    ) {
+      const storage = getOAuthSessionStorage(window)
+      if (storage && storage.getItem(OIDC_AUTO_RETRY_KEY) !== '1') {
+        storage.setItem(OIDC_AUTO_RETRY_KEY, '1')
+        void (async () => {
+          try {
+            const nextState = await createOAuthFlow('oidc', 'login')
+            const url = buildOIDCOAuthUrl(
+              oidcAuthEndpoint,
+              oidcClientId,
+              nextState
+            )
+            window.location.replace(url)
+          } catch {
+            storage.removeItem(OIDC_AUTO_RETRY_KEY)
+            toast.error(i18next.t('Missing code'))
+            safeNavigate('/sign-in', '/sign-in')
+          }
+        })()
+        return
+      }
+      storage?.removeItem(OIDC_AUTO_RETRY_KEY)
+    }
+
     if (!code && !search.error) {
       toast.error(i18next.t('Missing code'))
       safeNavigate('/sign-in', '/sign-in')
@@ -228,6 +272,7 @@ function OAuthCallback() {
         if (!active) return
         if (response.data?.success) {
           completedLogin.current = loginKey
+          getOAuthSessionStorage(window)?.removeItem(OIDC_AUTO_RETRY_KEY)
           if (
             await handleLoginResult(
               response.data.data,
@@ -236,6 +281,10 @@ function OAuthCallback() {
           ) {
             toast.success(i18next.t('Signed in successfully!'))
           }
+          return
+        }
+        if (provider === 'oidc' && isOAuthEmailConflictError(response.data)) {
+          setEmailConflict(true)
           return
         }
         const messageKey = getServerErrorMessageKey(response.data)
@@ -269,7 +318,17 @@ function OAuthCallback() {
     search.flow_token,
     search.redirect,
     search.telegram_bind,
+    status?.oidc_authorization_endpoint,
+    status?.oidc_client_id,
   ])
+
+  if (emailConflict) {
+    return (
+      <OAuthEmailConflictCard
+        displayName={status?.oidc_display_name?.trim() || 'OIDC'}
+      />
+    )
+  }
 
   return <OAuthCallbackScreen provider={provider} mode={mode} />
 }

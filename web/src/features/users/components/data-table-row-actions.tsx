@@ -28,11 +28,13 @@ import {
   ShieldAlert,
   Link2,
   CreditCard,
+  MonitorSmartphone,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { AdminUserSessionsDialog } from '@/branding/unified-auth'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataTableRowActionMenu } from '@/components/data-table/core/row-action-menu'
 import { Button } from '@/components/ui/button'
@@ -88,6 +90,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const [resetTwoFAOpen, setResetTwoFAOpen] = useState(false)
   const [bindingDialogOpen, setBindingDialogOpen] = useState(false)
   const [subscriptionsDialogOpen, setSubscriptionsDialogOpen] = useState(false)
+  // CUSTOM(brand): admin session inspection/revocation dialog
+  const [sessionsDialogOpen, setSessionsDialogOpen] = useState(false)
 
   const handleEdit = () => {
     setCurrentRow(user)
@@ -275,6 +279,20 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </DropdownMenuShortcut>
         </DropdownMenuItem>
 
+        {/* CUSTOM(brand): inspect or force-revoke user login sessions */}
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault()
+            setSessionsDialogOpen(true)
+          }}
+          disabled={isRoot}
+        >
+          {t('Login Sessions')}
+          <DropdownMenuShortcut>
+            <MonitorSmartphone size={16} />
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
+
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
@@ -353,6 +371,13 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         onOpenChange={setSubscriptionsDialogOpen}
         user={{ id: user.id, username: user.username }}
         onSuccess={triggerRefresh}
+      />
+
+      {/* CUSTOM(brand) */}
+      <AdminUserSessionsDialog
+        open={sessionsDialogOpen}
+        onOpenChange={setSessionsDialogOpen}
+        user={{ id: user.id, username: user.username }}
       />
     </div>
   )

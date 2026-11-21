@@ -473,6 +473,14 @@ const AUDIT_TEMPLATES: Record<string, string> = {
   'user.email_binding_resend': 'Email confirmation code resend',
 
   login: 'Logged in successfully via {{method}}',
+  // CUSTOM(brand): login lifecycle and session audit action labels
+  login_failed: 'Login failed via {{method}} ({{reason}})',
+  logout: 'Signed out',
+  'user.register': 'Registered via {{method}}',
+  'session.revoke': 'Revoked login session',
+  'session.revoke_others': 'Revoked {{count}} other login sessions',
+  'user.sessions_revoke':
+    'Force-revoked {{count}} login sessions for user {{username}}',
   // User management
   'user.create': 'Created user {{username}} (role {{role}})',
   'user.update': 'Updated user {{username}} (ID: {{id}})',

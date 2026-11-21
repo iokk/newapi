@@ -18,13 +18,14 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { Loader2, LogIn, KeyRound } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, LogIn, KeyRound } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { z } from 'zod'
 
+import { UnifiedAuthPrimaryCard } from '@/branding/unified-auth'
 import { Dialog } from '@/components/dialog'
 import { PasswordInput } from '@/components/password-input'
 import { Turnstile } from '@/components/turnstile'
@@ -44,6 +45,7 @@ import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { loginFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
+import { useOAuthLogin } from '@/features/auth/hooks/use-oauth-login'
 import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
 import { beginPasskeyLogin, finishPasskeyLogin } from '@/features/auth/passkey'
 import {
@@ -63,10 +65,16 @@ import { cn } from '@/lib/utils'
 export function UserAuthForm({
   className,
   redirectTo,
+  defaultExpandLegacy = false,
   ...props
 }: AuthFormProps) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
+  // CUSTOM(brand): collapse legacy password/Passkey section by default when Unified Auth (OIDC) is active
+  const [legacyExpanded, setLegacyExpanded] = useState(defaultExpandLegacy)
+  useEffect(() => {
+    if (defaultExpandLegacy) setLegacyExpanded(true)
+  }, [defaultExpandLegacy])
   const [wechatCode, setWeChatCode] = useState('')
   const [agreedToLegal, setAgreedToLegal] = useState(false)
   const [passkeySupported, setPasskeySupported] = useState(false)
@@ -84,6 +92,13 @@ export function UserAuthForm({
   const loginFailedMessage = t('Login failed')
 
   const { status } = useStatus()
+  // CUSTOM(brand): direct Unified Auth Center (OIDC) login handler
+  const oidcEnabled = Boolean(status?.oidc_enabled)
+  const oidcDisplayName = status?.oidc_display_name?.trim() || 'OIDC'
+  const { isLoading: isOAuthLoading, handleOIDCLogin } = useOAuthLogin(
+    status,
+    redirectTo
+  )
   const passkeyLoginEnabled = Boolean(
     status?.passkey_login ?? status?.data?.passkey_login
   )
@@ -299,6 +314,18 @@ export function UserAuthForm({
     }
   }
 
+  const hasLegacyOrOtherLogin =
+    passwordLoginEnabled ||
+    passkeyLoginEnabled ||
+    hasWeChatLogin ||
+    Boolean(
+      status?.github_oauth ||
+      status?.discord_oauth ||
+      status?.linuxdo_oauth ||
+      status?.telegram_oauth ||
+      (status?.custom_oauth_providers?.length ?? 0) > 0
+    )
+
   const alternativeLoginMethods = (
     <>
       {passkeyLoginEnabled && (
@@ -338,9 +365,14 @@ export function UserAuthForm({
         disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
         onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
         isWeChatLoading={isWeChatSubmitting}
+        excludeOidc={oidcEnabled}
+        hideDivider={oidcEnabled}
       />
     </>
   )
+
+  // CUSTOM(brand): show password/Passkey fields expanded when OIDC is disabled or user explicitly toggles legacy login
+  const showSecondaryLogin = !oidcEnabled || legacyExpanded
 
   return (
     <Form {...form}>
@@ -349,9 +381,40 @@ export function UserAuthForm({
         className={cn('grid gap-4', className)}
         {...props}
       >
-        {hasAlternativeLogin && alternativeLoginMethods}
+        {oidcEnabled && (
+          <UnifiedAuthPrimaryCard
+            mode='login'
+            displayName={oidcDisplayName}
+            isLoading={isOAuthLoading}
+            disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+            onPrimaryClick={() => void handleOIDCLogin({ mode: 'login' })}
+            onSwitchAccountClick={() =>
+              void handleOIDCLogin({ mode: 'login', prompt: 'login' })
+            }
+          />
+        )}
 
-        {passwordLoginEnabled && (
+        {oidcEnabled && hasLegacyOrOtherLogin && (
+          <div className='pt-1'>
+            <button
+              type='button'
+              onClick={() => setLegacyExpanded((prev) => !prev)}
+              aria-expanded={legacyExpanded}
+              className='text-muted-foreground hover:text-foreground border-border/70 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs font-medium transition-colors'
+            >
+              <span>{t('Legacy account password / Passkey sign in')}</span>
+              {legacyExpanded ? (
+                <ChevronUp className='size-4' />
+              ) : (
+                <ChevronDown className='size-4' />
+              )}
+            </button>
+          </div>
+        )}
+
+        {showSecondaryLogin && hasAlternativeLogin && alternativeLoginMethods}
+
+        {showSecondaryLogin && passwordLoginEnabled && (
           <>
             {/* Username Field */}
             <FormField
@@ -398,6 +461,7 @@ export function UserAuthForm({
             {/* Submit Button */}
             <Button
               type='submit'
+              variant={oidcEnabled ? 'outline' : 'default'}
               className='mt-2 w-full justify-center gap-2'
               disabled={isLoading}
             >
@@ -426,7 +490,7 @@ export function UserAuthForm({
           className='mt-1'
         />
 
-        {!hasAlternativeLogin && alternativeLoginMethods}
+        {showSecondaryLogin && !hasAlternativeLogin && alternativeLoginMethods}
       </form>
 
       {hasWeChatLogin && (

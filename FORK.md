@@ -141,8 +141,10 @@ data, and the steps that matter (backup, staging, cut-over, rollback) are in
 
 Production (`https://ai.bozzii.com`, container `xseek-new-api`) uses Casdoor at `https://auth.bozzii.com` (organization `bozzii`, application `app-bozzii-api`, callback `https://ai.bozzii.com/oauth/oidc`) as the unified identity provider.
 
-- **No backend fork changes required**: upstream `controller/oauth.go` natively handles OIDC user creation (`users.oidc_id`), skips `EmailDomainWhitelist` for OIDC signups, and rejects duplicate emails via `EnsureEmailAvailable` (`OAuthEmailAlreadyTakenError`) to prevent account takeover.
-- **Current production `options` state (2026-11-19)**:
+- **Unified Auth UX & Audit extensions (`v1.0.0-rc.51-bozzii.3`, tagged `CUSTOM(brand)`)**:
+  - Dedicated brand module `web/src/branding/unified-auth.tsx` + `unified-auth-helpers.ts`: prioritizes Casdoor `/signup/oauth/authorize` on `/sign-up` (hiding local password signup when `PasswordRegisterEnabled=false`), puts Unified SSO primary CTA at top of `/sign-in` with collapsible legacy password/Passkey section + `prompt=login` account switcher, adds 1-time post-signup `state`-loss auto-retry & structured legacy email-conflict guidance on `/oauth/oidc`, supports RP-Initiated Single Logout (`/api/logout`) in `SignOutDialog`, displays `LegacyOidcMigrationBanner` for unlinked legacy users, and clarifies Unified Auth Center credential management on `/security` & `/forgot-password`.
+  - Backend login lifecycle audit & admin session control (`model/log.go`, `controller/{user,oauth,auth_session}.go`, `router/api-router.go`): records `login_failed`, `user.register`, `logout`, `session.revoke`, `session.revoke_others`, and `user.sessions_revoke` in `audit_logs`, and exposes `GET/DELETE /api/user/:id/sessions` for admin session inspection & force sign-out.
+- **Current production `options` state (2026-11-21)**:
   - `oidc.enabled = true`, `oidc.display_name = 铂子统一账号`, endpoints pointing to `https://auth.bozzii.com`.
   - `RegisterEnabled = true` (required for first-time OIDC user creation).
   - `PasswordRegisterEnabled = false` (blocks new native signups so all new users register through Casdoor).

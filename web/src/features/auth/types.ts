@@ -218,4 +218,6 @@ export interface CustomOAuthProviderInfo {
 
 export interface AuthFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string
+  // CUSTOM(brand): auto-expand collapsed legacy password login section
+  defaultExpandLegacy?: boolean
 }

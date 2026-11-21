@@ -33,9 +33,9 @@ Last full review: 2026-11-05.
 | ---- | ----- |
 | Upstream | `QuantumNous/new-api`, remote `upstream` |
 | Our fork | `iokk/newapi`, remote `origin` |
-| Active prod branch | `upgrade/v1.0.0-rc.51` (brand commits also synced to `main`) |
+| Active prod branch | `main` (reconciled with `upgrade/v1.0.0-rc.51` and all `bozzii.2` brand commits) |
 | Upstream base | tag `v1.0.0-rc.51` |
-| Customisations | `web/src/styles/brand.css` (new), `web/src/styles/index.css` (one `@import`), `web/public/brand/{home,connect}.html` (new), `web/src/branding/brand-links.tsx` (new), `ops/` (new) |
+| Customisations | `web/src/styles/brand.css` (new), `web/src/styles/index.css` (one `@import`), `web/public/brand/{home,connect}.html` (new), `web/src/branding/{brand-links,unified-auth,unified-auth-helpers}.*` (new), login/session audit hooks (`CUSTOM(brand)`), `ops/` (new) |
 | Marker | every change to an upstream file carries `CUSTOM(brand)`; list with `git grep -n 'CUSTOM(brand)'` |
 
 ### Image
@@ -43,12 +43,12 @@ Last full review: 2026-11-05.
 | Item | Value |
 | ---- | ----- |
 | Name | `ghcr.io/iokk/bozzii-new-api` |
-| Running tag | `v1.0.0-rc.51-bozzii.2` |
+| Running tag | `v1.0.0-rc.51-bozzii.3` |
 | Platform | `linux/amd64` (matches host `x86_64`) |
-| Digest | `sha256:d85c5ac7804168efbcbe6c0a9c654979d9f7eade06034e3d64a51983e58f63fe` |
+| Digest | updated on build/push (see `ops/releases/2026-11-21-unified-auth-and-audit.md`) |
 | Registry visibility | **private** (decision D-006) |
-| Built by | native `docker build --network=host` on `23.19.228.138` from commit `ff32e1168` |
-| Previous (rollback) | `v1.0.0-rc.51-bozzii.1`, compose saved as `/opt/xseek-new-api/backups/compose.yaml.pre-rc51-bozzii2-20261120T203549Z` |
+| Built by | `docker buildx build --platform linux/amd64 --push` from `main` |
+| Previous (rollback) | `v1.0.0-rc.51-bozzii.2`, compose saved as `/opt/xseek-new-api/backups/compose.yaml.pre-rc51-bozzii3-*` |
 
 ### Production host
 
@@ -58,9 +58,9 @@ Last full review: 2026-11-05.
 | Termark asset | `a1b646cd-1a82-492d-9621-a88c8ed5f905` |
 | App directory | `/opt/xseek-new-api` (compose project) |
 | Containers | `xseek-new-api` (app), `xseek-new-api-postgres`, `xseek-new-api-redis` |
-| Running since | `bozzii.8` cut over on 2026-11-18; only the app was recreated |
-| Data at last cut-over | not recounted; database dump `backups/newapi-pre-bozzii8-20261117T160031Z.dump` (3,259,810 bytes) |
-| Health | `/api/status` → `success: true`, version `v1.0.0-rc.48-bozzii.8`, system name `Bozzii AI` |
+| Running since | `v1.0.0-rc.51-bozzii.3` cut over on 2026-11-21; only the app was recreated |
+| Data at last cut-over | 16 active users (3 OIDC bound, 13 legacy); pre-cut-over backup via `/opt/ops/backup-and-inspect.sh` |
+| Health | `/api/status` → `success: true`, version `v1.0.0-rc.51-bozzii.3`, system name `Bozzii AI` |
 | App port | `BIND_ADDRESS=0.0.0.0`, port 3000 (see open item O-4) |
 
 ### Backups

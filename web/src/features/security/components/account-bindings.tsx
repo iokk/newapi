@@ -278,7 +278,8 @@ export function AccountBindings({ profile, onUpdate }: AccountBindingsProps) {
     },
     {
       id: 'oidc',
-      label: t('OIDC'),
+      // CUSTOM(brand): show configured OIDC display name instead of literal OIDC
+      label: status?.oidc_display_name?.trim() || t('OIDC'),
       icon: Shield,
       value: (profile as unknown as Record<string, unknown>).oidc_id as
         | string

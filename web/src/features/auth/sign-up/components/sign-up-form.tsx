@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { z } from 'zod'
 
+import { UnifiedAuthPrimaryCard } from '@/branding/unified-auth'
 import { Dialog } from '@/components/dialog'
 import { PasswordInput } from '@/components/password-input'
 import {
@@ -48,11 +49,13 @@ import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { registerFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
 import { useEmailVerification } from '@/features/auth/hooks/use-email-verification'
+import { useOAuthLogin } from '@/features/auth/hooks/use-oauth-login'
 import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
 import {
   getAffiliateCode,
   saveAffiliateCode,
 } from '@/features/auth/lib/storage'
+import type { AuthFormProps } from '@/features/auth/types'
 import { useStatus } from '@/hooks/use-status'
 import { handleServerError } from '@/lib/handle-server-error'
 import { AuthOperationError } from '@/lib/secure-verification'
@@ -61,8 +64,9 @@ import { cn } from '@/lib/utils'
 
 export function SignUpForm({
   className,
+  redirectTo,
   ...props
-}: React.HTMLAttributes<HTMLFormElement>) {
+}: AuthFormProps) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
@@ -74,6 +78,20 @@ export function SignUpForm({
   const legalConsentErrorMessage = t('Please agree to the legal terms first')
 
   const { status } = useStatus()
+  // CUSTOM(brand): prioritize Unified Auth Center (OIDC) signup and respect register/password flags
+  const registerEnabled =
+    (status?.register_enabled ?? status?.data?.register_enabled ?? true) !==
+    false
+  const passwordRegisterEnabled =
+    (status?.password_register_enabled ??
+      status?.data?.password_register_enabled ??
+      true) !== false
+  const oidcEnabled = Boolean(status?.oidc_enabled)
+  const oidcDisplayName = status?.oidc_display_name?.trim() || 'OIDC'
+  const { isLoading: isOAuthLoading, handleOIDCLogin } = useOAuthLogin(
+    status,
+    redirectTo
+  )
   const {
     isTurnstileEnabled,
     turnstileSiteKey,
@@ -253,6 +271,47 @@ export function SignUpForm({
     verificationCodeAction = <Loader2 className='h-4 w-4 animate-spin' />
   }
 
+  // CUSTOM(brand): render disabled notice or Unified Auth Center primary signup when password registration is disabled
+  if (!registerEnabled) {
+    return (
+      <div className='bg-muted/40 border-border/80 rounded-xl border p-4 text-center text-sm'>
+        <p className='text-muted-foreground'>
+          {t('New user registration has been disabled by administrator')}
+        </p>
+      </div>
+    )
+  }
+
+  if (oidcEnabled && oauthRegisterEnabled && !passwordRegisterEnabled) {
+    return (
+      <div className={cn('grid gap-4', className)}>
+        <UnifiedAuthPrimaryCard
+          mode='signup'
+          displayName={oidcDisplayName}
+          isLoading={isOAuthLoading}
+          disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+          onPrimaryClick={() => void handleOIDCLogin({ mode: 'signup' })}
+        />
+
+        <LegalConsent
+          status={status}
+          checked={agreedToLegal}
+          onCheckedChange={setAgreedToLegal}
+          className='mt-1'
+        />
+
+        <OAuthProviders
+          status={status}
+          redirectTo={redirectTo}
+          disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+          onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
+          isWeChatLoading={isWeChatSubmitting}
+          excludeOidc
+        />
+      </div>
+    )
+  }
+
   return (
     <Form {...form}>
       <form
@@ -260,6 +319,16 @@ export function SignUpForm({
         className={cn('grid gap-4', className)}
         {...props}
       >
+        {oidcEnabled && oauthRegisterEnabled && (
+          <UnifiedAuthPrimaryCard
+            mode='signup'
+            displayName={oidcDisplayName}
+            isLoading={isOAuthLoading}
+            disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+            onPrimaryClick={() => void handleOIDCLogin({ mode: 'signup' })}
+          />
+        )}
+
         {/* Username Field */}
         <FormField
           control={form.control}
@@ -409,9 +478,11 @@ export function SignUpForm({
         {oauthRegisterEnabled && (
           <OAuthProviders
             status={status}
+            redirectTo={redirectTo}
             disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
             onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
             isWeChatLoading={isWeChatSubmitting}
+            excludeOidc={oidcEnabled}
             className='pt-2'
           />
         )}

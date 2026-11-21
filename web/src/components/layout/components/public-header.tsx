@@ -110,11 +110,21 @@ export function PublicHeader(props: PublicHeaderProps) {
   if (customLogo) logoContent = customLogo
   if (loading) logoContent = <Skeleton className='size-full rounded-lg' />
 
+  // CUSTOM(brand): preserve current page path in sign-in redirect (e.g. /pricing -> /sign-in?redirect=/pricing)
+  const signInRedirect =
+    pathname && pathname !== '/' && pathname !== '/sign-in'
+      ? `${pathname}${routerState.location.searchStr ?? ''}`
+      : undefined
   let authContent = (
     <Button
       size='sm'
       className='h-8 rounded-lg px-3.5 text-xs font-medium'
-      render={<Link to='/sign-in' />}
+      render={
+        <Link
+          to='/sign-in'
+          search={signInRedirect ? { redirect: signInRedirect } : undefined}
+        />
+      }
     >
       {t('Sign in')}
     </Button>

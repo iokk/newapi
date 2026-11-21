@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -64,6 +65,8 @@ func AuthLogout(c *gin.Context) {
 				writeAuthSessionError(c, err)
 				return
 			}
+			// CUSTOM(brand): audit active user logout
+			recordLogoutAudit(c, identity.UserID, identity.SessionID)
 			cookieCleared := false
 			if cookieErr == nil && hasCookieSID && cookieSID == identity.SessionID {
 				if err := service.RevokeByRefreshToken(rawRefreshToken, identity.SessionID, "logout"); err != nil {
@@ -132,6 +135,8 @@ func DeleteLoginSession(c *gin.Context) {
 			service.ClearRefreshCookie(c)
 		}
 	}
+	// CUSTOM(brand): audit self session revocation
+	recordUserSecurityAudit(c, identity.UserID, "session.revoke", map[string]any{"sid": sid})
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"revoked_sid": sid, "current": sid == identity.SessionID}})
 }
 
@@ -145,6 +150,85 @@ func RevokeOtherLoginSessions(c *gin.Context) {
 		writeAuthSessionError(c, err)
 		return
 	}
+	// CUSTOM(brand): audit revoking all other sessions
+	recordUserSecurityAudit(c, identity.UserID, "session.revoke_others", map[string]any{"count": count})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"revoked_count": count}})
+}
+
+// CUSTOM(brand): recordLogoutAudit records explicit logout events in login audit logs.
+func recordLogoutAudit(c *gin.Context, userID int, sid string) {
+	if userID <= 0 {
+		return
+	}
+	user, err := model.GetUserById(userID, false)
+	actorRole := common.RoleCommonUser
+	username := ""
+	if err == nil && user != nil {
+		actorRole = user.Role
+		username = user.Username
+	}
+	ip, ua := "", ""
+	if c != nil && c.Request != nil {
+		ip = c.ClientIP()
+		ua = c.Request.UserAgent()
+	}
+	extra := model.AuditOther{
+		UserAgent: ua,
+	}
+	model.RecordLoginEvent(userID, actorRole, username, "Signed out", ip, "logout", true, http.StatusOK, map[string]any{"sid": sid}, extra, c)
+}
+
+// CUSTOM(brand): AdminGetUserSessions lists active login sessions for a target user.
+func AdminGetUserSessions(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		common.ApiErrorT(c, "Invalid parameters")
+		return
+	}
+	user, err := model.GetUserById(id, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	myRole := c.GetInt("role")
+	if c.GetInt("id") != user.Id && !canManageTargetRole(myRole, user.Role) {
+		common.ApiErrorT(c, "No permission to access users of same or higher level")
+		return
+	}
+	sessions, err := service.ListLoginSessions(user.Id, "")
+	if err != nil {
+		writeAuthSessionError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": sessions})
+}
+
+// CUSTOM(brand): AdminRevokeUserSessions force-revokes all active login sessions for a target user.
+func AdminRevokeUserSessions(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		common.ApiErrorT(c, "Invalid parameters")
+		return
+	}
+	user, err := model.GetUserById(id, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	myRole := c.GetInt("role")
+	if !canManageTargetRole(myRole, user.Role) {
+		common.ApiErrorT(c, "No permission to access users of same or higher level")
+		return
+	}
+	count, err := model.RevokeAllUserSessions(user.Id, "admin_revoked")
+	if err != nil {
+		writeAuthSessionError(c, err)
+		return
+	}
+	recordManageAuditFor(c, user.Id, "user.sessions_revoke", map[string]any{
+		"username": user.Username,
+		"count":    count,
+	})
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"revoked_count": count}})
 }
 

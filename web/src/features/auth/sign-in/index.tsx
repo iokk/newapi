@@ -27,7 +27,8 @@ import { UserAuthForm } from './components/user-auth-form'
 
 export function SignIn() {
   const { t } = useTranslation()
-  const { redirect } = useSearch({ from: '/(auth)/sign-in' })
+  // CUSTOM(brand): preserve redirect to /sign-up and support legacy=1 auto-expand
+  const { redirect, legacy } = useSearch({ from: '/(auth)/sign-in' })
   const { status } = useStatus()
 
   return (
@@ -43,6 +44,7 @@ export function SignIn() {
                 {t("Don't have an account?")}{' '}
                 <Link
                   to='/sign-up'
+                  search={redirect ? { redirect } : undefined}
                   className='hover:text-primary font-medium underline underline-offset-4'
                 >
                   {t('Sign up')}
@@ -52,7 +54,10 @@ export function SignIn() {
             )}
         </div>
 
-        <UserAuthForm redirectTo={redirect} />
+        <UserAuthForm
+          redirectTo={redirect}
+          defaultExpandLegacy={legacy === '1'}
+        />
 
         <TermsFooter
           variant='sign-in'
