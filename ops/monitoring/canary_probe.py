@@ -122,15 +122,15 @@ def extract_text(protocol: str, body: dict) -> str:
     return str(msg.get("content") or "").strip()
 
 
-def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None, r3: dict | None = None) -> dict:
+def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None, extra_rounds: list[dict] | None = None) -> dict:
     """Evaluate liveness, real caching, and 1.00x token integrity across probe rounds."""
-    rounds = [r for r in (r1, r2, r3) if r is not None]
+    rounds = [r for r in (r1, r2, *(extra_rounds or [])) if r is not None]
     alive_ok = all(bool(r.get("answer_ok")) for r in rounds)
     t1 = int(r1.get("total_in") or 0)
     t2 = int(r2.get("total_in") or 0)
     totals = [int(r.get("total_in") or 0) for r in rounds if int(r.get("total_in") or 0) > 0]
 
-    # Multi-slot upstreams may hit warm cache on R1 (from prior run) or R2/R3; pick best hit.
+    # Multi-slot upstreams may hit warm cache on any round; pick best verified hit.
     best_hit_ratio = 0.0
     best_cr = 0
     best_t = t2 or t1
@@ -144,7 +144,8 @@ def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None, r3: di
             best_t = ti
 
     cache_hit_ratio = round(best_hit_ratio, 4)
-    cache_ok = best_t >= 500 and cache_hit_ratio >= 0.65
+    # Require >=1024 real cached tokens AND >=50% hit ratio (accommodates 4096-chunk prefix caches).
+    cache_ok = best_t >= 500 and best_cr >= 1024 and cache_hit_ratio >= 0.50
 
     # Cross-round stability: compare max/min total_in across rounds to catch cached-token bloat.
     round_ratio = round(max(totals) / min(totals), 4) if len(totals) >= 2 else (1.0 if totals else 0.0)
@@ -182,7 +183,7 @@ def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None, r3: di
         "round_ratio": round_ratio,
         "integrity_ratio": integrity_ratio,
         "latency_ms_r1": r1.get("latency_ms", 0),
-        "latency_ms_r2": (r3 or r2).get("latency_ms", 0),
+        "latency_ms_r2": rounds[-1].get("latency_ms", 0),
         "reasons": reasons,
     }
 
@@ -315,6 +316,7 @@ def main() -> int:
     ap.add_argument("--env", default="/opt/ops/bozzii-canary/.env")
     ap.add_argument("--state", default="/opt/ops/bozzii-canary/canary_state.json")
     ap.add_argument("--force-all", action="store_true")
+    ap.add_argument("--only", default="", help="Comma-separated model keys to run (e.g. claude_sonnet,gpt_sol)")
     ap.add_argument("--dry-run", action="store_true", help="Run probes without pinging Better Stack")
     args = ap.parse_args()
 
@@ -340,10 +342,13 @@ def main() -> int:
     ran_models = []
     alerts = []
 
+    only_keys = {k.strip() for k in args.only.split(",") if k.strip()}
     for spec in PROBES:
         key = spec["key"]
         model = spec["model"]
-        if not args.force_all and (now.hour % spec["every_hours"] != 0):
+        if only_keys and key not in only_keys:
+            continue
+        if not only_keys and not args.force_all and (now.hour % spec["every_hours"] != 0):
             continue
 
         prev = state["models"].get(model) or {}
@@ -355,14 +360,19 @@ def main() -> int:
         r1 = call_model(base_url, api_key, spec["protocol"], model, a1, b1)
         time.sleep(5)
         r2 = call_model(base_url, api_key, spec["protocol"], model, a2, b2)
-        r3 = None
-        # Multi-slot upstream pool may route R1 & R2 to two cold slots; allow 1 warm retry.
-        if r1.get("answer_ok") and r2.get("answer_ok") and r1.get("cache_read", 0) == 0 and r2.get("cache_read", 0) == 0:
-            time.sleep(5)
-            a3, b3 = random.randint(21, 79), random.randint(13, 47)
-            r3 = call_model(base_url, api_key, spec["protocol"], model, a3, b3)
+        extra = []
+        # Multi-slot upstream pool may route R1 & R2 to cold slots; allow up to 2 warm retries.
+        for _ in range(2):
+            cur = [r1, r2, *extra]
+            if not all(r.get("answer_ok") for r in cur):
+                break
+            if any(int(r.get("cache_read") or 0) >= 1024 for r in cur):
+                break
+            time.sleep(4)
+            ax, bx = random.randint(21, 79), random.randint(13, 47)
+            extra.append(call_model(base_url, api_key, spec["protocol"], model, ax, bx))
 
-        ev = evaluate_pair(r1, r2, baseline_tokens=baseline, r3=r3)
+        ev = evaluate_pair(r1, r2, baseline_tokens=baseline, extra_rounds=extra)
         # Calibrate baseline on first clean pass
         if ev["passed"] and not baseline and ev["total_in_r2"] >= 500:
             baseline = ev["total_in_r2"]
