@@ -122,27 +122,41 @@ def extract_text(protocol: str, body: dict) -> str:
     return str(msg.get("content") or "").strip()
 
 
-def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None) -> dict:
-    """Evaluate liveness, real caching, and 1.00x token integrity for a 2-round probe."""
-    alive_ok = bool(r1.get("answer_ok") and r2.get("answer_ok"))
+def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None, r3: dict | None = None) -> dict:
+    """Evaluate liveness, real caching, and 1.00x token integrity across probe rounds."""
+    rounds = [r for r in (r1, r2, r3) if r is not None]
+    alive_ok = all(bool(r.get("answer_ok")) for r in rounds)
     t1 = int(r1.get("total_in") or 0)
     t2 = int(r2.get("total_in") or 0)
-    cr2 = int(r2.get("cache_read") or 0)
+    totals = [int(r.get("total_in") or 0) for r in rounds if int(r.get("total_in") or 0) > 0]
 
-    cache_hit_ratio = round(cr2 / t2, 4) if t2 > 0 else 0.0
-    cache_ok = t2 >= 500 and cache_hit_ratio >= 0.65
+    # Multi-slot upstreams may hit warm cache on R1 (from prior run) or R2/R3; pick best hit.
+    best_hit_ratio = 0.0
+    best_cr = 0
+    best_t = t2 or t1
+    for r in rounds:
+        ti = int(r.get("total_in") or 0)
+        cr = int(r.get("cache_read") or 0)
+        ratio = (cr / ti) if ti > 0 else 0.0
+        if ratio >= best_hit_ratio:
+            best_hit_ratio = ratio
+            best_cr = cr
+            best_t = ti
 
-    round_ratio = round(t2 / t1, 4) if t1 > 0 else 0.0
-    baseline_ratio = round(t2 / baseline_tokens, 4) if (baseline_tokens and baseline_tokens > 0) else 1.0
-    # Integrity ratio captures worst deviation above/below 1.00x
+    cache_hit_ratio = round(best_hit_ratio, 4)
+    cache_ok = best_t >= 500 and cache_hit_ratio >= 0.65
+
+    # Cross-round stability: compare max/min total_in across rounds to catch cached-token bloat.
+    round_ratio = round(max(totals) / min(totals), 4) if len(totals) >= 2 else (1.0 if totals else 0.0)
+    ref_t = best_t or t2 or t1
+    baseline_ratio = round(ref_t / baseline_tokens, 4) if (baseline_tokens and baseline_tokens > 0) else 1.0
     integrity_ratio = (
         round_ratio
         if abs(round_ratio - 1.0) >= abs(baseline_ratio - 1.0)
         else baseline_ratio
     )
     integrity_ok = (
-        t1 > 0
-        and t2 > 0
+        len(totals) >= 2
         and 0.95 <= round_ratio <= 1.05
         and 0.92 <= baseline_ratio <= 1.08
     )
@@ -154,7 +168,7 @@ def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None) -> dic
     if not cache_ok:
         reasons.append(f"cache_miss({cache_hit_ratio:.1%})")
     if not integrity_ok:
-        reasons.append(f"token_drift(r2/r1={round_ratio:.3f},base={baseline_ratio:.3f})")
+        reasons.append(f"token_drift(spread={round_ratio:.3f},base={baseline_ratio:.3f})")
 
     return {
         "passed": passed,
@@ -163,12 +177,12 @@ def evaluate_pair(r1: dict, r2: dict, baseline_tokens: int | None = None) -> dic
         "integrity_ok": integrity_ok,
         "total_in_r1": t1,
         "total_in_r2": t2,
-        "cache_read_r2": cr2,
+        "cache_read_r2": best_cr,
         "cache_hit_ratio": cache_hit_ratio,
         "round_ratio": round_ratio,
         "integrity_ratio": integrity_ratio,
         "latency_ms_r1": r1.get("latency_ms", 0),
-        "latency_ms_r2": r2.get("latency_ms", 0),
+        "latency_ms_r2": (r3 or r2).get("latency_ms", 0),
         "reasons": reasons,
     }
 
@@ -339,10 +353,16 @@ def main() -> int:
         a2, b2 = random.randint(51, 89), random.randint(11, 49)
 
         r1 = call_model(base_url, api_key, spec["protocol"], model, a1, b1)
-        time.sleep(3)
+        time.sleep(5)
         r2 = call_model(base_url, api_key, spec["protocol"], model, a2, b2)
+        r3 = None
+        # Multi-slot upstream pool may route R1 & R2 to two cold slots; allow 1 warm retry.
+        if r1.get("answer_ok") and r2.get("answer_ok") and r1.get("cache_read", 0) == 0 and r2.get("cache_read", 0) == 0:
+            time.sleep(5)
+            a3, b3 = random.randint(21, 79), random.randint(13, 47)
+            r3 = call_model(base_url, api_key, spec["protocol"], model, a3, b3)
 
-        ev = evaluate_pair(r1, r2, baseline_tokens=baseline)
+        ev = evaluate_pair(r1, r2, baseline_tokens=baseline, r3=r3)
         # Calibrate baseline on first clean pass
         if ev["passed"] and not baseline and ev["total_in_r2"] >= 500:
             baseline = ev["total_in_r2"]
