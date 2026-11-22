@@ -173,6 +173,13 @@ To keep upstream `sync/upstream-*` merges low-friction while delivering a Subscr
   3. **30-day Plan Wave Rotation**: `model/subscription.go:CountUserSubscriptionsByPlan` enforces `max_purchase_per_user = 1` per `(user_id, plan_id)`. To launch a new promotional wave for returning individual developers without backend changes, disable old `plan_id`s and insert new rows in `subscription_plans`.
   4. **Phase-2 Billing Roadmap**: Add conversion telemetry (Starter → Plus/Pro/Max → wallet overflow rate), automated VAT invoicing / corporate top-up workflow for Enterprise High-SLA lines, and reconcile the pre-existing upstream `router` package SQLite test failure during the next upstream sync.
 
+## Minimalist Dual-State Overview & Support Hub (`v1.0.0-rc.51-bozzii.10`)
+
+- **1-Line Upstream Hook (`CUSTOM(brand)`)**: `web/src/features/dashboard/index.tsx` swaps `OverviewDashboard` import to `BrandOverviewDashboard` (`web/src/branding/overview-dashboard.tsx` + `overview-helpers.ts`), leaving upstream `overview-dashboard.tsx`, `summary-cards.tsx`, and upstream overview tests untouched for zero-conflict merges.
+- **Dual-State `/dashboard/overview`**: top 1-line dismissible announcement strip (opens native `AnnouncementDetailModal`), Cold-Start 2-col 3-step launchpad + flagship `deepseek-v4.1-flash` curl snippet, and Active single-screen cockpit combining subscription credits + wallet balance (fixing false "depleted" alerts for subscription users) + 1-line Base URL readiness bar + 7-day monochrome trend chart.
+- **Unified `/contact` Support Hub**: preserves exact 4-char sidebar label `联系客服` while hosting 3 tabs (`联系客服 | 常见问答 | 平台公告`, synced via `?tab=faq` / `?tab=announcements`) consuming dynamic `console_setting.faq` & `announcements`.
+- **Wallet 4-Tier Preset Grid**: `recharge-form-card.tsx` auto-fits 4/5/6 presets in `compactLayout` (`grid-cols-2 sm:grid-cols-4` for `[10, 50, 100, 500]`).
+
 ## Upstream licence
 
 new-api is AGPL-3.0. Serving a modified version over the network obliges us to

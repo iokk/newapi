@@ -175,6 +175,12 @@ export function RechargeFormCard({
       )
     : topupInfo?.pay_methods || [] // CUSTOM(brand): hide soft-disabled high-min methods in compact mode unless custom amount reaches them
 
+  const compactPresetColsClass = (() => {
+    if (presetAmounts.length <= 4) return 'grid-cols-2 sm:grid-cols-4'
+    if (presetAmounts.length === 5) return 'grid-cols-3 sm:grid-cols-5'
+    return 'grid-cols-3 sm:grid-cols-6'
+  })() // CUSTOM(brand): auto-fit 4/5/6 presets without trailing empty grid slots
+
   if (loading) {
     if (compactLayout) {
       return (
@@ -185,8 +191,8 @@ export function RechargeFormCard({
           </div>
           <div className='bg-card grid grid-cols-1 divide-y rounded-xl border lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.55fr)] lg:divide-x lg:divide-y-0'>
             <div className='space-y-4 p-4 sm:p-5'>
-              <div className='grid grid-cols-3 gap-2 sm:grid-cols-6'>
-                {Array.from({ length: 6 }, (_, index) => `preset-${index}`).map(
+              <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+                {Array.from({ length: 4 }, (_, index) => `preset-${index}`).map(
                   (key) => (
                     <Skeleton key={key} className='h-11 rounded-lg' />
                   )
@@ -277,11 +283,11 @@ export function RechargeFormCard({
                       />
                     </button>
                   </div>
-                  {/* CUSTOM(brand): compact single-row 6-pill bar in compactLayout; preserves 3x2 card grid when compactLayout is false */}
+                  {/* CUSTOM(brand): responsive single-row preset pills in compactLayout; preserves 3x2 card grid when compactLayout is false */}
                   <div
                     className={
                       compactLayout
-                        ? 'grid grid-cols-3 gap-2 sm:grid-cols-6'
+                        ? cn('grid gap-2', compactPresetColsClass)
                         : 'grid grid-cols-2 gap-2.5 sm:grid-cols-3'
                     }
                   >
