@@ -23,10 +23,6 @@ import type {
   TopupInfo,
 } from '@/features/wallet/types'
 
-// CUSTOM(brand): backend controller/subscription_payment_epay.go now converts USD price_amount
-// via operation_setting.Price and verifies callback money against order.Money.
-export const ENABLE_SUBSCRIPTION_EPAY_DIRECT = true
-
 /**
  * Payment methods whose min_topup is set >= $1,000 USD (e.g. Alipay min_topup=4999 -> ¥36,492.7)
  * are treated as soft-disabled for standard personal plans and default top-up presets.

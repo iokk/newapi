@@ -1,10 +1,10 @@
 /*
  * Bozzii brand layer.
  *
- * CUSTOM(brand): the only file this fork owns. It overrides the official
- * design tokens instead of forking components, so `git merge upstream/main`
- * never conflicts here (upstream does not know this file exists; the only
- * shared edit is the single `@import` line in ./index.css).
+ * CUSTOM(brand): overrides the official design tokens instead of forking
+ * components, so `git merge upstream/main` never conflicts here (upstream
+ * does not know this file exists; the only shared edit is the single
+ * `@import` line in ./index.css).
  *
  * Loaded AFTER theme.css and theme-presets.css so these :root / .dark values
  * win the cascade for the default theme. A user who picks another theme
