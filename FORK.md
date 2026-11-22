@@ -38,7 +38,8 @@ For a feature, fix, or documentation change:
 git switch main
 git pull --ff-only
 git switch -c feat/short-name       # or fix/short-name, docs/short-name
-# Make the change and run the checks that cover it.
+# Make the change and run the pre-PR gate before pushing:
+./ops/pre-pr-check.sh
 git push -u origin feat/short-name
 gh pr create --repo iokk/newapi --base main --head feat/short-name
 ```
@@ -166,12 +167,12 @@ To keep upstream `sync/upstream-*` merges low-friction while delivering a Subscr
     - `web/src/features/wallet/components/wallet-stats-card.tsx`: monochrome KPI strip + optional `actions` slot.
     - `web/src/features/wallet/components/subscription-plans-card.tsx`: removes nested `TitledCard` chrome; uses `filterSubscriptionEpayMethods` (excludes non-Epay & soft-disabled `min_topup >= $1,000` methods) and mounts `BrandSubscriptionTierList`.
     - `web/src/features/wallet/components/recharge-form-card.tsx`: optional `compactLayout` (defaults to `false` so upstream tests stay green) renders a balanced 2-column Pay-as-you-go + Redemption band and hides soft-disabled payment methods (`filterVisibleTopupMethods`) until custom amount reaches their threshold.
-    - `web/src/features/subscriptions/components/dialogs/subscription-purchase-dialog.tsx`: enables direct Epay (`ENABLE_SUBSCRIPTION_EPAY_DIRECT = true`) with a 1-click primary pay button when a single Epay method is available, while retaining multi-method Combobox, Balance, Stripe, Creem, and Waffo Pancake paths.
+    - `web/src/features/subscriptions/components/dialogs/subscription-purchase-dialog.tsx`: enables direct Epay with a 1-click primary pay button when a single Epay method is available, while retaining multi-method Combobox, Balance, Stripe, Creem, and Waffo Pancake paths.
 - **Upgrade & Roadmap Checklist**:
   1. **Upstream sync**: When merging a newer upstream tag (`sync/upstream-<tag>`), check whether upstream fixes `SubscriptionRequestEpay` currency conversion; if upstream adopts a different setting/formula, reconcile `getSubscriptionEpayPayMoney` and re-run `controller/subscription_payment_epay_bozzii_test.go`.
   2. **Alipay cleanup**: Production `options.PayMethods` currently soft-disables Alipay via `min_topup = 4999` USD. If Alipay is permanently retired, remove the `alipay` entry from `PayMethods` in Admin Settings so it is also blocked at the API layer (`ContainsPayMethod`).
   3. **30-day Plan Wave Rotation**: `model/subscription.go:CountUserSubscriptionsByPlan` enforces `max_purchase_per_user = 1` per `(user_id, plan_id)`. To launch a new promotional wave for returning individual developers without backend changes, disable old `plan_id`s and insert new rows in `subscription_plans`.
-  4. **Phase-2 Billing Roadmap**: Add conversion telemetry (Starter → Plus/Pro/Max → wallet overflow rate), automated VAT invoicing / corporate top-up workflow for Enterprise High-SLA lines, and reconcile the pre-existing upstream `router` package SQLite test failure during the next upstream sync.
+  4. **Phase-2 Billing Roadmap**: Add conversion telemetry (Starter → Plus/Pro/Max → wallet overflow rate) and automated VAT invoicing / corporate top-up workflow for Enterprise High-SLA lines. (The `pkg/jsplugin` and `router` Backend CI invariant failures were resolved by registering `/client-config`, `/contact`, and `GET/DELETE /api/user/:id/sessions` in `pkg/jsplugin/routing.go` and `middleware/access_token_routes.go`, and are now guarded by `./ops/pre-pr-check.sh`.)
 
 ## Minimalist Dual-State Overview & Support Hub (`v1.0.0-rc.51-bozzii.10`)
 

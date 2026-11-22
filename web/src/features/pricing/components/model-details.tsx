@@ -1101,6 +1101,8 @@ function AutoGroupChain(props: {
   usableGroup?: Record<string, unknown> // CUSTOM(brand)
 }) {
   const { t } = useTranslation()
+  // CUSTOM(brand): hide auto group chain when SHOW_PRICING_GROUPS is false
+  if (!SHOW_PRICING_GROUPS) return null
   const modelEnableGroups = filterVisibleGroups(
     props.model.enable_groups,
     props.usableGroup
@@ -1109,8 +1111,7 @@ function AutoGroupChain(props: {
     modelEnableGroups.includes(g)
   )
 
-  // CUSTOM(brand): hide auto group chain when SHOW_PRICING_GROUPS is false
-  if (!SHOW_PRICING_GROUPS || autoChain.length === 0) return null
+  if (autoChain.length === 0) return null
 
   return (
     <div className='text-muted-foreground mb-3 flex flex-wrap items-center gap-1 text-xs'>

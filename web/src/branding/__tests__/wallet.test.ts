@@ -24,7 +24,6 @@ import type { TopupInfo } from '@/features/wallet/types'
 import {
   buildBrandDefaultPresets,
   computePlanBonusPercent,
-  ENABLE_SUBSCRIPTION_EPAY_DIRECT,
   filterSubscriptionEpayMethods,
   filterVisibleTopupMethods,
   getBrandPresetMeta,
@@ -97,7 +96,6 @@ describe('brand wallet helpers', () => {
   })
 
   it('filters soft-disabled payment methods while keeping usable WeChat Pay for subscriptions and topups', () => {
-    expect(ENABLE_SUBSCRIPTION_EPAY_DIRECT).toBe(true)
     const methods = [
       { name: '支付宝', type: 'alipay', min_topup: 4999 },
       { name: '微信', type: 'wxpay', min_topup: 10 },

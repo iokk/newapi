@@ -22,10 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { SHOW_PRICING_GROUPS } from '@/branding/pricing' // CUSTOM(brand)
-import {
-  computePlanBonusPercent,
-  ENABLE_SUBSCRIPTION_EPAY_DIRECT,
-} from '@/branding/wallet' // CUSTOM(brand)
+import { computePlanBonusPercent } from '@/branding/wallet' // CUSTOM(brand)
 import { Dialog } from '@/components/dialog'
 import { GroupBadge } from '@/components/group-badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -97,10 +94,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const hasCreem = props.enableCreem && !!plan.creem_product_id
   const hasWaffoPancake =
     props.enableWaffoPancake && !!plan.waffo_pancake_product_id
-  const hasEpay =
-    ENABLE_SUBSCRIPTION_EPAY_DIRECT && // CUSTOM(brand): gated on verified backend CNY Epay conversion
-    props.enableOnlineTopUp &&
-    epayMethods.length > 0
+  const hasEpay = props.enableOnlineTopUp && epayMethods.length > 0
   const hasAnyPayment = hasStripe || hasCreem || hasWaffoPancake || hasEpay
   const totalAmount = Number(plan.total_amount || 0)
   // CUSTOM(brand): format plan price using site billing currency (matches balance cost)

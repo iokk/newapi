@@ -479,6 +479,8 @@ var reservedRouteNamespaces = []string{
 	"/system-settings",
 	"/channels",
 	"/chat",
+	"/client-config", // CUSTOM(brand): Bozzii one-step client setup page
+	"/contact",       // CUSTOM(brand): Bozzii Contact Support & FAQ/Announcements hub
 	"/dashboard",
 	"/errors",
 	"/keys",

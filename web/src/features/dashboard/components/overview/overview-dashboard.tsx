@@ -20,7 +20,6 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Check,
   ChevronDown,
@@ -29,7 +28,6 @@ import {
   Copy,
   CreditCard,
   FileText,
-  Headset, // CUSTOM(brand)
   KeyRound,
   ListChecks,
   RadioTower,
@@ -43,7 +41,6 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-import { FEISHU_SUPPORT_URL } from '@/branding/brand-links' // CUSTOM(brand)
 import { SectionPageLayout } from '@/components/layout'
 import {
   CardStaggerContainer,
@@ -54,7 +51,6 @@ import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { useIsSidebarModuleVisible } from '@/hooks/use-sidebar-config'
 import { getUserModels } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
 import { MOTION_TRANSITION } from '@/lib/motion'
@@ -89,8 +85,6 @@ const SETUP_GUIDE_CODE_PATTERN = [
 ].join('\n')
 
 type DashboardActionPath =
-  | '/client-config' // CUSTOM(brand)
-  | '/contact' // CUSTOM(brand)
   | '/keys'
   | '/wallet'
   | '/playground'
@@ -471,7 +465,6 @@ export function OverviewDashboard() {
   const setupGuideId = useId()
   const setupGuideToggleRef = useRef<HTMLButtonElement>(null)
   const user = useAuthStore((state) => state.auth.user)
-  const isWalletVisible = useIsSidebarModuleVisible('/wallet')
   const { items: apiInfoItems } = useApiInfo()
   const {
     apiInfo: showApiInfoPanel,
@@ -511,7 +504,7 @@ export function OverviewDashboard() {
     [apiKeysQuery.data]
   )
 
-  const allStartSteps = useMemo<StartStep[]>(
+  const startSteps = useMemo<StartStep[]>(
     () => [
       {
         title: t('Create API Key'),
@@ -537,21 +530,9 @@ export function OverviewDashboard() {
     ],
     [preferredKey, remainQuota, requestCount, t, usedQuota]
   )
-  // CUSTOM(brand): credits are added by the operator, so the step is dropped
-  // when the wallet is hidden; progress is computed from this array.
-  const startSteps = isWalletVisible
-    ? allStartSteps
-    : allStartSteps.filter((step) => step.to !== '/wallet')
 
   const quickActions = useMemo<QuickAction[]>(
     () => [
-      // CUSTOM(brand): surface one-click Client Hub prominently on Console Overview
-      {
-        title: t('Client Setup'),
-        description: t('One-click setup for WorkBuddy, Claude Code & Codex'),
-        to: '/client-config',
-        icon: TerminalSquare,
-      },
       {
         title: t('API Keys'),
         description: t('Create a key for your app or service'),
@@ -576,13 +557,6 @@ export function OverviewDashboard() {
         description: t('Review model rates before scaling traffic'),
         to: '/pricing',
         icon: BookOpen,
-      },
-      // CUSTOM(brand): direct shortcut to standalone Contact Support page
-      {
-        title: t('Contact Support'),
-        description: t('Connect with our team via WeChat, Feishu, or email'),
-        to: '/contact',
-        icon: Headset,
       },
     ],
     [t]
@@ -811,26 +785,6 @@ export function OverviewDashboard() {
                 </div>
               </CardStaggerItem>
             </CardStaggerContainer>
-          )}
-
-          {/* CUSTOM(brand): guide low-balance users to Feishu trial & corporate VAT invoicing when wallet is hidden */}
-          {!isWalletVisible && remainQuota <= 0 && (
-            <div className='bg-muted/40 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-2.5 text-xs'>
-              <span className='text-muted-foreground'>
-                {t(
-                  'Need trial credits, corporate top-up, or VAT invoicing? Connect directly with our Feishu team.'
-                )}
-              </span>
-              <a
-                href={FEISHU_SUPPORT_URL}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-primary inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline'
-              >
-                {t('Contact Feishu Support')}
-                <ArrowUpRight className='size-3.5' aria-hidden='true' />
-              </a>
-            </div>
           )}
 
           <SummaryCards />

@@ -18,12 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import {
-  Headset, // CUSTOM(brand)
-  ShieldCheck,
-  TrendingDown,
-  WalletCards, // CUSTOM(brand)
-} from 'lucide-react'
+import { ArrowRight, Flame, ShieldCheck, TrendingDown } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -32,7 +27,6 @@ import { Button } from '@/components/ui/button'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import { useSummaryCardsConfig } from '@/features/dashboard/hooks/use-dashboard-config'
 import type { QuotaDataItem } from '@/features/dashboard/types'
-import { useIsSidebarModuleVisible } from '@/hooks/use-sidebar-config'
 import { useStatus } from '@/hooks/use-status'
 import { getCurrencyLabel, isCurrencyDisplayEnabled } from '@/lib/currency'
 import { formatNumber, formatQuota } from '@/lib/format'
@@ -147,8 +141,6 @@ export function SummaryCards() {
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.auth.user)
   const { status, loading } = useStatus()
-  // CUSTOM(brand): follow the admin sidebar switch for the wallet entry.
-  const isWalletVisible = useIsSidebarModuleVisible('/wallet')
 
   const summaryTimeRange = useMemo(() => computeTimeRange(1), [])
   const remainQuota = Number(user?.quota ?? 0)
@@ -296,9 +288,8 @@ export function SummaryCards() {
           </StaggerContainer>
         </div>
 
-        {/* CUSTOM(brand): OpenAI-inspired clean balance panel — removes gradient wash and duplicate 24h usage metric */}
-        <div className='bg-muted/25 flex flex-col justify-between gap-4 border-t p-4 sm:p-5 xl:border-t-0 xl:border-l'>
-          <div className='flex flex-col gap-2.5'>
+        <div className='flex flex-col justify-between gap-3 border-t bg-[linear-gradient(135deg,color-mix(in_oklch,var(--overview-accent-2)_12%,var(--background))_0%,color-mix(in_oklch,oklch(0.82_0.04_155)_8%,var(--background))_48%,color-mix(in_oklch,var(--overview-accent-1)_7%,var(--background))_100%)] p-3 sm:gap-4 sm:p-5 xl:border-t-0 xl:border-l'>
+          <div className='flex flex-col gap-2 sm:gap-3'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-xs font-medium'>
                 {t('Credit remaining')}
@@ -308,67 +299,58 @@ export function SummaryCards() {
                   className={cn('size-1.5 rounded-full', healthCfg.dotClass)}
                   aria-hidden='true'
                 />
-                <span className='text-muted-foreground text-xs font-medium'>
+                <span className='text-muted-foreground text-[11px] font-medium'>
                   {t(healthCfg.labelKey)}
                 </span>
               </span>
             </div>
 
-            <div className='font-mono text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl'>
+            <div className='font-mono text-xl font-semibold tracking-tight sm:text-2xl'>
               {formatQuota(remainQuota)}
             </div>
 
-            <div className='bg-background flex items-center justify-between rounded-lg border px-3 py-2 text-xs'>
-              <span className='text-muted-foreground flex items-center gap-1.5 font-medium'>
-                {runwayDays !== null && runwayDays < 3 ? (
-                  <TrendingDown
-                    className='size-3.5 shrink-0'
-                    aria-hidden='true'
-                  />
-                ) : (
-                  <ShieldCheck
-                    className='size-3.5 shrink-0'
-                    aria-hidden='true'
-                  />
-                )}
-                <span>{t('Runway')}</span>
-              </span>
-              <span
-                className={cn(
-                  'font-mono font-semibold tabular-nums',
-                  healthLevel === 'critical' && 'text-destructive',
-                  healthLevel === 'caution' && 'text-warning'
-                )}
-              >
-                {runwayDisplay}
-              </span>
+            <div className='grid grid-cols-2 gap-2'>
+              <div className='bg-background/60 rounded-lg px-2.5 py-2'>
+                <div className='text-muted-foreground flex items-center gap-1 text-[11px] leading-none font-medium'>
+                  <Flame className='size-3 shrink-0' aria-hidden='true' />
+                  <span className='truncate'>{t('Last 24h usage')}</span>
+                </div>
+                <div className='text-foreground mt-1.5 truncate text-xs font-semibold tabular-nums'>
+                  {formatQuota(recentUsage)}
+                </div>
+              </div>
+              <div className='bg-background/60 rounded-lg px-2.5 py-2'>
+                <div className='text-muted-foreground flex items-center gap-1 text-[11px] leading-none font-medium'>
+                  {runwayDays !== null && runwayDays < 3 ? (
+                    <TrendingDown
+                      className='size-3 shrink-0'
+                      aria-hidden='true'
+                    />
+                  ) : (
+                    <ShieldCheck
+                      className='size-3 shrink-0'
+                      aria-hidden='true'
+                    />
+                  )}
+                  <span className='truncate'>{t('Runway')}</span>
+                </div>
+                <div
+                  className={cn(
+                    'mt-1.5 truncate text-xs font-semibold tabular-nums',
+                    healthLevel === 'critical' && 'text-destructive',
+                    healthLevel === 'caution' && 'text-warning'
+                  )}
+                >
+                  {runwayDisplay}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className='grid grid-cols-2 gap-2'>
-            {isWalletVisible && (
-              <Button
-                size='sm'
-                className='min-w-0 gap-1.5 px-2.5'
-                render={<Link to='/wallet' />}
-              >
-                <WalletCards className='size-3.5 shrink-0' aria-hidden='true' />
-                <span className='truncate'>{t('Wallet')}</span>
-              </Button>
-            )}
-            <Button
-              variant='outline'
-              size='sm'
-              className={cn(
-                'min-w-0 gap-1.5 px-2.5',
-                !isWalletVisible && 'col-span-2'
-              )}
-              render={<Link to='/contact' />}
-            >
-              <Headset className='size-3.5 shrink-0' aria-hidden='true' />
-              <span className='truncate'>{t('Contact Support')}</span>
-            </Button>
-          </div>
+          <Button className='justify-between' render={<Link to='/wallet' />}>
+            <span>{t('Wallet')}</span>
+            <ArrowRight data-icon='inline-end' />
+          </Button>
         </div>
       </div>
     </div>
