@@ -65,12 +65,12 @@ import { cn } from '@/lib/utils'
 export function UserAuthForm({
   className,
   redirectTo,
-  defaultExpandLegacy = true,
+  defaultExpandLegacy = false,
   ...props
 }: AuthFormProps) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
-  // CUSTOM(brand): keep legacy password login expanded below but visually demoted per operator preference
+  // CUSTOM(brand): collapse legacy local login by default when OIDC is enabled so unified users don't type SSO credentials here
   const [legacyExpanded, setLegacyExpanded] = useState(defaultExpandLegacy)
   useEffect(() => {
     if (defaultExpandLegacy) setLegacyExpanded(true)
@@ -375,9 +375,7 @@ export function UserAuthForm({
   const showSecondaryLogin = !oidcEnabled || legacyExpanded
   const handleUnifiedLoginClick = (prompt?: 'login') => {
     if (requiresLegalConsent && !agreedToLegal) {
-      toast.error(
-        t('Please read and agree to the User Agreement and Privacy Policy')
-      )
+      toast.error(legalConsentErrorMessage)
       return
     }
     void handleOIDCLogin(prompt ? { mode: 'login', prompt } : { mode: 'login' })
@@ -408,7 +406,7 @@ export function UserAuthForm({
         )}
 
         {oidcEnabled && hasLegacyOrOtherLogin && (
-          <div className='pt-1'>
+          <div className='space-y-2 pt-1'>
             <button
               type='button'
               onClick={() => setLegacyExpanded((prev) => !prev)}
@@ -422,6 +420,14 @@ export function UserAuthForm({
                 <ChevronDown className='size-4' />
               )}
             </button>
+            {legacyExpanded && (
+              <p className='text-muted-foreground px-1 text-xs leading-relaxed'>
+                {t(
+                  'For legacy local password accounts only. Users registered with {{name}} should use the primary button above.',
+                  { name: oidcDisplayName }
+                )}
+              </p>
+            )}
           </div>
         )}
 

@@ -33,7 +33,7 @@ import { toast } from 'sonner'
 import {
   buildUnifiedAccountUrl,
   buildUnifiedForgotUrl,
-  OIDC_BANNER_DISMISS_KEY,
+  getOidcBannerDismissKey,
 } from '@/branding/unified-auth-helpers'
 import { Dialog } from '@/components/dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -128,13 +128,16 @@ export function LegacyOidcMigrationBanner() {
   const { status } = useStatus()
   const user = useAuthStore((s) => s.auth.user)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const [dismissed, setDismissed] = useState(() => {
+  const dismissKey = getOidcBannerDismissKey(user?.id)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
     try {
-      return window.sessionStorage.getItem(OIDC_BANNER_DISMISS_KEY) === '1'
+      setDismissed(window.sessionStorage.getItem(dismissKey) === '1')
     } catch {
-      return false
+      setDismissed(false)
     }
-  })
+  }, [dismissKey])
 
   if (
     dismissed ||
@@ -151,7 +154,7 @@ export function LegacyOidcMigrationBanner() {
   const handleDismiss = () => {
     setDismissed(true)
     try {
-      window.sessionStorage.setItem(OIDC_BANNER_DISMISS_KEY, '1')
+      window.sessionStorage.setItem(dismissKey, '1')
     } catch {
       // ignore storage failure
     }
@@ -241,7 +244,10 @@ export function UnifiedAccountSecurityNotice({
         target='_blank'
         rel='noopener noreferrer'
         className={cn(
-          buttonVariants({ variant: 'outline', size: 'sm' }),
+          buttonVariants({
+            variant: variant === 'forgot-password' ? 'default' : 'outline',
+            size: 'sm',
+          }),
           'h-8 shrink-0 gap-1.5 text-xs'
         )}
       >
@@ -301,7 +307,7 @@ export function OAuthEmailConflictCard({
         <div className='flex flex-col gap-2'>
           <Link
             to='/sign-in'
-            search={{ legacy: '1' }}
+            search={{ legacy: '1', redirect: '/security' }}
             className={cn(
               buttonVariants({ variant: 'default' }),
               'h-11 w-full justify-center rounded-lg'
@@ -309,15 +315,20 @@ export function OAuthEmailConflictCard({
           >
             {t('Sign in with legacy password to bind')}
           </Link>
-          <Link
-            to='/sign-in'
-            className={cn(
-              buttonVariants({ variant: 'ghost' }),
-              'h-10 w-full justify-center rounded-lg'
-            )}
-          >
-            {t('Back to sign in')}
-          </Link>
+          <div className='flex items-center justify-between gap-2 pt-1'>
+            <Link
+              to='/forgot-password'
+              className='text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline'
+            >
+              {t('Forgot password?')}
+            </Link>
+            <Link
+              to='/sign-in'
+              className='text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline'
+            >
+              {t('Back to sign in')}
+            </Link>
+          </div>
         </div>
       </div>
     </AuthLayout>
@@ -334,6 +345,7 @@ export function AdminUserSessionsDialog({
   user: { id: number; username: string }
 }) {
   const { t } = useTranslation()
+  const { status } = useStatus()
   const [sessions, setSessions] = useState<LoginSession[]>([])
   const [loading, setLoading] = useState(false)
   const [revoking, setRevoking] = useState(false)
@@ -415,7 +427,13 @@ export function AdminUserSessionsDialog({
             <MonitorSmartphone className='text-muted-foreground mt-0.5 size-4 shrink-0' />
             <div className='min-w-0 flex-1 space-y-1'>
               <div className='flex flex-wrap items-center gap-2 font-medium'>
-                <span>{loginMethodLabel(s.login_method, t)}</span>
+                <span>
+                  {loginMethodLabel(
+                    s.login_method,
+                    t,
+                    status?.oidc_display_name
+                  )}
+                </span>
                 <span className='text-muted-foreground font-mono'>
                   {s.ip || '-'}
                 </span>

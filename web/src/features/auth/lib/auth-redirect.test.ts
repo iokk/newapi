@@ -37,16 +37,25 @@ describe('authentication redirect validation', () => {
     ).toBe('/dashboard?tab=quota#daily')
   })
 
-  test('rejects external and ambiguously parsed redirect targets', () => {
+  test('rejects external, protocol-relative, credentialed, and auth-loop redirect targets', () => {
     const unsafeTargets: unknown[] = [
       undefined,
       '',
       'dashboard',
       '//attacker.example/path',
+      'https://dashboard.example.com//attacker.example/path',
+      'https://user:pass@dashboard.example.com/dashboard',
       'https://attacker.example/path',
       'javascript:alert(1)',
       '/\\attacker.example/path',
       'https:\\attacker.example/path',
+      '/sign-in',
+      '/sign-in?redirect=%2Fsign-in',
+      '/sign-up',
+      '/register',
+      '/otp',
+      '/oauth/oidc',
+      '/api/user/self',
     ]
 
     for (const target of unsafeTargets) {

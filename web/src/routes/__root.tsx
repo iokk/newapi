@@ -86,7 +86,15 @@ function RootComponent() {
 
         if (currentSID && event.sid === currentSID) {
           clearAuthenticatedClientState(queryClient, false)
-          void navigate({ to: '/sign-in', replace: true })
+          const path = window.location.pathname
+          const isPublicPage =
+            path === '/' ||
+            /^\/(pricing|rankings|about|privacy-policy|user-agreement|sign-in|sign-up|forgot-password)(\/|$)/.test(
+              path
+            )
+          if (!isPublicPage) {
+            void navigate({ to: '/', replace: true })
+          }
         }
       }),
     [navigate, queryClient]

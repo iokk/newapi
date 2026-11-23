@@ -31,9 +31,13 @@ export function SignIn() {
   const { redirect, legacy } = useSearch({ from: '/(auth)/sign-in' })
   const { status } = useStatus()
 
+  const hasLegalConsent = Boolean(
+    status?.user_agreement_enabled || status?.privacy_policy_enabled
+  )
+
   return (
     <AuthLayout>
-      <div className='w-full space-y-8'>
+      <div className='w-full space-y-6'>
         <div className='space-y-2'>
           <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
             {t('Sign in')}
@@ -49,21 +53,22 @@ export function SignIn() {
                 >
                   {t('Sign up')}
                 </Link>
-                .
               </p>
             )}
         </div>
 
         <UserAuthForm
           redirectTo={redirect}
-          defaultExpandLegacy={legacy !== '0'}
+          defaultExpandLegacy={legacy === '1'}
         />
 
-        <TermsFooter
-          variant='sign-in'
-          status={status}
-          className='text-center'
-        />
+        {!hasLegalConsent && (
+          <TermsFooter
+            variant='sign-in'
+            status={status}
+            className='text-center'
+          />
+        )}
       </div>
     </AuthLayout>
   )

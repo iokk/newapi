@@ -20,6 +20,8 @@ import type { QueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { t } from 'i18next'
 
+import { clearBrandAuthClientState } from '@/branding/unified-auth-helpers'
+import { clearAffiliateCode } from '@/features/auth/lib/storage'
 import { publishAuthSessionEvent } from '@/lib/auth-session-sync'
 import { hasSessionHint } from '@/lib/session-hint'
 import {
@@ -201,6 +203,9 @@ export function clearAuthenticatedClientState(
   synchronizeTabs = true
 ): void {
   queryClient.clear()
+  // CUSTOM(brand): purge user-scoped auth/UI storage keys on sign-out to avoid cross-account leakage
+  clearAffiliateCode()
+  clearBrandAuthClientState()
   clearAuthentication(synchronizeTabs)
 }
 

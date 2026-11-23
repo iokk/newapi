@@ -33,13 +33,28 @@ const STORAGE_KEYS = {
 // Affiliate Code Storage
 // ============================================================================
 
+// CUSTOM(brand): mirror backend controller/oauth.go len(aff)<=32 constraint to prevent persistent OAuth DoS
+const AFFILIATE_CODE_PATTERN = /^[a-zA-Z0-9_-]{1,32}$/
+
+export function sanitizeAffiliateCode(code: string | null | undefined): string {
+  const trimmed = typeof code === 'string' ? code.trim() : ''
+  return AFFILIATE_CODE_PATTERN.test(trimmed) ? trimmed : ''
+}
+
 /**
  * Get affiliate code from localStorage
  */
 export function getAffiliateCode(): string {
   if (typeof window === 'undefined') return ''
   try {
-    return window.localStorage.getItem(STORAGE_KEYS.AFFILIATE) ?? ''
+    const raw = window.localStorage.getItem(STORAGE_KEYS.AFFILIATE)
+    if (!raw) return ''
+    const valid = sanitizeAffiliateCode(raw)
+    if (!valid) {
+      window.localStorage.removeItem(STORAGE_KEYS.AFFILIATE)
+      return ''
+    }
+    return valid
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to get affiliate code:', error)
@@ -52,10 +67,24 @@ export function getAffiliateCode(): string {
  */
 export function saveAffiliateCode(code: string): void {
   if (typeof window === 'undefined') return
+  const valid = sanitizeAffiliateCode(code)
+  if (!valid) return
   try {
-    window.localStorage.setItem(STORAGE_KEYS.AFFILIATE, code)
+    window.localStorage.setItem(STORAGE_KEYS.AFFILIATE, valid)
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to save affiliate code:', error)
+  }
+}
+
+/**
+ * Clear affiliate code from localStorage
+ */
+export function clearAffiliateCode(): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(STORAGE_KEYS.AFFILIATE)
+  } catch {
+    // ignore storage failure
   }
 }

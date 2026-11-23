@@ -10,10 +10,46 @@ import { getServerErrorMessageKey } from '@/lib/server-error-message'
 
 export const OIDC_BANNER_DISMISS_KEY = 'bozzii_hide_oidc_migration_banner'
 export const OIDC_AUTO_RETRY_KEY = 'bozzii_oidc_callback_retried'
+export const OIDC_PENDING_REDIRECT_KEY = 'bozzii_oidc_pending_redirect'
+
+export function getOidcBannerDismissKey(userId?: number): string {
+  return userId ? `${OIDC_BANNER_DISMISS_KEY}:${userId}` : OIDC_BANNER_DISMISS_KEY
+}
+
+export function clearBrandAuthClientState(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const ss = window.sessionStorage
+    for (let i = ss.length - 1; i >= 0; i -= 1) {
+      const key = ss.key(i)
+      if (
+        key &&
+        (key === OIDC_BANNER_DISMISS_KEY ||
+          key.startsWith(`${OIDC_BANNER_DISMISS_KEY}:`) ||
+          key === OIDC_AUTO_RETRY_KEY ||
+          key === OIDC_PENDING_REDIRECT_KEY ||
+          key.startsWith('oauth_login_redirect:'))
+      ) {
+        ss.removeItem(key)
+      }
+    }
+  } catch {
+    // ignore storage failure
+  }
+  try {
+    window.localStorage.removeItem('bozzii_dismissed_announcement_id')
+    window.localStorage.removeItem('bozzii_overview_setup_guide_override')
+  } catch {
+    // ignore storage failure
+  }
+}
 
 export function deriveCasdoorSignupEndpoint(authEndpoint: string): string {
   try {
     const parsed = new URL(authEndpoint)
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return ''
+    }
     if (parsed.pathname.endsWith('/login/oauth/authorize')) {
       parsed.pathname = parsed.pathname.replace(
         /\/login\/oauth\/authorize$/,
@@ -21,9 +57,9 @@ export function deriveCasdoorSignupEndpoint(authEndpoint: string): string {
       )
       return parsed.toString()
     }
-    return authEndpoint
+    return parsed.toString()
   } catch {
-    return authEndpoint
+    return ''
   }
 }
 

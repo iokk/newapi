@@ -20,6 +20,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { OIDC_PENDING_REDIRECT_KEY } from '@/branding/unified-auth-helpers'
 import { clearAuthentication } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
 import { AuthOperationError } from '@/lib/secure-verification'
@@ -50,8 +51,11 @@ export function useOAuthLogin(
 
   useEffect(() => {
     setGithubButtonText(t('Continue with GitHub'))
+    const handlePageShow = () => setIsLoading(false)
+    window.addEventListener('pageshow', handlePageShow)
 
     return () => {
+      window.removeEventListener('pageshow', handlePageShow)
       if (githubTimeoutRef.current) {
         clearTimeout(githubTimeoutRef.current)
       }
@@ -134,10 +138,20 @@ export function useOAuthLogin(
     if (!status?.oidc_authorization_endpoint || !status?.oidc_client_id) return
 
     setIsLoading(true)
+    let navigating = false
     try {
       await resetSession()
       const state = await createOAuthFlow('oidc', 'login')
       rememberOAuthLoginRedirect(state, redirectTo)
+      try {
+        if (redirectTo) {
+          window.sessionStorage.setItem(OIDC_PENDING_REDIRECT_KEY, redirectTo)
+        } else {
+          window.sessionStorage.removeItem(OIDC_PENDING_REDIRECT_KEY)
+        }
+      } catch {
+        // ignore storage failure
+      }
 
       const url = buildOIDCOAuthUrl(
         status.oidc_authorization_endpoint,
@@ -145,13 +159,16 @@ export function useOAuthLogin(
         state,
         options
       )
+      navigating = true
       window.open(url, '_self')
     } catch (error) {
       handleServerError(
         AuthOperationError.from(error, t('Failed to start OIDC login'))
       )
     } finally {
-      setIsLoading(false)
+      if (!navigating) {
+        setIsLoading(false)
+      }
     }
   }
 

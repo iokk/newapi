@@ -73,6 +73,9 @@ export function buildOIDCOAuthUrl(
   const targetEndpoint =
     options?.mode === 'signup' ? deriveCasdoorSignupEndpoint(authUrl) : authUrl
   const url = new URL(targetEndpoint)
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error('Invalid OIDC authorization endpoint protocol')
+  }
   url.searchParams.set('client_id', clientId)
   url.searchParams.set('redirect_uri', `${window.location.origin}/oauth/oidc`)
   url.searchParams.set('response_type', 'code')
@@ -109,10 +112,12 @@ export function buildOAuthAuthorizationUrl(
       break
     case 'oidc':
       if (status.oidc_authorization_endpoint && status.oidc_client_id) {
+        // CUSTOM(brand): require explicit Casdoor re-auth when binding OIDC to prevent cross-account takeover on shared browsers
         return buildOIDCOAuthUrl(
           status.oidc_authorization_endpoint,
           status.oidc_client_id,
-          state
+          state,
+          { prompt: 'login' }
         )
       }
       break
@@ -127,6 +132,9 @@ export function buildOAuthAuthorizationUrl(
       )
       if (custom) {
         const url = new URL(custom.authorization_endpoint)
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+          throw new Error('Invalid OAuth authorization endpoint protocol')
+        }
         url.searchParams.set('client_id', custom.client_id)
         url.searchParams.set(
           'redirect_uri',

@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -30,6 +30,7 @@ import { logout } from '@/features/auth/api'
 import { useStatus } from '@/hooks/use-status'
 import { clearAuthenticatedClientState } from '@/lib/auth-session'
 import { handleServerError } from '@/lib/handle-server-error'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface SignOutDialogProps {
   open: boolean
@@ -41,19 +42,41 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { status } = useStatus()
+  const user = useAuthStore((s) => s.auth.user)
+  const session = useAuthStore((s) => s.auth.session)
   const [isSigningOut, setIsSigningOut] = useState(false)
-  // CUSTOM(brand): default to RP-Initiated Single Logout so users can cleanly switch unified accounts
-  const [alsoSignOutSso, setAlsoSignOutSso] = useState(true)
   const oidcEnabled = Boolean(status?.oidc_enabled)
+  // CUSTOM(brand): only offer/default Casdoor SLO for OIDC-linked or OIDC-authenticated accounts
+  const isOidcAccount = Boolean(
+    user?.oidc_id || session?.login_method === 'oauth:oidc'
+  )
+  const [alsoSignOutSso, setAlsoSignOutSso] = useState(true)
+  useEffect(() => {
+    if (open) {
+      setAlsoSignOutSso(isOidcAccount)
+    }
+  }, [open, isOidcAccount])
   const oidcDisplayName = status?.oidc_display_name?.trim() || 'OIDC'
   const unifiedLogoutUrl =
-    oidcEnabled && typeof window !== 'undefined'
+    oidcEnabled && isOidcAccount && typeof window !== 'undefined'
       ? buildUnifiedLogoutUrl(
           status?.oidc_authorization_endpoint,
           `${window.location.origin}/`,
           status?.oidc_client_id
         )
       : null
+
+  const completeClientSignOut = () => {
+    clearAuthenticatedClientState(queryClient)
+    onOpenChange(false)
+    if (alsoSignOutSso && unifiedLogoutUrl) {
+      window.location.replace(unifiedLogoutUrl)
+      return
+    }
+    toast.success(t('Signed out'))
+    // CUSTOM(brand): return to public homepage after signing out
+    void navigate({ to: '/', replace: true })
+  }
 
   const handleSignOut = async () => {
     setIsSigningOut(true)
@@ -63,16 +86,20 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
         handleServerError(response, t('Failed to sign out session'))
         return
       }
-
-      clearAuthenticatedClientState(queryClient)
-      toast.success(t('Signed out'))
-      if (alsoSignOutSso && unifiedLogoutUrl) {
-        window.location.assign(unifiedLogoutUrl)
+      completeClientSignOut()
+    } catch (error: unknown) {
+      const statusCode =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: { status?: number } }).response
+          ?.status === 'number'
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined
+      if (statusCode === 401) {
+        completeClientSignOut()
         return
       }
-      // CUSTOM(brand): return to public homepage after signing out
-      void navigate({ to: '/', replace: true })
-    } catch (error: unknown) {
       handleServerError(error, t('Failed to sign out session'))
     } finally {
       setIsSigningOut(false)
@@ -93,20 +120,30 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
       className='sm:max-w-sm'
     >
       {unifiedLogoutUrl && (
-        <div className='flex items-center gap-2 pt-2'>
-          <Checkbox
-            id='bozzii-slo-checkbox'
-            checked={alsoSignOutSso}
-            onCheckedChange={(checked) => setAlsoSignOutSso(checked === true)}
-          />
-          <Label
-            htmlFor='bozzii-slo-checkbox'
-            className='text-muted-foreground cursor-pointer text-xs font-normal'
-          >
-            {t('Also sign out of {{name}} (Unified Auth Center)', {
-              name: oidcDisplayName,
-            })}
-          </Label>
+        <div className='space-y-1.5 pt-2'>
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              id='bozzii-slo-checkbox'
+              checked={alsoSignOutSso}
+              onCheckedChange={(checked) => setAlsoSignOutSso(checked === true)}
+            />
+            <Label
+              htmlFor='bozzii-slo-checkbox'
+              className='text-muted-foreground cursor-pointer text-xs font-normal'
+            >
+              {t('Also sign out of {{name}} (Unified Auth Center)', {
+                name: oidcDisplayName,
+              })}
+            </Label>
+          </div>
+          {!alsoSignOutSso && (
+            <p className='pl-6 text-[11px] leading-relaxed text-amber-600 dark:text-amber-400'>
+              {t(
+                'Local sign-out only: {{name}} remains signed in, so clicking unified sign-in next time will auto-return to this account. Keep checked to switch accounts or on shared devices.',
+                { name: oidcDisplayName }
+              )}
+            </p>
+          )}
         </div>
       )}
     </ConfirmDialog>

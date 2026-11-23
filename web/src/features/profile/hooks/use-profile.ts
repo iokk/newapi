@@ -21,6 +21,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 
 import { handleServerError } from '@/lib/handle-server-error'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { getUserProfile, updateUserProfile, updateUserSettings } from '../api'
 import type {
@@ -48,6 +49,16 @@ export function useProfile() {
 
       if (response.success && response.data) {
         setProfile(response.data)
+        // CUSTOM(brand): sync refreshed bindings (e.g. oidc_id) into auth store so migration banner clears immediately
+        const auth = useAuthStore.getState().auth
+        if (auth.user) {
+          auth.setUser({
+            ...auth.user,
+            oidc_id: response.data.oidc_id,
+            email: response.data.email ?? auth.user.email,
+            display_name: response.data.display_name ?? auth.user.display_name,
+          })
+        }
       } else if (!silent) {
         handleServerError(response, i18next.t('Failed to load profile'))
       }

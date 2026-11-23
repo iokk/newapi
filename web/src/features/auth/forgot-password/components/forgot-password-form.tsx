@@ -42,6 +42,7 @@ import {
 } from '@/features/auth/constants'
 import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
 import { useCountdown } from '@/hooks/use-countdown'
+import { useStatus } from '@/hooks/use-status'
 import { handleServerError } from '@/lib/handle-server-error'
 import { AuthOperationError } from '@/lib/secure-verification'
 import { createServerError } from '@/lib/server-error-message'
@@ -52,7 +53,9 @@ export function ForgotPasswordForm({
   ...props
 }: React.HTMLAttributes<HTMLFormElement>) {
   const { t } = useTranslation()
+  const { status } = useStatus()
   const [isLoading, setIsLoading] = useState(false)
+  const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0)
 
   const {
     isTurnstileEnabled,
@@ -93,6 +96,10 @@ export function ForgotPasswordForm({
         AuthOperationError.from(_error, t('Failed to send reset email'))
       )
     } finally {
+      if (isTurnstileEnabled) {
+        setTurnstileToken('')
+        setTurnstileWidgetKey((current) => current + 1)
+      }
       setIsLoading(false)
     }
   }
@@ -109,7 +116,7 @@ export function ForgotPasswordForm({
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t('Email')}</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
               </FormControl>
@@ -120,6 +127,7 @@ export function ForgotPasswordForm({
 
         <Button
           type='submit'
+          variant={status?.oidc_enabled ? 'outline' : 'default'}
           className='mt-2'
           disabled={isLoading || isActive || !turnstileReady}
         >
@@ -130,10 +138,12 @@ export function ForgotPasswordForm({
         </Button>
 
         {isTurnstileEnabled && (
-          <div className='mt-2'>
+          <div className='mt-2 min-w-[300px] overflow-x-auto'>
             <Turnstile
+              key={turnstileWidgetKey}
               siteKey={turnstileSiteKey}
               onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
             />
           </div>
         )}

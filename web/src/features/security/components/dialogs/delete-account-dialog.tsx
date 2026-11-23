@@ -22,6 +22,7 @@ import { useEffect, useId, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { buildUnifiedLogoutUrl } from '@/branding/unified-auth-helpers'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,7 @@ import { Label } from '@/components/ui/label'
 import { SecureVerificationDialog } from '@/features/auth/secure-verification'
 import { deleteUserAccount } from '@/features/profile/api'
 import { clearAuthentication } from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { useAccountSecurity } from '../../hooks/use-account-security'
 
@@ -71,7 +73,34 @@ export function DeleteAccountDialog(props: DeleteAccountDialogProps) {
     if (!result) return
     toast.success(t('Account deleted successfully'))
     props.onOpenChange(false)
+    // CUSTOM(brand): terminate Casdoor SSO session when deleting an OIDC-linked account
+    let sloUrl: string | null = null
+    const deletedUser = useAuthStore.getState().auth.user
+    if (deletedUser?.oidc_id && typeof window !== 'undefined') {
+      try {
+        const cached = JSON.parse(
+          window.localStorage.getItem('status') || 'null'
+        ) as {
+          oidc_enabled?: boolean
+          oidc_authorization_endpoint?: string
+          oidc_client_id?: string
+        } | null
+        if (cached?.oidc_enabled) {
+          sloUrl = buildUnifiedLogoutUrl(
+            cached.oidc_authorization_endpoint,
+            `${window.location.origin}/`,
+            cached.oidc_client_id
+          )
+        }
+      } catch {
+        // ignore storage parse failure
+      }
+    }
     clearAuthentication()
+    if (sloUrl) {
+      window.location.replace(sloUrl)
+      return
+    }
     navigate({ to: '/sign-in' })
   }
 

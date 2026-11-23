@@ -31,9 +31,13 @@ export function SignUp() {
   const { redirect } = useSearch({ from: '/(auth)/sign-up' })
   const { status } = useStatus()
 
+  const hasLegalConsent = Boolean(
+    status?.user_agreement_enabled || status?.privacy_policy_enabled
+  )
+
   return (
     <AuthLayout>
-      <div className='w-full space-y-8'>
+      <div className='w-full space-y-6'>
         <div className='space-y-2'>
           <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
             {t('Create an account')}
@@ -47,17 +51,18 @@ export function SignUp() {
             >
               {t('Sign in')}
             </Link>
-            .
           </p>
         </div>
 
         <SignUpForm redirectTo={redirect} />
 
-        <TermsFooter
-          variant='sign-up'
-          status={status}
-          className='text-center'
-        />
+        {!hasLegalConsent && (
+          <TermsFooter
+            variant='sign-up'
+            status={status}
+            className='text-center'
+          />
+        )}
       </div>
     </AuthLayout>
   )

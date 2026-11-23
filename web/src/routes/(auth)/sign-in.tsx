@@ -20,13 +20,15 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import { sanitizeAuthRedirect } from '@/features/auth/lib/auth-redirect'
+import { saveAffiliateCode } from '@/features/auth/lib/storage'
 import { SignIn } from '@/features/auth/sign-in'
 import { resolveAuthentication } from '@/lib/auth-session'
 import { useAuthStore } from '@/stores/auth-store'
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
-  // CUSTOM(brand): expand legacy password login section when redirected from email-conflict guidance
+  // CUSTOM(brand): preserve affiliate code and support legacy=1 auto-expand
+  aff: z.string().optional(),
   legacy: z.string().optional(),
 })
 
@@ -34,6 +36,9 @@ export const Route = createFileRoute('/(auth)/sign-in')({
   component: SignIn,
   validateSearch: searchSchema,
   beforeLoad: async ({ search }) => {
+    if (search?.aff) {
+      saveAffiliateCode(search.aff)
+    }
     // 根 guard 可能因为没有会话提示而跳过了 refresh。此处必须回源确认，
     // 否则持有有效 Refresh Cookie 的用户会被要求重新输入密码。
     await resolveAuthentication()
