@@ -20,19 +20,24 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import { sanitizeAuthRedirect } from '@/features/auth/lib/auth-redirect'
+import { saveAffiliateCode } from '@/features/auth/lib/storage'
 import { SignUp } from '@/features/auth/sign-up'
 import { resolveAuthentication } from '@/lib/auth-session'
 import { useAuthStore } from '@/stores/auth-store'
 
-// CUSTOM(brand): support redirect query param and resolve existing session on /sign-up
+// CUSTOM(brand): preserve redirect & aff query params and resolve existing session on /sign-up
 const searchSchema = z.object({
   redirect: z.string().optional(),
+  aff: z.string().optional(),
 })
 
 export const Route = createFileRoute('/(auth)/sign-up')({
   component: SignUp,
   validateSearch: searchSchema,
   beforeLoad: async ({ search }) => {
+    if (search?.aff) {
+      saveAffiliateCode(search.aff)
+    }
     await resolveAuthentication()
 
     const { auth } = useAuthStore.getState()

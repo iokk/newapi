@@ -19,6 +19,23 @@ For commercial licensing, please contact support@quantumnous.com
 import type { AuthUser } from '@/stores/auth-store'
 
 const allowedRedirectProtocols = new Set(['http:', 'https:'])
+// CUSTOM(brand): prevent redirect loops and unintended OAuth/API bounces via ?redirect=
+const disallowedRedirectPrefixes = [
+  '/sign-in',
+  '/sign-up',
+  '/register',
+  '/login',
+  '/otp',
+  '/oauth',
+  '/api',
+]
+
+function isDisallowedRedirectPath(pathname: string): boolean {
+  const normalized = pathname.toLowerCase()
+  return disallowedRedirectPrefixes.some(
+    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`)
+  )
+}
 
 export function getSavedLanguage(user: AuthUser): string | undefined {
   if (typeof user.language === 'string') {
@@ -71,7 +88,12 @@ export function sanitizeAuthRedirect(
 
   if (
     !allowedRedirectProtocols.has(redirectURL.protocol) ||
-    redirectURL.origin !== trustedOrigin.origin
+    redirectURL.origin !== trustedOrigin.origin ||
+    redirectURL.username ||
+    redirectURL.password ||
+    !redirectURL.pathname.startsWith('/') ||
+    redirectURL.pathname.startsWith('//') ||
+    isDisallowedRedirectPath(redirectURL.pathname)
   ) {
     return null
   }

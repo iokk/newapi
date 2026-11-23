@@ -110,9 +110,16 @@ export function PublicHeader(props: PublicHeaderProps) {
   if (customLogo) logoContent = customLogo
   if (loading) logoContent = <Skeleton className='size-full rounded-lg' />
 
-  // CUSTOM(brand): preserve current page path in sign-in redirect (e.g. /pricing -> /sign-in?redirect=/pricing)
+  // CUSTOM(brand): preserve non-auth page path in sign-in redirect (e.g. /pricing -> /sign-in?redirect=/pricing)
+  const isAuthPath = Boolean(
+    pathname &&
+    (/^\/(sign-in|sign-up|register|forgot-password|otp|oauth)(\/|$)/.test(
+      pathname
+    ) ||
+      pathname === '/')
+  )
   const signInRedirect =
-    pathname && pathname !== '/' && pathname !== '/sign-in'
+    pathname && !isAuthPath
       ? `${pathname}${routerState.location.searchStr ?? ''}`
       : undefined
   let authContent = (

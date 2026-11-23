@@ -31,6 +31,7 @@ import { OAuthEmailConflictCard } from '@/branding/unified-auth'
 import {
   isOAuthEmailConflictError,
   OIDC_AUTO_RETRY_KEY,
+  OIDC_PENDING_REDIRECT_KEY,
 } from '@/branding/unified-auth-helpers'
 import { createOAuthFlow } from '@/features/auth/api'
 import { OAuthCallbackScreen } from '@/features/auth/components/oauth-callback-screen'
@@ -48,6 +49,7 @@ import {
 import {
   getOAuthSessionStorage,
   consumeOAuthLoginRedirect,
+  rememberOAuthLoginRedirect,
   resolveOAuthCallbackMode,
 } from '@/features/auth/lib/oauth-callback-mode'
 import type { LoginResponse } from '@/features/auth/types'
@@ -75,9 +77,10 @@ interface OAuthPopupResult {
 function OAuthCallback() {
   const navigate = useNavigate()
   const { handleLoginResult } = useAuthRedirect()
-  const { status } = useStatus()
+  const { status, loading: statusLoading } = useStatus()
   // CUSTOM(brand): show structured guidance card on OIDC email collision instead of bare toast
   const [emailConflict, setEmailConflict] = useState(false)
+  const oidcAutoRetrying = useRef(false)
   const loginExchange = useRef<{
     key: string
     request: Promise<{ data: LoginResponse }>
@@ -211,37 +214,50 @@ function OAuthCallback() {
     // CUSTOM(brand): Casdoor post-signup return occasionally omits code/state; auto-reauthorize once seamlessly
     const oidcAuthEndpoint = status?.oidc_authorization_endpoint
     const oidcClientId = status?.oidc_client_id
-    if (
-      provider === 'oidc' &&
-      !search.error &&
-      (!code || !state) &&
-      oidcAuthEndpoint &&
-      oidcClientId
-    ) {
-      const storage = getOAuthSessionStorage(window)
-      if (storage && storage.getItem(OIDC_AUTO_RETRY_KEY) !== '1') {
-        storage.setItem(OIDC_AUTO_RETRY_KEY, '1')
-        void (async () => {
-          try {
-            const nextState = await createOAuthFlow('oidc', 'login')
-            const url = buildOIDCOAuthUrl(
-              oidcAuthEndpoint,
-              oidcClientId,
-              nextState
-            )
-            window.location.replace(url)
-          } catch {
-            storage.removeItem?.(OIDC_AUTO_RETRY_KEY)
-            toast.error(i18next.t('Missing code'))
-            safeNavigate('/sign-in', '/sign-in')
-          }
-        })()
+    if (provider === 'oidc' && !search.error && (!code || !state)) {
+      if (statusLoading && (!oidcAuthEndpoint || !oidcClientId)) {
         return
       }
-      storage?.removeItem?.(OIDC_AUTO_RETRY_KEY)
+      if (oidcAutoRetrying.current) {
+        return
+      }
+      if (oidcAuthEndpoint && oidcClientId) {
+        const storage = getOAuthSessionStorage(window)
+        if (storage && storage.getItem(OIDC_AUTO_RETRY_KEY) !== '1') {
+          oidcAutoRetrying.current = true
+          storage.setItem(OIDC_AUTO_RETRY_KEY, '1')
+          const pendingRedirect =
+            search.redirect ??
+            storage.getItem(OIDC_PENDING_REDIRECT_KEY) ??
+            undefined
+          void (async () => {
+            try {
+              const nextState = await createOAuthFlow('oidc', 'login')
+              rememberOAuthLoginRedirect(nextState, pendingRedirect)
+              const url = buildOIDCOAuthUrl(
+                oidcAuthEndpoint,
+                oidcClientId,
+                nextState
+              )
+              window.location.replace(url)
+            } catch {
+              oidcAutoRetrying.current = false
+              storage.removeItem?.(OIDC_AUTO_RETRY_KEY)
+              storage.removeItem?.(OIDC_PENDING_REDIRECT_KEY)
+              toast.error(i18next.t('Missing code'))
+              safeNavigate('/sign-in', '/sign-in')
+            }
+          })()
+          return
+        }
+        storage?.removeItem?.(OIDC_AUTO_RETRY_KEY)
+        storage?.removeItem?.(OIDC_PENDING_REDIRECT_KEY)
+      }
     }
 
     if (!code && !search.error) {
+      getOAuthSessionStorage(window)?.removeItem?.(OIDC_AUTO_RETRY_KEY)
+      getOAuthSessionStorage(window)?.removeItem?.(OIDC_PENDING_REDIRECT_KEY)
       toast.error(i18next.t('Missing code'))
       safeNavigate('/sign-in', '/sign-in')
       return
@@ -270,13 +286,19 @@ function OAuthCallback() {
         }
         const response = await loginExchange.current.request
         if (!active) return
+        const storage = getOAuthSessionStorage(window)
+        storage?.removeItem?.(OIDC_AUTO_RETRY_KEY)
+        const pendingRedirect =
+          storage?.getItem(OIDC_PENDING_REDIRECT_KEY) ?? undefined
+        storage?.removeItem?.(OIDC_PENDING_REDIRECT_KEY)
         if (response.data?.success) {
           completedLogin.current = loginKey
-          getOAuthSessionStorage(window)?.removeItem?.(OIDC_AUTO_RETRY_KEY)
           if (
             await handleLoginResult(
               response.data.data,
-              search.redirect ?? consumeOAuthLoginRedirect(state) ?? undefined
+              search.redirect ??
+                consumeOAuthLoginRedirect(state) ??
+                pendingRedirect
             )
           ) {
             toast.success(i18next.t('Signed in successfully!'))
@@ -296,6 +318,8 @@ function OAuthCallback() {
         )
       } catch (error: unknown) {
         if (!active) return
+        getOAuthSessionStorage(window)?.removeItem?.(OIDC_AUTO_RETRY_KEY)
+        getOAuthSessionStorage(window)?.removeItem?.(OIDC_PENDING_REDIRECT_KEY)
         handleServerError(
           AuthOperationError.from(error, i18next.t('OAuth failed'))
         )
@@ -320,6 +344,7 @@ function OAuthCallback() {
     search.telegram_bind,
     status?.oidc_authorization_endpoint,
     status?.oidc_client_id,
+    statusLoading,
   ])
 
   if (emailConflict) {

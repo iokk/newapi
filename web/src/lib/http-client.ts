@@ -122,7 +122,7 @@ api.interceptors.response.use(
           redirectToSignIn()
         }
       } else if (config?.authRetry) {
-        clearAuthentication(false)
+        clearAuthentication(true)
         if (!skipErrorHandler) {
           handleServerError({
             message: t('Session expired!'),
