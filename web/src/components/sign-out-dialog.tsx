@@ -50,7 +50,8 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     oidcEnabled && typeof window !== 'undefined'
       ? buildUnifiedLogoutUrl(
           status?.oidc_authorization_endpoint,
-          `${window.location.origin}/sign-in`
+          `${window.location.origin}/`,
+          status?.oidc_client_id
         )
       : null
 
@@ -69,7 +70,8 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
         window.location.assign(unifiedLogoutUrl)
         return
       }
-      void navigate({ to: '/sign-in', replace: true })
+      // CUSTOM(brand): return to public homepage after signing out
+      void navigate({ to: '/', replace: true })
     } catch (error: unknown) {
       handleServerError(error, t('Failed to sign out session'))
     } finally {
