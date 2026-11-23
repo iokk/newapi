@@ -37,9 +37,18 @@ describe('unified-auth helpers', () => {
   it('builds unified logout, account, and forgot-password URLs', () => {
     const authEndpoint = 'https://auth.bozzii.com/login/oauth/authorize'
     expect(
-      buildUnifiedLogoutUrl(authEndpoint, 'https://ai.bozzii.com/sign-in')
+      buildUnifiedLogoutUrl(
+        authEndpoint,
+        'https://ai.bozzii.com/',
+        '15cddc259a67891b0d1c871b904e1bc1'
+      )
     ).toBe(
-      'https://auth.bozzii.com/api/logout?post_logout_redirect_uri=https%3A%2F%2Fai.bozzii.com%2Fsign-in'
+      'https://auth.bozzii.com/api/logout?client_id=15cddc259a67891b0d1c871b904e1bc1&post_logout_redirect_uri=https%3A%2F%2Fai.bozzii.com%2F'
+    )
+    expect(
+      buildUnifiedLogoutUrl(authEndpoint, 'https://ai.bozzii.com/', '  ')
+    ).toBe(
+      'https://auth.bozzii.com/api/logout?post_logout_redirect_uri=https%3A%2F%2Fai.bozzii.com%2F'
     )
     expect(buildUnifiedAccountUrl(authEndpoint)).toBe(
       'https://auth.bozzii.com/account'
@@ -47,7 +56,7 @@ describe('unified-auth helpers', () => {
     expect(buildUnifiedForgotUrl(authEndpoint)).toBe(
       'https://auth.bozzii.com/forget/app-bozzii-api'
     )
-    expect(buildUnifiedLogoutUrl('', 'https://ai.bozzii.com/sign-in')).toBeNull()
+    expect(buildUnifiedLogoutUrl('', 'https://ai.bozzii.com/')).toBeNull()
   })
 
   it('detects OAuth email conflict errors from message_key or message', () => {

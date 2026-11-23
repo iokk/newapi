@@ -42,11 +42,16 @@ export function deriveUnifiedAuthOrigin(
 
 export function buildUnifiedLogoutUrl(
   authEndpoint: string | undefined | null,
-  postLogoutRedirectUri: string
+  postLogoutRedirectUri: string,
+  clientId?: string | null
 ): string | null {
   const origin = deriveUnifiedAuthOrigin(authEndpoint)
   if (!origin) return null
   const url = new URL('/api/logout', origin)
+  const trimmedClientId = clientId?.trim()
+  if (trimmedClientId) {
+    url.searchParams.set('client_id', trimmedClientId)
+  }
   url.searchParams.set('post_logout_redirect_uri', postLogoutRedirectUri)
   return url.toString()
 }
