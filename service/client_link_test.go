@@ -498,3 +498,109 @@ providers:
 	_, err = ClientConfigBody(user.Id, "codex", emptyTok.Id)
 	assert.ErrorIs(t, err, ErrClientLinkUnavailable)
 }
+
+func TestClientLinkAutoAppendsChatModelsAndExcludesMedia(t *testing.T) {
+	user := setupClientLinkTest(t)
+	require.NoError(t, model.DB.AutoMigrate(&model.Channel{}, &model.Ability{}))
+
+	*operation_setting.GetClientLinkSetting() = operation_setting.ClientLinkSetting{
+		Enabled: true,
+		WorkBuddyModels: `[
+			{"id":"gpt-6.2-sol"},
+			{"id":"claude-opus-5-5"}
+		]`,
+		DshKeyEnv: "NEWAPI_API_KEY",
+		DshProvidersYaml: `providers:
+  bozzii:
+    api: openai-responses
+    models:
+      - id: "gpt-6.2-sol"
+  bozzii-claude:
+    api: anthropic-messages
+    models:
+      - id: "claude-opus-5-5"
+`,
+	}
+
+	chLive := &model.Channel{Name: "live", Status: common.ChannelStatusEnabled}
+	require.NoError(t, model.DB.Create(chLive).Error)
+	for _, ab := range []model.Ability{
+		{Group: "default", Model: "gpt-6.2-sol", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "claude-opus-5-5", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "gemini-4-argon", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "gemini-3.8-flash", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "claude-haiku-5-5", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "gpt-6.3-pro", ChannelId: chLive.Id, Enabled: true},
+		// Non-chat media / utility models must NOT be auto-appended:
+		{Group: "default", Model: "gpt-image-2.6-flare", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "gemini-nano-banana-2.1", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "seedance2.5-MNW", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "seedream-5-5", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "sd-2.5", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "text-embedding-3-large", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "whisper-1", ChannelId: chLive.Id, Enabled: true},
+		// Enterprise group without Gemini:
+		{Group: "XSEEK官方", Model: "gpt-6.2-sol", ChannelId: chLive.Id, Enabled: true},
+	} {
+		require.NoError(t, model.DB.Create(&ab).Error)
+	}
+
+	// 1. WorkBuddy keeps curated order first, auto-appends new chat models sorted, excludes media.
+	wbBody, err := ClientConfigBody(user.Id, "workbuddy", 0)
+	require.NoError(t, err)
+	var wbEntries []map[string]any
+	require.NoError(t, common.Unmarshal(wbBody, &wbEntries))
+	gotIDs := make([]string, 0, len(wbEntries))
+	for _, e := range wbEntries {
+		gotIDs = append(gotIDs, e["id"].(string))
+	}
+	assert.Equal(t, []string{
+		"gpt-6.2-sol",
+		"claude-opus-5-5",
+		"claude-haiku-5-5",
+		"gemini-3.8-flash",
+		"gemini-4-argon",
+		"gpt-6.3-pro",
+	}, gotIDs)
+
+	// 2. Claude Code auto-appends claude-haiku-5-5, Codex auto-appends gpt-6.3-pro (not gpt-image-*).
+	claudeBody, err := ClientConfigBody(user.Id, "claude", 0)
+	require.NoError(t, err)
+	var claudeCfg struct {
+		Models     []string `json:"models"`
+		HaikuModel string   `json:"haiku_model"`
+	}
+	require.NoError(t, common.Unmarshal(claudeBody, &claudeCfg))
+	assert.Equal(t, []string{"claude-opus-5-5", "claude-haiku-5-5"}, claudeCfg.Models)
+	assert.Equal(t, "claude-haiku-5-5", claudeCfg.HaikuModel)
+
+	codexBody, err := ClientConfigBody(user.Id, "codex", 0)
+	require.NoError(t, err)
+	var codexCfg struct {
+		Models []string `json:"models"`
+	}
+	require.NoError(t, common.Unmarshal(codexBody, &codexCfg))
+	assert.Equal(t, []string{"gpt-6.2-sol", "gpt-6.3-pro"}, codexCfg.Models)
+
+	// 3. DSH auto-appends Gemini & GPT to bozzii and Claude to bozzii-claude, excluding media.
+	dshBody, err := ClientConfigBody(user.Id, "dsh", 0)
+	require.NoError(t, err)
+	var dshCfg map[string]string
+	require.NoError(t, common.Unmarshal(dshBody, &dshCfg))
+	assert.Contains(t, dshCfg["providers_yaml"], `"gemini-4-argon"`)
+	assert.Contains(t, dshCfg["providers_yaml"], `"claude-haiku-5-5"`)
+	assert.NotContains(t, dshCfg["providers_yaml"], "gpt-image-2.6-flare")
+	assert.NotContains(t, dshCfg["providers_yaml"], "seedance2.5-MNW")
+
+	// 4. XSEEK官方 token does NOT receive Gemini models.
+	entTok := &model.Token{
+		UserId: user.Id, Name: "ent-tok", Key: "ent-key", Status: common.TokenStatusEnabled,
+		ExpiredTime: -1, UnlimitedQuota: true, Group: "XSEEK官方",
+	}
+	require.NoError(t, entTok.Insert())
+	entBody, err := ClientConfigBody(user.Id, "workbuddy", entTok.Id)
+	require.NoError(t, err)
+	assert.Contains(t, string(entBody), "gpt-6.2-sol")
+	assert.NotContains(t, string(entBody), "gemini-4-argon")
+	assert.NotContains(t, string(entBody), "gemini-3.8-flash")
+}

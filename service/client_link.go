@@ -8,6 +8,7 @@ import (
 	"encoding/base32"
 	"encoding/hex"
 	"errors"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -321,6 +322,15 @@ func ClientConfigBody(userID int, target string, tokenID int) ([]byte, error) {
 	allowed := clientLinkAvailableModels(user, token)
 	if target == "claude" || target == "codex" {
 		models := filterClientLinkModelIDs(clientLinkCodingModels(target), allowed)
+		seen := make(map[string]struct{}, len(models))
+		for _, id := range models {
+			seen[id] = struct{}{}
+		}
+		prefix := "claude-"
+		if target == "codex" {
+			prefix = "gpt-"
+		}
+		models = append(models, extraAllowedChatModels(allowed, seen, prefix)...)
 		if len(models) == 0 {
 			return nil, ErrClientLinkUnavailable
 		}
@@ -366,17 +376,30 @@ func ClientConfigBody(userID int, target string, tokenID int) ([]byte, error) {
 		return nil, ErrClientLinkUnavailable
 	}
 	filtered := make([]map[string]any, 0, len(entries))
+	seen := make(map[string]struct{}, len(entries))
+	defaultURL := ClientLinkBase() + "/v1/chat/completions"
 	for _, e := range entries {
-		if id, _ := e["id"].(string); allowed != nil {
+		id, _ := e["id"].(string)
+		if allowed != nil {
 			if _, ok := allowed[id]; !ok {
 				continue
 			}
 		}
+		if id != "" {
+			seen[id] = struct{}{}
+		}
 		e["apiKey"] = apiKey
 		if _, hasURL := e["url"]; !hasURL {
-			e["url"] = ClientLinkBase() + "/v1/chat/completions"
+			e["url"] = defaultURL
 		}
 		filtered = append(filtered, e)
+	}
+	for _, id := range extraAllowedChatModels(allowed, seen, "") {
+		filtered = append(filtered, map[string]any{
+			"id":     id,
+			"apiKey": apiKey,
+			"url":    defaultURL,
+		})
 	}
 	if len(filtered) == 0 {
 		return nil, ErrClientLinkUnavailable
@@ -462,8 +485,65 @@ func filterClientLinkModelIDs(ids []string, allowed map[string]struct{}) []strin
 	return out
 }
 
+var (
+	clientLinkNonChatSubstrings = []string{
+		"image", "nano-banana", "seedance", "seedream", "dall-e", "imagen",
+		"flux", "midjourney", "sora", "kling", "veo", "runway", "wanx",
+		"vidu", "cogvideo", "jimeng", "kolors", "recraft", "ideogram",
+		"embedding", "rerank", "tts", "whisper", "moderation", "realtime",
+		"transcribe", "audio-preview",
+	}
+	clientLinkNonChatPrefixes = []string{
+		"sd-", "sdxl", "stable-diffusion", "bge-", "jina-embeddings",
+	}
+)
+
+// isClientLinkChatModel reports whether modelID is a text/chat model suitable
+// for auto-appending into coding/chat clients (WorkBuddy, DSH, Claude, Codex).
+func isClientLinkChatModel(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	if id == "" {
+		return false
+	}
+	for _, p := range clientLinkNonChatPrefixes {
+		if strings.HasPrefix(id, p) {
+			return false
+		}
+	}
+	for _, sub := range clientLinkNonChatSubstrings {
+		if strings.Contains(id, sub) {
+			return false
+		}
+	}
+	return true
+}
+
+// extraAllowedChatModels returns sorted active chat models in allowed that are
+// not yet in seen (and match prefix when non-empty).
+func extraAllowedChatModels(allowed, seen map[string]struct{}, prefix string) []string {
+	if allowed == nil {
+		return nil
+	}
+	extra := make([]string, 0)
+	for id := range allowed {
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		if !isClientLinkChatModel(id) {
+			continue
+		}
+		if prefix != "" && !strings.HasPrefix(strings.ToLower(id), prefix) {
+			continue
+		}
+		extra = append(extra, id)
+	}
+	sort.Strings(extra)
+	return extra
+}
+
 // filterDshProvidersYAML removes models not in allowed from providers.<name>.models
-// using yaml.Node AST editing so comments, key order, and inline maps stay intact.
+// and appends new active chat models using yaml.Node AST editing so comments,
+// key order, and inline maps stay intact.
 func filterDshProvidersYAML(raw string, allowed map[string]struct{}) string {
 	if allowed == nil || strings.TrimSpace(raw) == "" {
 		return raw
@@ -481,7 +561,10 @@ func filterDshProvidersYAML(raw string, allowed map[string]struct{}) string {
 		return raw
 	}
 	changed := false
+	seen := make(map[string]struct{})
+	var openaiModelsNode, claudeModelsNode *yaml.Node
 	for i := 0; i+1 < len(providers.Content); i += 2 {
+		providerName := providers.Content[i].Value
 		providerNode := providers.Content[i+1]
 		if providerNode.Kind != yaml.MappingNode {
 			continue
@@ -489,6 +572,14 @@ func filterDshProvidersYAML(raw string, allowed map[string]struct{}) string {
 		modelsNode := yamlMapValue(providerNode, "models")
 		if modelsNode == nil || modelsNode.Kind != yaml.SequenceNode {
 			continue
+		}
+		apiNode := yamlMapValue(providerNode, "api")
+		if (apiNode != nil && strings.Contains(apiNode.Value, "anthropic")) || strings.Contains(providerName, "claude") {
+			if claudeModelsNode == nil {
+				claudeModelsNode = modelsNode
+			}
+		} else if openaiModelsNode == nil {
+			openaiModelsNode = modelsNode
 		}
 		kept := make([]*yaml.Node, 0, len(modelsNode.Content))
 		for _, item := range modelsNode.Content {
@@ -498,10 +589,22 @@ func filterDshProvidersYAML(raw string, allowed map[string]struct{}) string {
 					changed = true
 					continue
 				}
+				seen[idNode.Value] = struct{}{}
 			}
 			kept = append(kept, item)
 		}
 		modelsNode.Content = kept
+	}
+	for _, id := range extraAllowedChatModels(allowed, seen, "") {
+		targetNode := openaiModelsNode
+		if strings.HasPrefix(strings.ToLower(id), "claude-") && claudeModelsNode != nil {
+			targetNode = claudeModelsNode
+		}
+		if targetNode == nil {
+			continue
+		}
+		targetNode.Content = append(targetNode.Content, dshModelYAMLNode(id))
+		changed = true
 	}
 	if !changed {
 		return raw
@@ -514,6 +617,30 @@ func filterDshProvidersYAML(raw string, allowed map[string]struct{}) string {
 	}
 	_ = enc.Close()
 	return buf.String()
+}
+
+func dshModelYAMLNode(id string) *yaml.Node {
+	inputSeq := &yaml.Node{
+		Kind:  yaml.SequenceNode,
+		Style: yaml.FlowStyle,
+		Content: []*yaml.Node{
+			{Kind: yaml.ScalarNode, Value: "text"},
+			{Kind: yaml.ScalarNode, Value: "image"},
+		},
+	}
+	return &yaml.Node{
+		Kind: yaml.MappingNode,
+		Content: []*yaml.Node{
+			{Kind: yaml.ScalarNode, Value: "id"},
+			{Kind: yaml.ScalarNode, Style: yaml.DoubleQuotedStyle, Value: id},
+			{Kind: yaml.ScalarNode, Value: "contextWindow"},
+			{Kind: yaml.ScalarNode, Tag: "!!int", Value: "128000"},
+			{Kind: yaml.ScalarNode, Value: "maxTokens"},
+			{Kind: yaml.ScalarNode, Tag: "!!int", Value: "8192"},
+			{Kind: yaml.ScalarNode, Value: "input"},
+			inputSeq,
+		},
+	}
 }
 
 func yamlMapValue(m *yaml.Node, key string) *yaml.Node {

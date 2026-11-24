@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMutation } from '@tanstack/react-query'
-import { Download, Link2, Sparkles } from 'lucide-react'
+import { Download, Link2, RefreshCw, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -90,12 +90,32 @@ export function TargetPanel(props: TargetPanelProps) {
               { product }
             )}
           </CardDescription>
-          <p className='text-muted-foreground text-xs'>
-            {t(
-              'When the platform adds or updates models, generate and paste this prompt again to refresh your local {{product}} model list without touching other providers.',
-              { product }
-            )}
-          </p>
+          <div className='group mt-2 flex items-start gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5 text-xs transition-colors hover:border-emerald-500/35 hover:bg-emerald-500/10'>
+            <div className='mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'>
+              <RefreshCw
+                className={`size-3.5 transition-transform duration-500 ${
+                  promptMutation.isPending
+                    ? 'animate-spin'
+                    : 'group-hover:rotate-180'
+                }`}
+              />
+            </div>
+            <div className='space-y-0.5 leading-relaxed'>
+              <div className='flex items-center gap-1.5 font-medium text-foreground'>
+                <span className='relative flex size-2'>
+                  <span className='absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75' />
+                  <span className='relative inline-flex size-2 rounded-full bg-emerald-500' />
+                </span>
+                <span>{t('Auto-sync on model updates')}</span>
+              </div>
+              <p className='text-muted-foreground'>
+                {t(
+                  'When the platform adds or updates models, generate and paste this prompt again to refresh your local {{product}} model list without touching other providers.',
+                  { product }
+                )}
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className='space-y-3'>
           <Button
