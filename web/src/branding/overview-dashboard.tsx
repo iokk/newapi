@@ -9,11 +9,15 @@ License, or (at your option) any later version.
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
+  Activity,
   ArrowUpRight,
   Check,
+  ChevronDown,
   ChevronRight,
   Copy,
+  KeyRound,
   Terminal,
+  Wallet,
   X,
   Zap,
 } from 'lucide-react'
@@ -23,7 +27,7 @@ import { toast } from 'sonner'
 
 import { CopyButton } from '@/components/copy-button'
 import { SectionPageLayout } from '@/components/layout'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getUserQuotaDates } from '@/features/dashboard/api'
@@ -69,20 +73,11 @@ import {
 } from './overview-helpers'
 
 const DISMISSED_ANNOUNCEMENT_KEY = 'bozzii_dismissed_announcement_id'
-const SETUP_GUIDE_OVERRIDE_KEY = 'bozzii_overview_setup_guide_override'
 const EMPTY_KEYS: ApiKey[] = []
 
 function getSavedDismissedAnnouncementId(): string | null {
   if (typeof window === 'undefined') return null
   return window.localStorage.getItem(DISMISSED_ANNOUNCEMENT_KEY)
-}
-
-function getSavedSetupOverride(): boolean | null {
-  if (typeof window === 'undefined') return null
-  const val = window.localStorage.getItem(SETUP_GUIDE_OVERRIDE_KEY)
-  if (val === 'open') return true
-  if (val === 'closed') return false
-  return null
 }
 
 function maskKeyForPreview(rawKey?: string): string {
@@ -114,11 +109,11 @@ const HEALTH_META: Record<
 }
 
 /**
- * Scheme A (Linear / Vercel Dual-State Minimalist Workspace):
- * - Top 1-line dismissible announcement strip (opens native AnnouncementDetailModal)
- * - Cold-start mode: compact 2-col 3-step launchpad + flagship model curl + 4-col status bar
- * - Active mode: unified Subscription + Wallet + Usage strip -> 1-line Base URL readiness bar -> clean 7-day monochrome trend chart
- * - FAQ & historical announcements live cleanly inside /contact tabs (zero overview clutter)
+ * OpenRouter Asset Focus + Cloudflare Progressive Disclosure Overview:
+ * - Single primary visual anchor: Available Balance & Usage paired with 7-day monochrome trend.
+ * - Single-line API Readiness Bar (Base URL, copy, latency ping, 1-click client setup).
+ * - Session-scoped onboarding drawer: auto-opens ONLY for cold-start users, never traps active users via localStorage.
+ * - Admin ops health panels collapsed behind a 1-line summary bar by default to preserve visual clarity.
  */
 export function BrandOverviewDashboard() {
   const { t } = useTranslation()
@@ -139,9 +134,8 @@ export function BrandOverviewDashboard() {
   const [selectedAnnouncement, setSelectedAnnouncement] =
     useState<AnnouncementItem | null>(null)
   const [announcementDialogOpen, setAnnouncementDialogOpen] = useState(false)
-  const [manualSetupGuide, setManualSetupGuide] = useState<boolean | null>(() =>
-    getSavedSetupOverride()
-  )
+  const [manualSetupGuide, setManualSetupGuide] = useState<boolean | null>(null)
+  const [adminHealthOpen, setAdminHealthOpen] = useState(false)
   const [pingStatus, setPingStatus] = useState<PingStatus>(getDefaultPingStatus)
   const [copyingCurl, setCopyingCurl] = useState(false)
   const [hoveredDayIndex, setHoveredDayIndex] = useState<number | null>(null)
@@ -221,6 +215,9 @@ export function BrandOverviewDashboard() {
   const walletQuota = Number(user?.quota ?? 0)
   const totalUsedQuota = Number(user?.used_quota ?? 0)
   const totalRequests = Number(user?.request_count ?? 0)
+  const totalAvailableQuota = subSummary.hasUnlimited
+    ? walletQuota
+    : walletQuota + subSummary.remainQuota
 
   const trendPoints = useMemo(
     () => buildDailyTrendPoints(trendQuery.data ?? [], 7),
@@ -268,16 +265,6 @@ export function BrandOverviewDashboard() {
     apiKeysQuery.isFetched && subscriptionQuery.isFetched && Boolean(user)
   const showSetupGuide =
     manualSetupGuide ?? (setupStatusReady ? coldStart : false)
-
-  const toggleSetupGuide = useCallback((next: boolean) => {
-    setManualSetupGuide(next)
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(
-        SETUP_GUIDE_OVERRIDE_KEY,
-        next ? 'open' : 'closed'
-      )
-    }
-  }, [])
 
   const primaryApiInfo = apiInfoItems[0]
   const baseUrl = normalizeOverviewBaseUrl(primaryApiInfo?.url)
@@ -365,9 +352,9 @@ export function BrandOverviewDashboard() {
     },
     {
       index: 2,
-      title: isWalletVisible ? '开通 ¥19.9 体验包或充值' : '获取测试额度',
+      title: isWalletVisible ? '开通体验包或充值' : '获取测试额度',
       description: isWalletVisible
-        ? '个人首单 ¥19.9 得 ¥26（加赠 30%），或按量充值'
+        ? '首单 ¥19.9 得 ¥26（加赠 30%），或按量充值'
         : '联系专属团队领取试用额度或办理企业对公',
       completed: walletQuota > 0 || subSummary.activeCount > 0,
       to: (isWalletVisible ? '/wallet' : '/contact') as '/wallet' | '/contact',
@@ -383,7 +370,6 @@ export function BrandOverviewDashboard() {
     },
   ]
   const completedSteps = onboardingSteps.filter((s) => s.completed).length
-
   const activeHoveredDay =
     hoveredDayIndex !== null ? trendPoints[hoveredDayIndex] : null
 
@@ -405,51 +391,6 @@ export function BrandOverviewDashboard() {
     pingLabel = '不可达'
   }
 
-  let subscriptionBody: ReactNode
-  if (subscriptionQuery.isLoading) {
-    subscriptionBody = <Skeleton className='h-10 w-36' />
-  } else if (subSummary.activeCount > 0) {
-    subscriptionBody = (
-      <div className='space-y-2'>
-        <div className='flex items-baseline justify-between gap-2'>
-          <span className='text-foreground font-mono text-2xl font-semibold tracking-tight tabular-nums'>
-            {subSummary.hasUnlimited
-              ? t('Unlimited')
-              : formatQuota(subSummary.remainQuota)}
-          </span>
-          <span className='text-muted-foreground text-xs tabular-nums'>
-            {subSummary.minRemainDays !== null
-              ? `剩 ${subSummary.minRemainDays} 天`
-              : `${subSummary.activeCount} 个生效`}
-          </span>
-        </div>
-        {!subSummary.hasUnlimited && subSummary.totalQuota > 0 && (
-          <div className='space-y-1'>
-            <Progress value={subSummary.usagePercent} className='h-1.5' />
-            <div className='text-muted-foreground flex justify-between text-[11px] tabular-nums'>
-              <span>
-                已用 {formatQuota(subSummary.usedQuota)} /{' '}
-                {formatQuota(subSummary.totalQuota)}
-              </span>
-              <span>{subSummary.usagePercent}%</span>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  } else {
-    subscriptionBody = (
-      <div className='space-y-1.5'>
-        <div className='text-foreground text-sm font-medium'>
-          当前未开通订阅
-        </div>
-        <p className='text-muted-foreground text-xs leading-relaxed'>
-          个人 30 天体验包首单 ¥19.9 到账 ¥26（加赠 30%），超额自动衔接钱包余额。
-        </p>
-      </div>
-    )
-  }
-
   return (
     <SectionPageLayout>
       <SectionPageLayout.Title>{t('Overview')}</SectionPageLayout.Title>
@@ -458,15 +399,15 @@ export function BrandOverviewDashboard() {
           variant='ghost'
           size='sm'
           className='text-muted-foreground hover:text-foreground h-8 gap-1.5 text-xs'
-          onClick={() => toggleSetupGuide(!showSetupGuide)}
+          onClick={() => setManualSetupGuide(!showSetupGuide)}
         >
           <Terminal className='size-3.5' aria-hidden='true' />
-          {showSetupGuide ? '切换为数据概览' : '接入引导'}
+          {showSetupGuide ? '收起接入引导' : '接入引导'}
         </Button>
       </SectionPageLayout.Actions>
       <SectionPageLayout.Content>
-        <div className='mx-auto flex w-full max-w-7xl flex-col gap-4'>
-          {/* 1-line Dismissible Announcement Strip */}
+        <div className='mx-auto flex w-full max-w-6xl flex-col gap-5'>
+          {/* Optional 1-line Dismissible Announcement Strip */}
           {showAnnouncementStrip && latestAnnouncement && (
             <div className='bg-card flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2 text-xs'>
               <button
@@ -511,499 +452,367 @@ export function BrandOverviewDashboard() {
             </div>
           )}
 
-          {/* MODE 1: Cold-Start Launchpad (compact 2-col + 4-col status bar) */}
-          {showSetupGuide ? (
-            <>
-              <div className='grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]'>
-                {/* Left: Clean 3-Step Checklist */}
-                <div className='bg-card flex flex-col justify-between rounded-xl border p-5'>
-                  <div className='flex items-start justify-between gap-3'>
-                    <div className='space-y-1'>
-                      <div className='flex items-center gap-2'>
-                        <h2 className='text-foreground text-base font-semibold tracking-tight'>
-                          开始使用 Bozzii AI
-                        </h2>
-                        <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-mono text-[11px] tabular-nums'>
-                          {completedSteps}/3
-                        </span>
-                      </div>
-                      <p className='text-muted-foreground text-xs'>
-                        完成以下三步即可在 2 分钟内发出首个 API 请求。
-                      </p>
-                    </div>
-                  </div>
-
-                  <ol className='mt-4 divide-y rounded-lg border'>
-                    {onboardingSteps.map((step) => (
-                      <li key={step.index}>
-                        <Link
-                          to={step.to}
-                          className='group hover:bg-muted/35 flex items-center justify-between gap-3 px-3.5 py-3 transition-colors'
-                        >
-                          <div className='flex min-w-0 items-center gap-3'>
-                            <span
-                              className={cn(
-                                'flex size-6 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-medium',
-                                step.completed
-                                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                  : 'border-border text-muted-foreground'
-                              )}
-                            >
-                              {step.completed ? (
-                                <Check className='size-3.5' />
-                              ) : (
-                                step.index
-                              )}
-                            </span>
-                            <div className='min-w-0'>
-                              <div className='text-foreground truncate text-sm font-medium'>
-                                {step.title}
-                              </div>
-                              <p className='text-muted-foreground truncate text-xs'>
-                                {step.description}
-                              </p>
-                            </div>
-                          </div>
-                          <span className='text-muted-foreground group-hover:text-foreground inline-flex shrink-0 items-center gap-0.5 text-xs font-medium transition-colors'>
-                            {step.cta}
-                            <ChevronRight className='size-3.5' />
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-
-                {/* Right: Minimalist Monochrome Curl Snippet */}
-                <div className='bg-card flex flex-col justify-between rounded-xl border p-5'>
-                  <div className='flex items-center justify-between gap-2'>
-                    <div className='space-y-0.5'>
-                      <h3 className='text-foreground text-sm font-semibold'>
-                        首个请求示例
-                      </h3>
-                      <p className='text-muted-foreground text-xs'>
-                        默认模型：
-                        <span className='text-foreground font-mono'>
-                          {exampleModel}
-                        </span>
-                      </p>
-                    </div>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      className='h-8 gap-1.5 text-xs'
-                      onClick={handleCopyCurl}
-                      disabled={copyingCurl}
-                    >
-                      <Copy className='size-3.5' aria-hidden='true' />
-                      复制命令
-                    </Button>
-                  </div>
-
-                  <pre className='bg-muted/40 text-foreground mt-3.5 overflow-x-auto rounded-lg border p-3.5 font-mono text-xs leading-relaxed'>
-                    <code>{curlDisplay}</code>
-                  </pre>
-
-                  <div className='text-muted-foreground mt-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px]'>
-                    <span className='inline-flex items-center gap-1.5'>
-                      <span
-                        className='size-1.5 rounded-full bg-emerald-500'
-                        aria-hidden='true'
-                      />
-                      阿里云 CDN 就近加速 · OpenAI / Anthropic 协议兼容
-                    </span>
-                    <Link
-                      to='/pricing'
-                      className='hover:text-foreground inline-flex items-center gap-0.5 underline-offset-4 hover:underline'
-                    >
-                      查看模型定价
-                      <ArrowUpRight className='size-3' />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Compact 4-Col Account & Endpoint Status Bar */}
-              <div className='bg-card grid grid-cols-1 divide-y rounded-xl border sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4 xl:divide-x'>
-                <div className='flex flex-col justify-between gap-1.5 p-4'>
-                  <span className='text-muted-foreground text-xs font-medium'>
-                    订阅与余额
-                  </span>
-                  <div className='flex items-baseline gap-2'>
-                    <span className='text-foreground font-mono text-xl font-semibold tabular-nums'>
-                      {subSummary.activeCount > 0
-                        ? formatQuota(subSummary.remainQuota + walletQuota)
-                        : formatQuota(walletQuota)}
-                    </span>
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 text-[11px] font-medium',
-                        healthMeta.textClass
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'size-1.5 rounded-full',
-                          healthMeta.dotClass
-                        )}
-                      />
-                      {healthMeta.label}
+          {/* Progressive-Disclosure Onboarding Panel (auto-open ONLY for cold-start, session-scoped) */}
+          {showSetupGuide && (
+            <div className='bg-card grid gap-5 rounded-xl border p-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]'>
+              <div className='flex flex-col justify-between gap-3'>
+                <div className='flex items-center justify-between gap-2'>
+                  <div className='flex items-center gap-2'>
+                    <h2 className='text-foreground text-sm font-semibold'>
+                      快速接入
+                    </h2>
+                    <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-mono text-[11px] tabular-nums'>
+                      {completedSteps}/3
                     </span>
                   </div>
-                </div>
-
-                <div className='flex flex-col justify-between gap-1.5 border-t p-4 sm:border-t-0 sm:border-l xl:border-l-0'>
-                  <span className='text-muted-foreground text-xs font-medium'>
-                    API 密钥
-                  </span>
-                  <div className='flex items-baseline justify-between gap-2'>
-                    <span className='text-foreground font-mono text-xl font-semibold tabular-nums'>
-                      {activeKeyCount} 个活跃
-                    </span>
-                    <Link
-                      to='/keys'
-                      className='text-muted-foreground hover:text-foreground text-xs transition-colors'
-                    >
-                      管理 →
-                    </Link>
-                  </div>
-                </div>
-
-                <div className='flex flex-col justify-between gap-1.5 border-t p-4 xl:border-t-0'>
-                  <div className='flex items-center justify-between'>
-                    <span className='text-muted-foreground text-xs font-medium'>
-                      主接口
-                    </span>
-                    <div className='flex items-center gap-1'>
-                      <button
-                        type='button'
-                        onClick={handleTestLatency}
-                        disabled={pingStatus.testing}
-                        className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] transition-colors'
-                      >
-                        <Zap
-                          className={cn(
-                            'size-3',
-                            pingStatus.testing && 'animate-pulse'
-                          )}
-                        />
-                        {pingLabel}
-                      </button>
-                      <CopyButton
-                        value={baseUrl}
-                        variant='ghost'
-                        size='sm'
-                        className='size-6 p-0'
-                        iconClassName='size-3'
-                        tooltip={t('Copy URL')}
-                        aria-label={t('Copy URL')}
-                      />
-                    </div>
-                  </div>
-                  <span className='text-foreground truncate font-mono text-sm font-medium'>
-                    {baseUrl}
-                  </span>
-                </div>
-
-                <div className='flex flex-col justify-between gap-1.5 border-t p-4 sm:border-l xl:border-t-0 xl:border-l-0'>
-                  <span className='text-muted-foreground text-xs font-medium'>
-                    帮助与支持
-                  </span>
-                  <div className='flex flex-wrap items-center gap-3 text-xs'>
-                    <Link
-                      to='/contact'
-                      search={{ tab: 'faq' } as never}
-                      className='text-foreground hover:text-primary font-medium transition-colors'
-                    >
-                      常见问答 →
-                    </Link>
-                    <Link
-                      to='/contact'
-                      className='text-muted-foreground hover:text-foreground transition-colors'
-                    >
-                      联系客服 →
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            /* MODE 2: Active Production Cockpit (Strict Single-Screen Layout) */
-            <>
-              {/* Row 1: Unified Asset Strip (Subscription + Wallet + Usage) */}
-              <div className='bg-card grid grid-cols-1 divide-y rounded-xl border lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1.15fr)] lg:divide-x lg:divide-y-0'>
-                {/* Col 1: Subscription Credits */}
-                <div className='flex flex-col justify-between gap-3 p-5'>
-                  <div className='flex items-center justify-between gap-2'>
-                    <span className='text-muted-foreground text-xs font-medium'>
-                      订阅套餐额度
-                    </span>
-                    {isWalletVisible && (
-                      <Link
-                        to='/wallet'
-                        className='text-muted-foreground hover:text-foreground text-xs transition-colors'
-                      >
-                        {subSummary.activeCount > 0 ? '管理套餐 →' : '查看套餐 →'}
-                      </Link>
-                    )}
-                  </div>
-                  {subscriptionBody}
-                </div>
-
-                {/* Col 2: Wallet Balance */}
-                <div className='flex flex-col justify-between gap-3 p-5'>
-                  <div className='flex items-center justify-between gap-2'>
-                    <span className='text-muted-foreground text-xs font-medium'>
-                      钱包余额
-                    </span>
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1.5 text-xs font-medium',
-                        healthMeta.textClass
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'size-1.5 rounded-full',
-                          healthMeta.dotClass
-                        )}
-                      />
-                      {healthMeta.label}
-                    </span>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <div className='text-foreground font-mono text-2xl font-semibold tracking-tight tabular-nums sm:text-[28px]'>
-                      {formatQuota(walletQuota)}
-                    </div>
-                    <div className='flex items-center gap-3 text-xs'>
-                      {isWalletVisible ? (
-                        <Link
-                          to='/wallet'
-                          className='text-primary font-medium underline-offset-4 hover:underline'
-                        >
-                          按量充值 / 兑换码 →
-                        </Link>
-                      ) : (
-                        <Link
-                          to='/contact'
-                          className='text-primary font-medium underline-offset-4 hover:underline'
-                        >
-                          联系商务充值 →
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Col 3: Usage Readout */}
-                <div className='flex flex-col justify-between gap-3 p-5'>
-                  <div className='flex items-center justify-between gap-2'>
-                    <span className='text-muted-foreground text-xs font-medium'>
-                      用量概览
-                    </span>
-                    <Link
-                      to='/usage-logs/$section'
-                      params={{ section: 'common' }}
-                      className='text-muted-foreground hover:text-foreground text-xs transition-colors'
-                    >
-                      使用日志 →
-                    </Link>
-                  </div>
-
-                  <div className='grid grid-cols-3 gap-3'>
-                    <div className='min-w-0'>
-                      <div className='text-muted-foreground truncate text-[11px]'>
-                        今日消耗
-                      </div>
-                      <div className='text-foreground mt-1 truncate font-mono text-base font-semibold tabular-nums'>
-                        {formatQuota(recent24hUsage)}
-                      </div>
-                    </div>
-                    <div className='min-w-0'>
-                      <div className='text-muted-foreground truncate text-[11px]'>
-                        累计消耗
-                      </div>
-                      <div className='text-foreground mt-1 truncate font-mono text-base font-semibold tabular-nums'>
-                        {formatQuota(totalUsedQuota)}
-                      </div>
-                    </div>
-                    <div className='min-w-0'>
-                      <div className='text-muted-foreground truncate text-[11px]'>
-                        总请求数
-                      </div>
-                      <div className='text-foreground mt-1 truncate font-mono text-base font-semibold tabular-nums'>
-                        {formatNumber(totalRequests)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Single-Line API Readiness Bar */}
-              <div className='bg-card flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs'>
-                <div className='flex min-w-0 flex-wrap items-center gap-2.5'>
-                  <span className='inline-flex items-center gap-1.5 font-medium'>
-                    <span
-                      className='size-1.5 rounded-full bg-emerald-500'
-                      aria-hidden='true'
-                    />
-                    <span className='text-muted-foreground'>主接口</span>
-                  </span>
-                  <code className='bg-muted/50 text-foreground rounded px-2 py-0.5 font-mono text-xs'>
-                    {baseUrl}
-                  </code>
-                  <CopyButton
-                    value={baseUrl}
-                    variant='ghost'
-                    size='sm'
-                    className='size-7 p-0'
-                    iconClassName='size-3.5'
-                    tooltip={t('Copy URL')}
-                    aria-label={t('Copy URL')}
-                  />
                   <button
                     type='button'
-                    onClick={handleTestLatency}
-                    disabled={pingStatus.testing}
-                    className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition-colors'
-                  >
-                    <Zap
-                      className={cn(
-                        'size-3',
-                        pingStatus.testing && 'animate-pulse'
-                      )}
-                      aria-hidden='true'
-                    />
-                    {pingLabel}
-                  </button>
-                </div>
-
-                <div className='flex flex-wrap items-center gap-3 text-xs'>
-                  <Link
-                    to='/keys'
-                    className='text-muted-foreground hover:text-foreground transition-colors'
-                  >
-                    活跃密钥{' '}
-                    <span className='text-foreground font-mono font-medium'>
-                      {activeKeyCount}
-                    </span>
-                  </Link>
-                  <span className='text-border' aria-hidden='true'>
-                    |
-                  </span>
-                  <Link
-                    to='/client-config'
-                    className='text-muted-foreground hover:text-foreground transition-colors'
-                  >
-                    客户端配置
-                  </Link>
-                  <span className='text-border' aria-hidden='true'>
-                    |
-                  </span>
-                  <Link
-                    to='/contact'
-                    search={{ tab: 'faq' } as never}
-                    className='text-muted-foreground hover:text-foreground transition-colors'
-                  >
-                    常见问答
-                  </Link>
-                  <span className='text-border' aria-hidden='true'>
-                    |
-                  </span>
-                  <Link
-                    to='/contact'
-                    className='text-muted-foreground hover:text-foreground transition-colors'
-                  >
-                    联系客服
-                  </Link>
-                </div>
-              </div>
-
-              {/* Row 3: Minimal Monochrome 7-Day Usage Trend */}
-              <div className='bg-card rounded-xl border p-5'>
-                <div className='flex flex-wrap items-baseline justify-between gap-2'>
-                  <div className='flex flex-wrap items-baseline gap-3'>
-                    <h2 className='text-foreground text-sm font-semibold'>
-                      近 7 日消耗趋势
-                    </h2>
-                    <span className='text-muted-foreground font-mono text-xs tabular-nums'>
-                      {activeHoveredDay
-                        ? `${activeHoveredDay.label} · 消耗 ${formatQuota(activeHoveredDay.quota)} · ${formatNumber(activeHoveredDay.requests)} 次请求`
-                        : `合计 ${formatQuota(sevenDayQuotaTotal)} · ${formatNumber(sevenDayRequestTotal)} 次请求`}
-                    </span>
-                  </div>
-                  <Link
-                    to='/dashboard/$section'
-                    params={{ section: 'models' }}
+                    onClick={() => setManualSetupGuide(false)}
                     className='text-muted-foreground hover:text-foreground text-xs transition-colors'
                   >
-                    详细数据看板 →
-                  </Link>
+                    隐藏
+                  </button>
                 </div>
-
-                {trendQuery.isLoading ? (
-                  <Skeleton className='mt-4 h-28 w-full rounded-lg' />
-                ) : (
-                  <div className='mt-4 grid h-28 grid-cols-7 items-end gap-2 sm:gap-3'>
-                    {trendPoints.map((pt, idx) => {
-                      const ratio =
-                        maxTrendQuota > 0
-                          ? Math.max(0.06, pt.quota / maxTrendQuota)
-                          : 0.04
-                      const isHovered = hoveredDayIndex === idx
-                      let barToneClass = 'bg-muted'
-                      if (pt.quota > 0) {
-                        barToneClass = isHovered
-                          ? 'bg-foreground'
-                          : 'bg-foreground/75 group-hover:bg-foreground'
-                      }
-                      return (
-                        <button
-                          key={pt.dateKey}
-                          type='button'
-                          onMouseEnter={() => setHoveredDayIndex(idx)}
-                          onMouseLeave={() => setHoveredDayIndex(null)}
-                          onFocus={() => setHoveredDayIndex(idx)}
-                          onBlur={() => setHoveredDayIndex(null)}
-                          aria-label={`${pt.label}: ${formatQuota(pt.quota)}, ${pt.requests} 次请求`}
-                          className='group flex h-full flex-col items-center justify-end gap-1.5 outline-none'
-                        >
-                          <div className='flex w-full flex-1 items-end'>
-                            <div
-                              style={{
-                                height: `${Math.round(ratio * 100)}%`,
-                              }}
-                              className={cn(
-                                'w-full rounded-t-md transition-colors',
-                                barToneClass
-                              )}
-                            />
-                          </div>
+                <ol className='divide-y rounded-lg border'>
+                  {onboardingSteps.map((step) => (
+                    <li key={step.index}>
+                      <Link
+                        to={step.to}
+                        className='group hover:bg-muted/35 flex items-center justify-between gap-3 px-3 py-2.5 transition-colors'
+                      >
+                        <div className='flex min-w-0 items-center gap-2.5'>
                           <span
                             className={cn(
-                              'font-mono text-[11px] tabular-nums transition-colors',
-                              isHovered
-                                ? 'text-foreground font-medium'
-                                : 'text-muted-foreground'
+                              'flex size-5 shrink-0 items-center justify-center rounded-full border font-mono text-[11px] font-medium',
+                              step.completed
+                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                : 'border-border text-muted-foreground'
                             )}
                           >
-                            {pt.label}
+                            {step.completed ? (
+                              <Check className='size-3' />
+                            ) : (
+                              step.index
+                            )}
                           </span>
-                        </button>
-                      )
-                    })}
+                          <div className='min-w-0'>
+                            <div className='text-foreground truncate text-xs font-medium'>
+                              {step.title}
+                            </div>
+                            <p className='text-muted-foreground truncate text-[11px]'>
+                              {step.description}
+                            </p>
+                          </div>
+                        </div>
+                        <span className='text-muted-foreground group-hover:text-foreground inline-flex shrink-0 items-center gap-0.5 text-xs transition-colors'>
+                          {step.cta}
+                          <ChevronRight className='size-3.5' />
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className='flex flex-col justify-between gap-3'>
+                <div className='flex items-center justify-between gap-2'>
+                  <div className='text-muted-foreground text-xs'>
+                    首个请求示例 ·{' '}
+                    <span className='text-foreground font-mono'>
+                      {exampleModel}
+                    </span>
+                  </div>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-7 gap-1.5 px-2.5 text-xs'
+                    onClick={handleCopyCurl}
+                    disabled={copyingCurl}
+                  >
+                    <Copy className='size-3' aria-hidden='true' />
+                    复制命令
+                  </Button>
+                </div>
+                <pre className='bg-muted/40 text-foreground flex-1 overflow-x-auto rounded-lg border p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all'>
+                  <code>{curlDisplay}</code>
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* Row 1: Primary Single-Screen Cockpit (Asset Hero + 7-Day Activity Trend) */}
+          <div className='bg-card grid grid-cols-1 divide-y rounded-xl border lg:grid-cols-[minmax(320px,0.88fr)_minmax(0,1.12fr)] lg:divide-x lg:divide-y-0'>
+            {/* Left: Primary Focal Point — Available Balance & Actions */}
+            <div className='flex flex-col justify-between gap-5 p-6'>
+              <div className='space-y-3'>
+                <div className='flex items-center justify-between gap-2'>
+                  <span className='text-muted-foreground text-xs font-medium'>
+                    可用额度
+                  </span>
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1.5 text-xs font-medium',
+                      healthMeta.textClass
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'size-1.5 rounded-full',
+                        healthMeta.dotClass
+                      )}
+                    />
+                    {healthMeta.label}
+                  </span>
+                </div>
+
+                {subscriptionQuery.isLoading ? (
+                  <Skeleton className='h-9 w-40' />
+                ) : (
+                  <div className='text-foreground font-mono text-3xl font-semibold tracking-tight tabular-nums'>
+                    {subSummary.hasUnlimited
+                      ? t('Unlimited')
+                      : formatQuota(totalAvailableQuota)}
+                  </div>
+                )}
+
+                {subSummary.activeCount > 0 &&
+                !subSummary.hasUnlimited &&
+                subSummary.totalQuota > 0 ? (
+                  <div className='space-y-1.5'>
+                    <Progress value={subSummary.usagePercent} className='h-1.5' />
+                    <div className='text-muted-foreground flex justify-between text-[11px] tabular-nums'>
+                      <span>
+                        套餐剩 {formatQuota(subSummary.remainQuota)}
+                        {subSummary.minRemainDays !== null
+                          ? `（${subSummary.minRemainDays} 天）`
+                          : ''}
+                      </span>
+                      <span>钱包 {formatQuota(walletQuota)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className='text-muted-foreground text-xs tabular-nums'>
+                    钱包余额 {formatQuota(walletQuota)}
+                    {subSummary.activeCount > 0
+                      ? ` · ${subSummary.activeCount} 个订阅生效`
+                      : ''}
                   </div>
                 )}
               </div>
-            </>
-          )}
 
-          {/* Admin-only native health & uptime panels preserved cleanly below */}
+              <div className='border-border/70 grid grid-cols-3 gap-3 border-t pt-4'>
+                <div className='min-w-0'>
+                  <div className='text-muted-foreground truncate text-[11px]'>
+                    今日消耗
+                  </div>
+                  <div className='text-foreground mt-0.5 truncate font-mono text-sm font-semibold tabular-nums'>
+                    {formatQuota(recent24hUsage)}
+                  </div>
+                </div>
+                <div className='min-w-0'>
+                  <div className='text-muted-foreground truncate text-[11px]'>
+                    累计消耗
+                  </div>
+                  <div className='text-foreground mt-0.5 truncate font-mono text-sm font-semibold tabular-nums'>
+                    {formatQuota(totalUsedQuota)}
+                  </div>
+                </div>
+                <div className='min-w-0'>
+                  <div className='text-muted-foreground truncate text-[11px]'>
+                    总请求数
+                  </div>
+                  <div className='text-foreground mt-0.5 truncate font-mono text-sm font-semibold tabular-nums'>
+                    {formatNumber(totalRequests)}
+                  </div>
+                </div>
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <Link
+                  to={isWalletVisible ? '/wallet' : '/contact'}
+                  className={cn(
+                    buttonVariants({ variant: 'default', size: 'sm' }),
+                    'h-8 gap-1.5 text-xs'
+                  )}
+                >
+                  <Wallet className='size-3.5' aria-hidden='true' />
+                  {isWalletVisible ? '充值 / 套餐' : '联系商务充值'}
+                </Link>
+                <Link
+                  to='/keys'
+                  className={cn(
+                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                    'h-8 gap-1.5 text-xs'
+                  )}
+                >
+                  <KeyRound className='size-3.5' aria-hidden='true' />
+                  管理密钥
+                  <span className='text-muted-foreground font-mono tabular-nums'>
+                    ({activeKeyCount})
+                  </span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right: OpenRouter-Style Monochrome 7-Day Activity Trend */}
+            <div className='flex flex-col justify-between gap-4 p-6'>
+              <div className='flex flex-wrap items-baseline justify-between gap-2'>
+                <div className='space-y-1'>
+                  <h2 className='text-foreground text-sm font-semibold'>
+                    近 7 日消耗趋势
+                  </h2>
+                  <p className='text-muted-foreground font-mono text-xs tabular-nums'>
+                    {activeHoveredDay
+                      ? `${activeHoveredDay.label}  消耗 ${formatQuota(activeHoveredDay.quota)}  (${formatNumber(activeHoveredDay.requests)} 次请求)`
+                      : `近 7 日合计 ${formatQuota(sevenDayQuotaTotal)}  (${formatNumber(sevenDayRequestTotal)} 次请求)`}
+                  </p>
+                </div>
+                <Link
+                  to='/dashboard/$section'
+                  params={{ section: 'models' }}
+                  className='text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5 text-xs transition-colors'
+                >
+                  详细看板
+                  <ArrowUpRight className='size-3.5' aria-hidden='true' />
+                </Link>
+              </div>
+
+              {trendQuery.isLoading ? (
+                <Skeleton className='h-36 w-full rounded-lg' />
+              ) : (
+                <div className='grid h-36 grid-cols-7 items-end gap-2.5 sm:gap-3'>
+                  {trendPoints.map((pt, idx) => {
+                    const ratio =
+                      maxTrendQuota > 0
+                        ? Math.max(0.06, pt.quota / maxTrendQuota)
+                        : 0.04
+                    const isHovered = hoveredDayIndex === idx
+                    let barToneClass = 'bg-muted'
+                    if (pt.quota > 0) {
+                      barToneClass = isHovered
+                        ? 'bg-foreground'
+                        : 'bg-foreground/75 group-hover:bg-foreground'
+                    }
+                    return (
+                      <button
+                        key={pt.dateKey}
+                        type='button'
+                        onMouseEnter={() => setHoveredDayIndex(idx)}
+                        onMouseLeave={() => setHoveredDayIndex(null)}
+                        onFocus={() => setHoveredDayIndex(idx)}
+                        onBlur={() => setHoveredDayIndex(null)}
+                        aria-label={`${pt.label}: ${formatQuota(pt.quota)}, ${pt.requests} 次请求`}
+                        className='group flex h-full flex-col items-center justify-end gap-2 outline-none'
+                      >
+                        <div className='flex w-full flex-1 items-end'>
+                          <div
+                            style={{
+                              height: `${Math.round(ratio * 100)}%`,
+                            }}
+                            className={cn(
+                              'w-full rounded-t-md transition-colors',
+                              barToneClass
+                            )}
+                          />
+                        </div>
+                        <span
+                          className={cn(
+                            'font-mono text-[11px] tabular-nums transition-colors',
+                            isHovered
+                              ? 'text-foreground font-medium'
+                              : 'text-muted-foreground'
+                          )}
+                        >
+                          {pt.label}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Minimal Cloudflare-Style API Readiness Bar */}
+          <div className='bg-card flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs'>
+            <div className='flex min-w-0 flex-wrap items-center gap-2.5'>
+              <span className='inline-flex items-center gap-1.5 font-medium'>
+                <span
+                  className='size-1.5 rounded-full bg-emerald-500'
+                  aria-hidden='true'
+                />
+                <span className='text-muted-foreground'>主接口</span>
+              </span>
+              <code className='bg-muted/50 text-foreground rounded px-2 py-0.5 font-mono text-xs'>
+                {baseUrl}
+              </code>
+              <CopyButton
+                value={baseUrl}
+                variant='ghost'
+                size='sm'
+                className='size-7 p-0'
+                iconClassName='size-3.5'
+                tooltip={t('Copy URL')}
+                aria-label={t('Copy URL')}
+              />
+              <button
+                type='button'
+                onClick={handleTestLatency}
+                disabled={pingStatus.testing}
+                className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition-colors'
+              >
+                <Zap
+                  className={cn(
+                    'size-3',
+                    pingStatus.testing && 'animate-pulse'
+                  )}
+                  aria-hidden='true'
+                />
+                {pingLabel}
+              </button>
+            </div>
+
+            <Link
+              to='/client-config'
+              className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1 font-medium transition-colors'
+            >
+              一键配置客户端
+              <ChevronRight className='size-3.5' aria-hidden='true' />
+            </Link>
+          </div>
+
+          {/* Row 3: Admin-only Collapsible Ops Health (collapsed by default to keep Overview crisp) */}
           {isAdmin && (
-            <div className='space-y-4'>
-              <PerformanceHealthPanel />
-              {showUptimePanel && <UptimePanel />}
+            <div className='space-y-3'>
+              <button
+                type='button'
+                onClick={() => setAdminHealthOpen((open) => !open)}
+                className='bg-card hover:bg-muted/30 flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-xs transition-colors'
+              >
+                <span className='text-foreground inline-flex items-center gap-2 font-medium'>
+                  <Activity
+                    className='text-muted-foreground size-3.5'
+                    aria-hidden='true'
+                  />
+                  运维健康监控（管理员）
+                </span>
+                <span className='text-muted-foreground inline-flex items-center gap-1'>
+                  {adminHealthOpen ? '收起' : '展开查看 24h 成功率与延迟'}
+                  <ChevronDown
+                    className={cn(
+                      'size-3.5 transition-transform',
+                      adminHealthOpen && 'rotate-180'
+                    )}
+                    aria-hidden='true'
+                  />
+                </span>
+              </button>
+              {adminHealthOpen && (
+                <div className='space-y-4'>
+                  <PerformanceHealthPanel />
+                  {showUptimePanel && <UptimePanel />}
+                </div>
+              )}
             </div>
           )}
         </div>
