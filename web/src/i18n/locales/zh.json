@@ -7756,6 +7756,7 @@
     "Ask the administrator to enable it and configure the models.": "请联系管理员开启并配置模型。",
     "Copy setup prompt": "复制配置提示词",
     "Paste it into {{product}} on your computer. It sets up the API for you, and your key never appears in the prompt.": "粘贴到你电脑上的 {{product}} 中，它会自动帮你配好 API，提示词里不会出现你的密钥。",
+    "When the platform adds or updates models, generate and paste this prompt again to refresh your local {{product}} model list without touching other providers.": "平台新增或调整模型后，重新生成并粘贴此提示词即可一键刷新你电脑上 {{product}} 的模型列表，不会影响其他供应商配置。",
     "Generate prompt": "生成提示词",
     "Setup prompt": "配置提示词",
     "Share with friends": "分享给朋友",
