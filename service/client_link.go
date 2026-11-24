@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -18,6 +19,7 @@ import (
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/samber/hot"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 
@@ -316,8 +318,12 @@ func ClientConfigBody(userID int, target string, tokenID int) ([]byte, error) {
 
 	s := operation_setting.GetClientLinkSetting()
 	apiKey := "sk-" + token.Key
+	allowed := clientLinkAvailableModels(user, token)
 	if target == "claude" || target == "codex" {
-		models := clientLinkCodingModels(target)
+		models := filterClientLinkModelIDs(clientLinkCodingModels(target), allowed)
+		if len(models) == 0 {
+			return nil, ErrClientLinkUnavailable
+		}
 		if target == "codex" {
 			return common.Marshal(map[string]any{
 				"api_key": apiKey, "base_url": ClientLinkBase() + "/v1",
@@ -352,19 +358,174 @@ func ClientConfigBody(userID int, target string, tokenID int) ([]byte, error) {
 		})
 	}
 	if target == "dsh" {
-		return common.Marshal(map[string]string{"key_env": s.DshKeyEnv, "api_key": apiKey, "providers_yaml": s.DshProvidersYaml})
+		providersYAML := filterDshProvidersYAML(s.DshProvidersYaml, allowed)
+		return common.Marshal(map[string]string{"key_env": s.DshKeyEnv, "api_key": apiKey, "providers_yaml": providersYAML})
 	}
 	var entries []map[string]any
 	if err := common.UnmarshalJsonStr(s.WorkBuddyModels, &entries); err != nil {
 		return nil, ErrClientLinkUnavailable
 	}
+	filtered := make([]map[string]any, 0, len(entries))
 	for _, e := range entries {
+		if id, _ := e["id"].(string); allowed != nil {
+			if _, ok := allowed[id]; !ok {
+				continue
+			}
+		}
 		e["apiKey"] = apiKey
 		if _, hasURL := e["url"]; !hasURL {
 			e["url"] = ClientLinkBase() + "/v1/chat/completions"
 		}
+		filtered = append(filtered, e)
 	}
-	return common.Marshal(entries)
+	if len(filtered) == 0 {
+		return nil, ErrClientLinkUnavailable
+	}
+	return common.Marshal(filtered)
+}
+
+// clientLinkEffectiveGroups resolves the channel groups reachable by (user, token),
+// expanding "auto" via the same group rules used during relay.
+func clientLinkEffectiveGroups(user *model.User, token *model.Token) []string {
+	userGroup := user.Group
+	if userGroup == "" {
+		userGroup = "default"
+	}
+	if token != nil && token.Group != "" && token.Group != "auto" {
+		return []string{token.Group}
+	}
+	if token != nil && token.Group == "auto" {
+		if custom, err := token.GetAutoGroups(); err == nil && len(custom) > 0 {
+			if filtered := FilterUserTokenAutoGroups(userGroup, custom); len(filtered) > 0 {
+				return filtered
+			}
+		}
+		if autoGroups := GetUserAutoGroup(userGroup); len(autoGroups) > 0 {
+			return autoGroups
+		}
+		usable := GetUserUsableGroups(userGroup)
+		groups := make([]string, 0, len(usable)+1)
+		seen := make(map[string]struct{}, len(usable)+1)
+		for g := range usable {
+			if g == "" || g == "auto" {
+				continue
+			}
+			seen[g] = struct{}{}
+			groups = append(groups, g)
+		}
+		if _, ok := seen[userGroup]; !ok {
+			groups = append(groups, userGroup)
+		}
+		return groups
+	}
+	return []string{userGroup}
+}
+
+// clientLinkAvailableModels returns the set of models reachable by (user, token),
+// or nil when no active/auto-disabled channels exist in the DB (no filtering).
+func clientLinkAvailableModels(user *model.User, token *model.Token) map[string]struct{} {
+	groups := clientLinkEffectiveGroups(user, token)
+	models, ok := model.GetGroupsActiveModels(groups)
+	if !ok {
+		return nil
+	}
+	allowed := make(map[string]struct{}, len(models))
+	for _, m := range models {
+		allowed[m] = struct{}{}
+	}
+	if token != nil && token.ModelLimitsEnabled {
+		tokenAllowed := make(map[string]struct{})
+		for _, m := range token.GetModelLimits() {
+			m = strings.TrimSpace(m)
+			if m == "" {
+				continue
+			}
+			if _, exists := allowed[m]; exists {
+				tokenAllowed[m] = struct{}{}
+			}
+		}
+		return tokenAllowed
+	}
+	return allowed
+}
+
+func filterClientLinkModelIDs(ids []string, allowed map[string]struct{}) []string {
+	if allowed == nil {
+		return ids
+	}
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := allowed[id]; ok {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// filterDshProvidersYAML removes models not in allowed from providers.<name>.models
+// using yaml.Node AST editing so comments, key order, and inline maps stay intact.
+func filterDshProvidersYAML(raw string, allowed map[string]struct{}) string {
+	if allowed == nil || strings.TrimSpace(raw) == "" {
+		return raw
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal([]byte(raw), &doc); err != nil || doc.Kind != yaml.DocumentNode || len(doc.Content) == 0 {
+		return raw
+	}
+	root := doc.Content[0]
+	if root.Kind != yaml.MappingNode {
+		return raw
+	}
+	providers := yamlMapValue(root, "providers")
+	if providers == nil || providers.Kind != yaml.MappingNode {
+		return raw
+	}
+	changed := false
+	for i := 0; i+1 < len(providers.Content); i += 2 {
+		providerNode := providers.Content[i+1]
+		if providerNode.Kind != yaml.MappingNode {
+			continue
+		}
+		modelsNode := yamlMapValue(providerNode, "models")
+		if modelsNode == nil || modelsNode.Kind != yaml.SequenceNode {
+			continue
+		}
+		kept := make([]*yaml.Node, 0, len(modelsNode.Content))
+		for _, item := range modelsNode.Content {
+			idNode := yamlMapValue(item, "id")
+			if idNode != nil && idNode.Kind == yaml.ScalarNode {
+				if _, ok := allowed[idNode.Value]; !ok {
+					changed = true
+					continue
+				}
+			}
+			kept = append(kept, item)
+		}
+		modelsNode.Content = kept
+	}
+	if !changed {
+		return raw
+	}
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return raw
+	}
+	_ = enc.Close()
+	return buf.String()
+}
+
+func yamlMapValue(m *yaml.Node, key string) *yaml.Node {
+	if m == nil || m.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(m.Content); i += 2 {
+		if m.Content[i].Value == key {
+			return m.Content[i+1]
+		}
+	}
+	return nil
 }
 
 // findOrCreateAnonymousUser maps a device to one account via its username, so no table is needed.

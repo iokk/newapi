@@ -392,3 +392,109 @@ func TestClientLinkDeviceWithoutWorkBuddy(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(body), "sk-")
 }
+
+func TestClientLinkFiltersByGroupAbilitiesAndPreservesAutoDisabled(t *testing.T) {
+	user := setupClientLinkTest(t)
+	require.NoError(t, model.DB.AutoMigrate(&model.Channel{}, &model.Ability{}))
+
+	*operation_setting.GetClientLinkSetting() = operation_setting.ClientLinkSetting{
+		Enabled:         true,
+		WorkBuddyModels: `[{"id":"gpt-6.2-sol"},{"id":"gpt-dead"},{"id":"gpt-auto-disabled"},{"id":"claude-opus-5-5"}]`,
+		DshKeyEnv:       "NEWAPI_API_KEY",
+		DshProvidersYaml: `# keep comment
+providers:
+  bozzii:
+    api: openai-responses
+    models:
+      - id: "gpt-6.2-sol"
+        reasoningEfforts: {low: low, high: high}
+      - id: "gpt-dead"
+        reasoningEfforts: {low: low}
+      - id: "gpt-auto-disabled"
+`,
+	}
+
+	chLive := &model.Channel{Name: "live", Type: 1, Status: common.ChannelStatusEnabled, Group: "default", Models: "gpt-6.2-sol,claude-opus-5-5"}
+	chManualOff := &model.Channel{Name: "manual-off", Type: 1, Status: common.ChannelStatusManuallyDisabled, Group: "default", Models: "gpt-dead"}
+	chAutoOff := &model.Channel{Name: "auto-off", Type: 1, Status: common.ChannelStatusAutoDisabled, Group: "default", Models: "gpt-auto-disabled"}
+	require.NoError(t, model.DB.Create(chLive).Error)
+	require.NoError(t, model.DB.Create(chManualOff).Error)
+	require.NoError(t, model.DB.Create(chAutoOff).Error)
+
+	abilities := []model.Ability{
+		{Group: "default", Model: "gpt-6.2-sol", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "claude-opus-5-5", ChannelId: chLive.Id, Enabled: true},
+		{Group: "default", Model: "gpt-dead", ChannelId: chManualOff.Id, Enabled: false},
+		{Group: "default", Model: "gpt-auto-disabled", ChannelId: chAutoOff.Id, Enabled: false},
+	}
+	for _, ab := range abilities {
+		require.NoError(t, model.DB.Create(&ab).Error)
+	}
+
+	// 1. WorkBuddy: keeps enabled + transiently auto-disabled, strips manually disabled.
+	wbBody, err := ClientConfigBody(user.Id, "workbuddy", 0)
+	require.NoError(t, err)
+	var wbEntries []map[string]any
+	require.NoError(t, common.Unmarshal(wbBody, &wbEntries))
+	gotIDs := make([]string, 0, len(wbEntries))
+	for _, e := range wbEntries {
+		gotIDs = append(gotIDs, e["id"].(string))
+	}
+	assert.Equal(t, []string{"gpt-6.2-sol", "gpt-auto-disabled", "claude-opus-5-5"}, gotIDs)
+
+	// 2. Codex: only gpt-* that are active or auto-disabled.
+	codexBody, err := ClientConfigBody(user.Id, "codex", 0)
+	require.NoError(t, err)
+	var codexCfg struct {
+		Models       []string `json:"models"`
+		DefaultModel string   `json:"default_model"`
+	}
+	require.NoError(t, common.Unmarshal(codexBody, &codexCfg))
+	assert.Equal(t, []string{"gpt-6.2-sol", "gpt-auto-disabled"}, codexCfg.Models)
+	assert.Equal(t, "gpt-6.2-sol", codexCfg.DefaultModel)
+
+	// 3. DSH: AST filtering strips gpt-dead while keeping comment & inline map style.
+	dshBody, err := ClientConfigBody(user.Id, "dsh", 0)
+	require.NoError(t, err)
+	var dshCfg map[string]string
+	require.NoError(t, common.Unmarshal(dshBody, &dshCfg))
+	assert.Contains(t, dshCfg["providers_yaml"], "# keep comment")
+	assert.Contains(t, dshCfg["providers_yaml"], "gpt-6.2-sol")
+	assert.Contains(t, dshCfg["providers_yaml"], "gpt-auto-disabled")
+	assert.Contains(t, dshCfg["providers_yaml"], "{low: low, high: high}")
+	assert.NotContains(t, dshCfg["providers_yaml"], "gpt-dead")
+
+	// 4. Token with group="auto" expands to usable groups instead of returning empty.
+	autoTok := &model.Token{
+		UserId: user.Id, Name: "auto-tok", Key: "auto-key", Status: common.TokenStatusEnabled,
+		ExpiredTime: -1, UnlimitedQuota: true, Group: "auto",
+	}
+	require.NoError(t, autoTok.Insert())
+	autoBody, err := ClientConfigBody(user.Id, "workbuddy", autoTok.Id)
+	require.NoError(t, err)
+	assert.Contains(t, string(autoBody), "gpt-6.2-sol")
+
+	// 5. Token with ModelLimitsEnabled intersects with group abilities.
+	limTok := &model.Token{
+		UserId: user.Id, Name: "lim-tok", Key: "lim-key", Status: common.TokenStatusEnabled,
+		ExpiredTime: -1, UnlimitedQuota: true, ModelLimitsEnabled: true, ModelLimits: "gpt-6.2-sol,gpt-dead",
+	}
+	require.NoError(t, limTok.Insert())
+	limBody, err := ClientConfigBody(user.Id, "workbuddy", limTok.Id)
+	require.NoError(t, err)
+	var limEntries []map[string]any
+	require.NoError(t, common.Unmarshal(limBody, &limEntries))
+	require.Len(t, limEntries, 1)
+	assert.Equal(t, "gpt-6.2-sol", limEntries[0]["id"])
+
+	// 6. Empty intersection returns ErrClientLinkUnavailable (no panic).
+	emptyTok := &model.Token{
+		UserId: user.Id, Name: "empty-tok", Key: "empty-key", Status: common.TokenStatusEnabled,
+		ExpiredTime: -1, UnlimitedQuota: true, Group: "nonexistent-group",
+	}
+	require.NoError(t, emptyTok.Insert())
+	_, err = ClientConfigBody(user.Id, "workbuddy", emptyTok.Id)
+	assert.ErrorIs(t, err, ErrClientLinkUnavailable)
+	_, err = ClientConfigBody(user.Id, "codex", emptyTok.Id)
+	assert.ErrorIs(t, err, ErrClientLinkUnavailable)
+}

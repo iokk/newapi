@@ -90,6 +90,12 @@ export function TargetPanel(props: TargetPanelProps) {
               { product }
             )}
           </CardDescription>
+          <p className='text-muted-foreground text-xs'>
+            {t(
+              'When the platform adds or updates models, generate and paste this prompt again to refresh your local {{product}} model list without touching other providers.',
+              { product }
+            )}
+          </p>
         </CardHeader>
         <CardContent className='space-y-3'>
           <Button

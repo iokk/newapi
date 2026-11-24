@@ -37,7 +37,6 @@ import {
   ClientConfigGuideCard,
   QUICK_CONNECT_URL,
   XSEEK_AGENT_URL,
-  XseekAgentLink,
 } from '../brand-links'
 
 afterEach(() => {
@@ -81,24 +80,14 @@ describe('brand navigation links', () => {
     )
   })
 
-  it('renders XseekAgentLink and ClientConfigGuideCard pointing to live URLs', () => {
-    render(
-      <>
-        <XseekAgentLink />
-        <ClientConfigGuideCard />
-      </>
-    )
+  it('renders streamlined ClientConfigGuideCard pointing to Quick Connect guide', () => {
+    render(<ClientConfigGuideCard />)
 
-    const agentBtn = screen.getByRole('link', { name: 'XSEEK Agent' })
-    expect(agentBtn).toHaveAttribute('href', XSEEK_AGENT_URL)
-    expect(agentBtn).toHaveAttribute('target', '_blank')
-
-    expect(
-      screen.getByRole('link', { name: /Full Quick Connect Guide/ })
-    ).toHaveAttribute('href', QUICK_CONNECT_URL)
-    expect(
-      screen.getByRole('link', { name: /Visit XSEEK Agent/ })
-    ).toHaveAttribute('href', XSEEK_AGENT_URL)
+    const guideLink = screen.getByRole('link', {
+      name: /Full Quick Connect Guide/,
+    })
+    expect(guideLink).toHaveAttribute('href', QUICK_CONNECT_URL)
+    expect(guideLink).toHaveAttribute('target', '_blank')
   })
 
   it('renders external sidebar links as new-tab anchors and never marks them active', async () => {

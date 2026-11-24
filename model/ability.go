@@ -47,6 +47,33 @@ func GetGroupEnabledModels(group string) []string {
 	return models
 }
 
+// GetGroupsActiveModels returns distinct models configured for any of groups on channels
+// that are enabled or transiently auto-disabled (excluding manually disabled channels).
+// Returns (nil, false) when the database has no active/auto-disabled channels yet.
+func GetGroupsActiveModels(groups []string) ([]string, bool) {
+	if DB == nil || len(groups) == 0 || !DB.Migrator().HasTable(&Ability{}) || !DB.Migrator().HasTable(&Channel{}) {
+		return nil, false
+	}
+	activeStatuses := []int{common.ChannelStatusEnabled, common.ChannelStatusAutoDisabled}
+	var activeChannels int64
+	if err := DB.Model(&Channel{}).Where("status IN ?", activeStatuses).Count(&activeChannels).Error; err != nil || activeChannels == 0 {
+		return nil, false
+	}
+	groupCol := commonGroupCol
+	if groupCol == "" {
+		groupCol = `"group"`
+	}
+	var models []string
+	if err := DB.Table("abilities").
+		Joins("JOIN channels ON abilities.channel_id = channels.id").
+		Where("abilities."+groupCol+" IN ? AND channels.status IN ?", groups, activeStatuses).
+		Distinct("abilities.model").
+		Pluck("abilities.model", &models).Error; err != nil {
+		return nil, false
+	}
+	return models, true
+}
+
 func GetEnabledModels() []string {
 	var models []string
 	// Find distinct models

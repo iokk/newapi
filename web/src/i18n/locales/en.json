@@ -7756,6 +7756,7 @@
     "Ask the administrator to enable it and configure the models.": "Ask the administrator to enable it and configure the models.",
     "Copy setup prompt": "Copy setup prompt",
     "Paste it into {{product}} on your computer. It sets up the API for you, and your key never appears in the prompt.": "Paste it into {{product}} on your computer. It sets up the API for you, and your key never appears in the prompt.",
+    "When the platform adds or updates models, generate and paste this prompt again to refresh your local {{product}} model list without touching other providers.": "When the platform adds or updates models, generate and paste this prompt again to refresh your local {{product}} model list without touching other providers.",
     "Generate prompt": "Generate prompt",
     "Setup prompt": "Setup prompt",
     "Share with friends": "Share with friends",
